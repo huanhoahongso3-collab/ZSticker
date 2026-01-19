@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.imageview.ShapeableImageView 
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/imgSticker"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="0dp"
-    android:layout_margin="4dp"
-    android:adjustViewBounds="true"
-    android:scaleType="centerCrop"
-    app:layout_constraintDimensionRatio="1:1"
-    app:shapeAppearanceOverlay="@style/ShapeAppearance.ZSticker.MediumComponent" />
+    android:layout_height="wrap_content"
+    android:padding="4dp">
+
+    <ImageView
+        android:id="@+id/stickerImage"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:scaleType="centerInside"
+        android:background="?attr/selectableItemBackground"
+        android:contentDescription="Sticker" />
+</FrameLayout>

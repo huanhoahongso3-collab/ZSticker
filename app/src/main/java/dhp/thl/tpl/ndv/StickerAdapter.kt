@@ -11,6 +11,8 @@ import androidx.core.content.FileProvider
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 
 class StickerAdapter(
     private var items: MutableList<Any>,
@@ -22,7 +24,6 @@ class StickerAdapter(
         fun onStickerLongClick(uri: Uri)
     }
 
-    // View types: 0 for Header (date), 1 for Sticker (image)
     override fun getItemViewType(position: Int): Int {
         return if (items[position] is String) 0 else 1
     }
@@ -63,7 +64,6 @@ class StickerAdapter(
 
     override fun getItemCount(): Int = items.size
 
-    // This is the function that fixes your "stickers not showing" after import/delete
     fun refreshData(context: Context) {
         this.items.clear()
         this.items.addAll(loadOrdered(context))
@@ -83,21 +83,21 @@ class StickerAdapter(
             val list = mutableListOf<Any>()
             val folder = context.filesDir
             
-            // Filter only files created by the app starting with 'zaticker_'
+            // FIX: Updated to zsticker_
             val files = folder.listFiles { file ->
-                file.name.startsWith("zaticker_") && file.name.endsWith(".png")
+                file.name.startsWith("zsticker_") && file.name.endsWith(".png")
             }?.sortedByDescending { it.lastModified() } ?: emptyList()
 
             var lastDate = ""
-            val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
             files.forEach { file ->
-                val date = sdf.format(java.util.Date(file.lastModified()))
+                val date = sdf.format(Date(file.lastModified()))
                 if (date != lastDate) {
-                    list.add(date) // Add header string
+                    list.add(date)
                     lastDate = date
                 }
-                list.add(file) // Add the actual file object
+                list.add(file)
             }
             return list
         }
