@@ -1,14 +1,17 @@
 package dhp.thl.tpl.ndv
 
 import android.Manifest
-import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.graphics.Typeface
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.text.SpannableString
+import android.text.style.StyleSpan
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,9 +21,11 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.FileProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.color.DynamicColors
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
 import java.io.File
 import java.io.FileOutputStream
+import java.util.Locale
 
 class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
@@ -28,12 +33,15 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var adapter: StickerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 1. Theme Persistence
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+        
+        // 1. Language Persistence (Must be set before super.onCreate)
+        val langCode = prefs.getString("lang", "en") ?: "en"
+        setLocale(langCode)
+
+        // 2. Theme Persistence
         val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
-        if (AppCompatDelegate.getDefaultNightMode() != savedMode) {
-            AppCompatDelegate.setDefaultNightMode(savedMode)
-        }
+        AppCompatDelegate.setDefaultNightMode(savedMode)
 
         DynamicColors.applyToActivityIfAvailable(this)
         super.onCreate(savedInstanceState)
@@ -45,7 +53,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         setupStickerList()
         setupInfoSection()
         
-        // BUG FIX: Sync UI visibility immediately to prevent overlapping views
+        // BUG FIX: Sync UI visibility immediately to prevent section overlap
         syncUIState()
         
         // Handle incoming shares (Single or Multiple)
@@ -67,6 +75,14 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         super.onNewIntent(intent)
         setIntent(intent)
         handleIncomingShare(intent)
+    }
+
+    private fun setLocale(langCode: String) {
+        val locale = Locale(langCode)
+        Locale.setDefault(locale)
+        val config = Configuration()
+        config.setLocale(locale)
+        resources.updateConfiguration(config, resources.displayMetrics)
     }
 
     private fun syncUIState() {
@@ -112,15 +128,15 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         
-        // 1. Theme
+        // --- 1. THEME ---
         val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
         binding.txtCurrentTheme.text = if (savedMode == AppCompatDelegate.MODE_NIGHT_YES) 
             getString(R.string.theme_dark) else getString(R.string.theme_light)
 
         binding.itemTheme.setOnClickListener {
             val options = arrayOf(getString(R.string.theme_light), getString(R.string.theme_dark))
-            AlertDialog.Builder(this)
-                .setTitle(R.string.info_theme_title)
+            MaterialAlertDialogBuilder(this)
+                .setTitle(getString(R.string.info_theme_title))
                 .setItems(options) { _, which ->
                     val mode = if (which == 0) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
                     prefs.edit().putInt("theme_mode", mode).apply()
@@ -128,88 +144,108 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }.show()
         }
 
-        // 2. Version
+        // --- 2. LANGUAGE ---
+        val currentLang = prefs.getString("lang", "en") ?: "en"
+        binding.txtCurrentLanguage.text = if (currentLang == "vi") "Tiếng Việt" else "English"
+        
+        binding.itemLanguage.setOnClickListener {
+            val langs = arrayOf("English", "Tiếng Việt")
+            MaterialAlertDialogBuilder(this)
+                .setTitle(getString(R.string.info_language_title))
+                .setItems(langs) { _, which ->
+                    val langCode = if (which == 0) "en" else "vi"
+                    if (currentLang != langCode) {
+                        prefs.edit().putString("lang", langCode).apply()
+                        recreate() 
+                    }
+                }.show()
+        }
+
+        // --- 3. VERSION ---
         try {
             val pInfo = packageManager.getPackageInfo(packageName, 0)
             binding.txtVersion.text = pInfo.versionName
         } catch (e: Exception) { binding.txtVersion.text = "1.0.0" }
 
-        // 3. Source Code
+        // --- 4. SOURCE CODE ---
         binding.itemRepo.setOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/huanhoahongso3-collab/ZSticker")))
         }
 
-        // 4. License
+        // --- 5. LICENSE ---
         binding.itemLicense.setOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.gnu.org/licenses/gpl-3.0.html")))
         }
 
-        // 5. Export All
+        // --- 6. EXPORT ALL ---
         binding.itemExportAll.setOnClickListener { exportAllStickers() }
     }
 
-    /** RESTORED: Zalo Sticker Intent */
+    /** SHARE TO ZALO (AS STICKER) */
     override fun onStickerClick(uri: Uri) {
         try {
-            // Ensure we are sending a FileProvider URI
-            val file = File(filesDir, uri.lastPathSegment ?: "")
+            val file = File(uri.path!!)
             val contentUri = FileProvider.getUriForFile(this, "$packageName.provider", file)
 
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "image/png"
                 putExtra(Intent.EXTRA_STREAM, contentUri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                // Specific Zalo Sticker Extras
+                // Zalo-specific flags to force Sticker mode
                 putExtra("is_sticker", true)
                 putExtra("type", 3)
                 setClassName("com.zing.zalo", "com.zing.zalo.ui.TempShareViaActivity")
             }
             startActivity(intent)
         } catch (e: Exception) {
-            Toast.makeText(this, "Zalo not found or share failed", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.zalo_share_failed), Toast.LENGTH_SHORT).show()
         }
     }
 
-    /** RESTORED: 3-Option Long Click Dialog */
+    /** LONG PRESS: BOLD TITLE & ROUNDED DIALOG */
     override fun onStickerLongClick(uri: Uri) {
-        val options = arrayOf("Export to Gallery", "Delete Sticker")
-        AlertDialog.Builder(this)
-            .setTitle("Sticker Options")
+        // Bold the title using SpannableString
+        val title = getString(R.string.sticker_options_title)
+        val boldTitle = SpannableString(title)
+        boldTitle.setSpan(StyleSpan(Typeface.BOLD), 0, title.length, 0)
+
+        val options = arrayOf(
+            getString(R.string.export),
+            getString(R.string.delete)
+        )
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(boldTitle)
             .setItems(options) { _, which ->
                 when (which) {
                     0 -> exportSingleSticker(uri)
                     1 -> deleteSticker(uri)
                 }
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
 
     private fun exportSingleSticker(uri: Uri) {
         try {
-            val fileName = uri.lastPathSegment ?: "sticker_${System.currentTimeMillis()}.png"
-            val file = File(filesDir, fileName)
+            val file = File(uri.path!!)
             val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
             if (!outDir.exists()) outDir.mkdirs()
             val dest = File(outDir, file.name)
             file.inputStream().use { input -> dest.outputStream().use { output -> input.copyTo(output) } }
-            Toast.makeText(this, "Saved to Pictures/ZSticker", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.export) + " OK", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) { e.printStackTrace() }
     }
 
     private fun deleteSticker(uri: Uri) {
-        val fileName = uri.lastPathSegment ?: ""
-        val file = File(filesDir, fileName)
+        val file = File(uri.path!!)
         if (file.exists()) file.delete()
         adapter.refreshData(this)
     }
 
     private fun exportAllStickers() {
         val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
-        if (stickerFiles.isNullOrEmpty()) {
-            Toast.makeText(this, "No stickers to export", Toast.LENGTH_SHORT).show()
-            return
-        }
+        if (stickerFiles.isNullOrEmpty()) return
         try {
             val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
             if (!outDir.exists()) outDir.mkdirs()
@@ -217,11 +253,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 val dest = File(outDir, src.name)
                 src.inputStream().use { input -> dest.outputStream().use { output -> input.copyTo(output) } }
             }
-            Toast.makeText(this, "All exported to Pictures/ZSticker", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Exported All", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) { e.printStackTrace() }
     }
 
-    /** RESTORED: Single and Multiple Photo Import */
     private fun handleIncomingShare(intent: Intent?) {
         if (intent == null) return
         when (intent.action) {

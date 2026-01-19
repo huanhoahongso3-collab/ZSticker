@@ -2,27 +2,22 @@
     <string name="app_name">ZSticker</string>
 
     <string name="nav_home">Home</string>
-    <string name="nav_info">Info</string>
+    <string name="nav_info">Information</string>
 
     <string name="info_theme_title">Theme</string>
-    <string name="info_export_all_title">Export All Stickers</string>
+    <string name="info_language_title">Language</string>
+    <string name="info_version_title">Version</string>
     <string name="info_repo_title">Source Code</string>
     <string name="info_license_title">License</string>
-    <string name="info_license_note">GPL-3.0</string>
-    <string name="info_version_title">Version</string>
+    <string name="info_export_all_title">Export All Stickers</string>
 
-    <string name="theme_system">System Default</string>
-    <string name="theme_light">Light</string>
-    <string name="theme_dark">Dark</string>
-
+    <string name="theme_light">Light Mode</string>
+    <string name="theme_dark">Dark Mode</string>
+    <string name="info_license_note">GNU General Public License v3.0</string>
+    
     <string name="sticker_options_title">Sticker Options</string>
     <string name="export">Export to Gallery</string>
-    <string name="delete">Delete</string>
-    <string name="deleted">Deleted</string>
-
-    <string name="import_success">Imported successfully</string>
-    <string name="import_failed">Import failed: %s</string>
-    <string name="export_success">Exported to Pictures/ZSticker</string>
-    <string name="zalo_share_failed">Zalo is not installed or failed to share</string>
-    <string name="no_stickers">No stickers found</string>
+    <string name="delete">Delete Sticker</string>
+    <string name="cancel">Cancel</string>
+    <string name="zalo_share_failed">Zalo not found or share failed</string>
 </resources>
