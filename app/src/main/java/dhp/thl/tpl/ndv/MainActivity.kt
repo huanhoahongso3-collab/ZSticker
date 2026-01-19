@@ -2,7 +2,6 @@ package dhp.thl.tpl.ndv
 
 import android.Manifest
 import android.app.AlertDialog
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -29,9 +28,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var adapter: StickerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 1. Theme Persistence & Loop Prevention
+        // 1. Theme Persistence (Light/Dark Only)
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
-        val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
         
         if (AppCompatDelegate.getDefaultNightMode() != savedMode) {
             AppCompatDelegate.setDefaultNightMode(savedMode)
@@ -47,16 +46,24 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         setupStickerList()
         setupInfoSection()
         
-        // 2. FIX: Sync UI visibility after activity recreation (Theme change)
+        // Fix: Force UI sync to prevent layout overlap
         syncUIState()
         
-        handleShareIntent(intent)
+        // Initial check for shared content
+        handleIncomingShare(intent)
 
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
             requestLegacyPermissions()
         }
 
         binding.addButton.setOnClickListener { openSystemImagePicker() }
+    }
+
+    // FIX: Allows app to receive shares even if it's already open in background
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingShare(intent)
     }
 
     private fun setupStickerList() {
@@ -72,8 +79,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     }
 
     private fun syncUIState() {
-        val selectedId = binding.bottomNavigation.selectedItemId
-        updateLayoutVisibility(selectedId)
+        updateLayoutVisibility(binding.bottomNavigation.selectedItemId)
     }
 
     private fun setupNavigation() {
@@ -103,42 +109,42 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         
-        // FIX: Update theme label to reflect actual saved state
-        val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-        binding.txtCurrentTheme.text = when(savedMode) {
-            AppCompatDelegate.MODE_NIGHT_NO -> getString(R.string.theme_light)
-            AppCompatDelegate.MODE_NIGHT_YES -> getString(R.string.theme_dark)
-            else -> getString(R.string.theme_system)
-        }
+        // 1. Theme Toggle (Arrangement: First)
+        val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
+        binding.txtCurrentTheme.text = if (savedMode == AppCompatDelegate.MODE_NIGHT_YES) 
+            getString(R.string.theme_dark) else getString(R.string.theme_light)
 
         binding.itemTheme.setOnClickListener {
-            val options = arrayOf(getString(R.string.theme_system), getString(R.string.theme_light), getString(R.string.theme_dark))
+            val options = arrayOf(getString(R.string.theme_light), getString(R.string.theme_dark))
             AlertDialog.Builder(this)
                 .setTitle(R.string.info_theme_title)
                 .setItems(options) { _, which ->
-                    val mode = when (which) {
-                        0 -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-                        1 -> AppCompatDelegate.MODE_NIGHT_NO
-                        else -> AppCompatDelegate.MODE_NIGHT_YES
-                    }
+                    val mode = if (which == 0) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
                     prefs.edit().putInt("theme_mode", mode).apply()
                     AppCompatDelegate.setDefaultNightMode(mode)
                 }.show()
         }
 
-        // Export All
-        binding.itemExportAll.setOnClickListener { exportAllStickers() }
-
-        // Repository
-        binding.itemRepo.setOnClickListener {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/huanhoahongso3-collab/ZSticker")))
-        }
-
-        // Version Info
+        // 2. Version Info (Arrangement: Second)
         try {
             val pInfo = packageManager.getPackageInfo(packageName, 0)
             binding.txtVersion.text = pInfo.versionName
         } catch (e: Exception) { binding.txtVersion.text = "1.0.0" }
+
+        // 3. Source Code (Arrangement: Third)
+        binding.itemRepo.setOnClickListener {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/huanhoahongso3-collab/ZSticker")))
+        }
+
+        // 4. License (Arrangement: Fourth - logic for tapping row)
+        // Ensure you have an 'itemLicense' ID in activity_main.xml
+        val licenseItem = findViewById<View>(R.id.itemLicense)
+        licenseItem?.setOnClickListener {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.gnu.org/licenses/gpl-3.0.html")))
+        }
+
+        // 5. Export All (Arrangement: Last)
+        binding.itemExportAll.setOnClickListener { exportAllStickers() }
     }
 
     private fun exportAllStickers() {
@@ -185,39 +191,57 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 FileOutputStream(file).use { out -> input.copyTo(out) }
                 adapter.refreshData(this)
             }
-        } catch (e: Exception) { e.printStackTrace() }
+        } catch (e: Exception) { 
+            Toast.makeText(this, "Failed to import", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onStickerClick(uri: Uri) {
         try {
-            val file = File(uri.path!!)
-            val contentUri = FileProvider.getUriForFile(this, "$packageName.provider", file)
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "image/png"
-                putExtra(Intent.EXTRA_STREAM, contentUri)
+                putExtra(Intent.EXTRA_STREAM, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                setClassName("com.zing.zalo", "com.zing.zalo.ui.TempShareViaActivity")
+                setPackage("com.zing.zalo")
             }
             startActivity(intent)
-        } catch (e: Exception) { Toast.makeText(this, "Zalo not found", Toast.LENGTH_SHORT).show() }
+        } catch (e: Exception) { 
+            val fallback = Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(fallback, "Share Sticker"))
+        }
     }
 
     override fun onStickerLongClick(uri: Uri) {
         AlertDialog.Builder(this)
-            .setItems(arrayOf("Delete")) { _, _ ->
-                File(uri.path!!).delete()
+            .setMessage("Delete this sticker?")
+            .setPositiveButton("Delete") { _, _ ->
+                val file = File(uri.path!!)
+                if (file.exists()) file.delete()
                 adapter.refreshData(this)
-            }.show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
-    private fun handleShareIntent(intent: Intent?) {
-        if (intent?.action == Intent.ACTION_SEND) {
-            val uri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+    private fun handleIncomingShare(intent: Intent?) {
+        if (intent?.action == Intent.ACTION_SEND && intent.type?.startsWith("image/") == true) {
+            val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(Intent.EXTRA_STREAM)
+            }
             uri?.let { importToApp(it) }
         }
     }
 
     private fun requestLegacyPermissions() {
-        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 999)
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 999)
+        }
     }
 }
