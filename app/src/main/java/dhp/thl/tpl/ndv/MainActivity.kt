@@ -38,34 +38,36 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var adapter: StickerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        // -------------------------------------
+        // FORCE LIGHT THEME ON FIRST INSTALL
+        // -------------------------------------
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         val firstRun = prefs.getBoolean("first_run", true)
-
-        // FIX 1 — Apply dynamic colors before theme inflation + allow recreate
-        DynamicColors.applyToActivityIfAvailable(this)
-
-        // Persistent Language
-        val langCode = prefs.getString("lang", "en") ?: "en"
-        setLocale(langCode)
-
-        // Theme Persistence (Default Light)
-        val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
-        if (AppCompatDelegate.getDefaultNightMode() != savedMode) {
+        if (firstRun) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+            prefs.edit().putBoolean("first_run", false).apply()
+        } else {
+            val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
             AppCompatDelegate.setDefaultNightMode(savedMode)
         }
+
+        // -------------------------------------
+        // APPLY DYNAMIC COLORS BEFORE INFLATE
+        // -------------------------------------
+        DynamicColors.applyToActivityIfAvailable(this)
+
+        // -------------------------------------
+        // LANGUAGE APPLY
+        // -------------------------------------
+        val langCode = prefs.getString("lang", "en") ?: "en"
+        setLocale(langCode)
 
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Recreate 1 time on first install to apply dynamic colors correctly
-        if (firstRun) {
-            prefs.edit().putBoolean("first_run", false).apply()
-            recreate()
-            return
-        }
-
-        // Restore last tab
+        // Restore nav state
         val lastTab = prefs.getInt("last_tab", R.id.nav_home)
         binding.bottomNavigation.selectedItemId = lastTab
         updateLayoutVisibility(lastTab)
@@ -89,15 +91,11 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             view.updatePadding(bottom = navInsets.bottom)
             insets
         }
-
-        // FIX 3 — Add button offset above nav bar for gesture & 3-button layouts
         ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
             val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-            val extra = (96 * resources.displayMetrics.density).toInt()
             view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                bottomMargin = navInsets.bottom + extra
+                bottomMargin = (128 * resources.displayMetrics.density).toInt() + navInsets.bottom
             }
-            view.translationY = -navInsets.bottom.toFloat()
             insets
         }
     }
@@ -145,9 +143,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.info_language_title))
                 .setItems(langs) { _, which ->
-                    val code = if (which == 0) "en" else "vi"
-                    if (currentLang != code) {
-                        prefs.edit().putString("lang", code).apply()
+                    val langCode = if (which == 0) "en" else "vi"
+                    if (currentLang != langCode) {
+                        prefs.edit().putString("lang", langCode).apply()
                         recreate()
                     }
                 }.show()
@@ -172,6 +170,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
         binding.itemExportAll.setOnClickListener { exportAllStickers() }
     }
+
+    // --- EXPORT/DELETE/STICKER SHARE (unchanged) ---
 
     private fun exportAllStickers() {
         val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
@@ -259,20 +259,22 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     }
 
     private fun setupStickerList() {
+
+        // --- INFINITE SCROLL FIX ---
+        binding.recycler.setHasFixedSize(false)
+        binding.recycler.isNestedScrollingEnabled = true
+
         val items = StickerAdapter.loadOrdered(this)
         adapter = StickerAdapter(items, this)
 
         val layoutManager = GridLayoutManager(this, 3)
         layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-            override fun getSpanSize(pos: Int): Int = if (adapter.getItemViewType(pos) == 0) 3 else 1
+            override fun getSpanSize(pos: Int): Int =
+                if (adapter.getItemViewType(pos) == 0) 3 else 1
         }
 
         binding.recycler.layoutManager = layoutManager
         binding.recycler.adapter = adapter
-
-        // FIX 2 — allow infinite scroll
-        binding.recycler.setHasFixedSize(false)
-        binding.recycler.isNestedScrollingEnabled = true
     }
 
     private fun handleIncomingShare(intent: Intent?) {
