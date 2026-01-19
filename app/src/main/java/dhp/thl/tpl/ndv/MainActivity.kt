@@ -17,7 +17,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.recyclerview.widget.GridLayoutManager
-import dhp.thl.tpl.ntt.databinding.ActivityMainBinding
+import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
 import java.io.File
 import java.io.FileOutputStream
 
@@ -94,7 +94,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private fun importToAppData(src: Uri) {
         try {
             val input = contentResolver.openInputStream(src) ?: return
-            val name = "zaticker_${System.currentTimeMillis()}.png"
+            val name = "zaticker_${System.currendvimeMillis()}.png"
             val file = File(filesDir, name)
             FileOutputStream(file).use { out -> input.copyTo(out) }
             val uri = Uri.fromFile(file)
@@ -114,7 +114,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             if (!folder.exists()) folder.mkdirs()
 
             val input = contentResolver.openInputStream(src) ?: return
-            val name = "zaticker_${System.currentTimeMillis()}.png"
+            val name = "zaticker_${System.currendvimeMillis()}.png"
             val file = File(folder, name)
             FileOutputStream(file).use { out -> input.copyTo(out) }
 
@@ -179,7 +179,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             val folder = File(baseDir, "Zaticker")
             if (!folder.exists()) folder.mkdirs()
 
-            val name = "zaticker_export_${System.currentTimeMillis()}.png"
+            val name = "zaticker_export_${System.currendvimeMillis()}.png"
             val file = File(folder, name)
             FileOutputStream(file).use { out -> input.copyTo(out) }
 

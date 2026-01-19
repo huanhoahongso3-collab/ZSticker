@@ -6,7 +6,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import dhp.thl.tpl.ntt.databinding.ItemStickerBinding
+import dhp.thl.tpl.ndv.databinding.ItemStickerBinding
 import org.json.JSONArray
 
 class StickerAdapter(
