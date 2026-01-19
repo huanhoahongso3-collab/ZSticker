@@ -3,101 +3,95 @@ package dhp.thl.tpl.ndv
 import android.content.Context
 import android.net.Uri
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import dhp.thl.tpl.ndv.databinding.ItemStickerBinding
-import org.json.JSONArray
+import com.google.android.material.imageview.ShapeableImageView
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 
 class StickerAdapter(
-    private val stickers: MutableList<Uri>,
+    private var items: MutableList<Any>, // Can be String (Header) or Uri (Sticker)
     private val listener: StickerListener
-) : RecyclerView.Adapter<StickerAdapter.StickerViewHolder>() {
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+
+    companion object {
+        private const val TYPE_HEADER = 0
+        private const val TYPE_STICKER = 1
+
+        fun loadOrdered(context: Context): MutableList<Any> {
+            val stickerFiles = context.filesDir.listFiles { file ->
+                file.name.startsWith("zaticker_") && file.extension == "png"
+            }?.sortedByDescending { it.lastModified() } ?: emptyList()
+
+            val result = mutableListOf<Any>()
+            var lastDate = ""
+            val sdf = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
+
+            for (file in stickerFiles) {
+                val currentDate = sdf.format(Date(file.lastModified()))
+                if (currentDate != lastDate) {
+                    result.add(currentDate) // Add Date Header
+                    lastDate = currentDate
+                }
+                result.add(Uri.fromFile(file)) // Add Sticker
+            }
+            return result
+        }
+    }
 
     interface StickerListener {
         fun onStickerClick(uri: Uri)
         fun onStickerLongClick(uri: Uri)
     }
 
-    inner class StickerViewHolder(val binding: ItemStickerBinding) :
-        RecyclerView.ViewHolder(binding.root)
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): StickerViewHolder {
-        val binding = ItemStickerBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return StickerViewHolder(binding)
+    override fun getItemViewType(position: Int): Int {
+        return if (items[position] is String) TYPE_HEADER else TYPE_STICKER
     }
 
-    override fun onBindViewHolder(holder: StickerViewHolder, position: Int) {
-        val uri = stickers[position]
-
-        // Load sticker image efficiently
-        Glide.with(holder.binding.image.context)
-            .load(uri)
-            .centerCrop()
-            .into(holder.binding.image)
-
-        // Tap → share
-        holder.binding.image.setOnClickListener {
-            listener.onStickerClick(uri)
-        }
-
-        // Long press → confirm delete
-        holder.binding.image.setOnLongClickListener {
-            listener.onStickerLongClick(uri)
-            true
-        }
-    }
-
-    override fun getItemCount(): Int = stickers.size
-
-    /** ✅ Add a new sticker, optionally at the top */
-    fun addSticker(context: Context, uri: Uri, toTop: Boolean = false) {
-        if (toTop) {
-            stickers.add(0, uri)
-            notifyItemInserted(0)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        val inflater = LayoutInflater.from(parent.context)
+        return if (viewType == TYPE_HEADER) {
+            HeaderViewHolder(inflater.inflate(R.layout.item_header, parent, false))
         } else {
-            stickers.add(uri)
-            notifyItemInserted(stickers.size - 1)
-        }
-        saveOrder(context)
-    }
-
-    /** ✅ Shortcut for adding new sticker at top */
-    fun addStickerAtTop(context: Context, uri: Uri) {
-        addSticker(context, uri, toTop = true)
-    }
-
-    /** ✅ Remove sticker safely and persist */
-    fun removeSticker(context: Context, uri: Uri) {
-        val index = stickers.indexOf(uri)
-        if (index != -1) {
-            stickers.removeAt(index)
-            notifyItemRemoved(index)
-            saveOrder(context)
+            StickerViewHolder(inflater.inflate(R.layout.item_sticker, parent, false))
         }
     }
 
-    // --- Persistence helpers (fixes random order on restart) ---
-
-    /** ✅ Save order as JSON array (keeps exact order) */
-    private fun saveOrder(context: Context) {
-        val prefs = context.getSharedPreferences("stickers", Context.MODE_PRIVATE)
-        val jsonArray = JSONArray()
-        stickers.forEach { jsonArray.put(it.toString()) }
-        prefs.edit().putString("uris_json", jsonArray.toString()).apply()
-    }
-
-    companion object {
-        /** ✅ Load ordered stickers */
-        fun loadOrdered(context: Context): MutableList<Uri> {
-            val prefs = context.getSharedPreferences("stickers", Context.MODE_PRIVATE)
-            val json = prefs.getString("uris_json", "[]")
-            val array = JSONArray(json)
-            val list = mutableListOf<Uri>()
-            for (i in 0 until array.length()) {
-                list.add(Uri.parse(array.getString(i)))
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        if (holder is HeaderViewHolder) {
+            holder.txtHeader.text = items[position] as String
+        } else if (holder is StickerViewHolder) {
+            val uri = items[position] as Uri
+            Glide.with(holder.imgSticker).load(uri).into(holder.imgSticker)
+            holder.imgSticker.setOnClickListener { listener.onStickerClick(uri) }
+            holder.imgSticker.setOnLongClickListener {
+                listener.onStickerLongClick(uri)
+                true
             }
-            return list
         }
+    }
+
+    override fun getItemCount(): Int = items.size
+
+    fun addStickerAtTop(context: Context, uri: Uri) {
+        items = loadOrdered(context) // Re-calculate categories
+        notifyDataSetChanged()
+    }
+
+    fun removeSticker(context: Context, uri: Uri) {
+        items = loadOrdered(context) // Re-calculate categories
+        notifyDataSetChanged()
+    }
+
+    class StickerViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val imgSticker: ShapeableImageView = view.findViewById(R.id.imgSticker)
+    }
+
+    class HeaderViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val txtHeader: TextView = view.findViewById(R.id.txtHeader)
     }
 }
