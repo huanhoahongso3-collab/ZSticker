@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">Z Hình Dán</string>
+
+    <!-- Main UI -->
+    <string name="no_images_selected">Chưa chọn hình ảnh nào</string>
+    <string name="import_failed">Nhập thất bại: %1$s</string>
+    <string name="legacy_import_failed">Nhập cũ thất bại: %1$s</string>
+    <string name="zalo_share_failed">Chia sẻ Zalo thất bại</string>
+    <string name="export_failed">Xuất thất bại: %1$s</string>
+    <string name="sticker_exported">Sticker đã xuất tới: %1$s</string>
+
+    <!-- Long press / Options dialog -->
+    <string name="sticker_options_title">Tùy chọn Sticker</string>
+    <string name="sticker_options_message">Bạn muốn làm gì với sticker này?</string>
+    <string name="export">Xuất</string>
+    <string name="delete_title">Xóa Sticker</string>
+    <string name="delete_message">Bạn có muốn xóa sticker này không?</string>
+    <string name="delete">Xóa</string>
+    <string name="cancel">Hủy</string>
+    <string name="deleted">Đã xóa</string>
+    <string name="delete_failed">Xóa thất bại</string>
+</resources>
