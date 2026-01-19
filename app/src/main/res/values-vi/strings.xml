@@ -20,4 +20,6 @@
     <string name="delete">Xóa nhãn dán</string>
     <string name="cancel">Hủy bỏ</string>
     <string name="zalo_share_failed">Không tìm thấy Zalo hoặc chia sẻ thất bại</string>
+    <string name="success">Thành công</string>
+    <string name="failed">Thất bại</string>
 </resources>
