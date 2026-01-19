@@ -2,9 +2,9 @@ name: Android ZSticker
 
 on:
   push:
-    branches: [ main ]
+    branches: [ realm3 ]
   pull_request:
-    branches: [ main ]
+    branches: [ realm3 ]
 
 jobs:
   build:

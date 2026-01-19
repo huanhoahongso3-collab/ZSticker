@@ -1,34 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
-    android:background="?android:attr/windowBackground"
-    android:fitsSystemWindows="false"
-    android:clipToPadding="false"
-    android:padding="8dp"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="?attr/colorSurface"
+    android:fitsSystemWindows="true">
 
-    <!-- Reserve inset/toolbar area so A15 doesn't overlap -->
     <Space
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"/>
 
-    <ImageButton
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/addButton"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_marginTop="4dp"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:src="@android:drawable/ic_input_add"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Add new sticker"/>
+        android:text="@string/add_sticker"
+        app:icon="@drawable/ic_add" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="8dp"
-        android:clipToPadding="false"
-        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"/>
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="8dp"
+        android:clipToPadding="false"/>
+
 </LinearLayout>
