@@ -14,7 +14,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class StickerAdapter(
-    private var items: MutableList<Any>, // Can be String (Header) or Uri (Sticker)
+    private var items: MutableList<Any>,
     private val listener: StickerListener
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -34,10 +34,10 @@ class StickerAdapter(
             for (file in stickerFiles) {
                 val currentDate = sdf.format(Date(file.lastModified()))
                 if (currentDate != lastDate) {
-                    result.add(currentDate) // Add Date Header
+                    result.add(currentDate)
                     lastDate = currentDate
                 }
-                result.add(Uri.fromFile(file)) // Add Sticker
+                result.add(Uri.fromFile(file))
             }
             return result
         }
@@ -46,6 +46,13 @@ class StickerAdapter(
     interface StickerListener {
         fun onStickerClick(uri: Uri)
         fun onStickerLongClick(uri: Uri)
+    }
+
+    // THE MISSING FUNCTION THAT CAUSED THE CRASH
+    fun refreshData(context: Context) {
+        items.clear()
+        items.addAll(loadOrdered(context))
+        notifyDataSetChanged()
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -66,7 +73,10 @@ class StickerAdapter(
             holder.txtHeader.text = items[position] as String
         } else if (holder is StickerViewHolder) {
             val uri = items[position] as Uri
-            Glide.with(holder.imgSticker).load(uri).into(holder.imgSticker)
+            Glide.with(holder.imgSticker.context)
+                .load(uri)
+                .into(holder.imgSticker)
+            
             holder.imgSticker.setOnClickListener { listener.onStickerClick(uri) }
             holder.imgSticker.setOnLongClickListener {
                 listener.onStickerLongClick(uri)
@@ -76,16 +86,6 @@ class StickerAdapter(
     }
 
     override fun getItemCount(): Int = items.size
-
-    fun addStickerAtTop(context: Context, uri: Uri) {
-        items = loadOrdered(context) // Re-calculate categories
-        notifyDataSetChanged()
-    }
-
-    fun removeSticker(context: Context, uri: Uri) {
-        items = loadOrdered(context) // Re-calculate categories
-        notifyDataSetChanged()
-    }
 
     class StickerViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val imgSticker: ShapeableImageView = view.findViewById(R.id.imgSticker)
