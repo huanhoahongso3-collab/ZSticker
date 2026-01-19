@@ -20,4 +20,6 @@
     <string name="delete">Delete Sticker</string>
     <string name="cancel">Cancel</string>
     <string name="zalo_share_failed">Zalo not found or share failed</string>
+    <string name="success">Successful</string>
+    <string name="failed">Failed</string>
 </resources>
