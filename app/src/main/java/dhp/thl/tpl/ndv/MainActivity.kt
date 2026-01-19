@@ -28,10 +28,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var adapter: StickerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 1. Theme Persistence (Light/Dark Only)
+        // 1. Theme Persistence
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
-        
         if (AppCompatDelegate.getDefaultNightMode() != savedMode) {
             AppCompatDelegate.setDefaultNightMode(savedMode)
         }
@@ -46,10 +45,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         setupStickerList()
         setupInfoSection()
         
-        // Fix: Force UI sync to prevent layout overlap
+        // BUG FIX: Sync UI visibility immediately to prevent overlapping views
         syncUIState()
         
-        // Initial check for shared content
+        // Handle incoming shares (Single or Multiple)
         handleIncomingShare(intent)
 
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
@@ -59,23 +58,15 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         binding.addButton.setOnClickListener { openSystemImagePicker() }
     }
 
-    // FIX: Allows app to receive shares even if it's already open in background
+    override fun onResume() {
+        super.onResume()
+        syncUIState()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         handleIncomingShare(intent)
-    }
-
-    private fun setupStickerList() {
-        val items = StickerAdapter.loadOrdered(this)
-        adapter = StickerAdapter(items, this)
-        val layoutManager = GridLayoutManager(this, 3)
-        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-            override fun getSpanSize(position: Int): Int = 
-                if (adapter.getItemViewType(position) == 0) 3 else 1
-        }
-        binding.recycler.layoutManager = layoutManager
-        binding.recycler.adapter = adapter
     }
 
     private fun syncUIState() {
@@ -106,10 +97,22 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
     }
 
+    private fun setupStickerList() {
+        val items = StickerAdapter.loadOrdered(this)
+        adapter = StickerAdapter(items, this)
+        val layoutManager = GridLayoutManager(this, 3)
+        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(position: Int): Int = 
+                if (adapter.getItemViewType(position) == 0) 3 else 1
+        }
+        binding.recycler.layoutManager = layoutManager
+        binding.recycler.adapter = adapter
+    }
+
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         
-        // 1. Theme Toggle (Arrangement: First)
+        // 1. Theme
         val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
         binding.txtCurrentTheme.text = if (savedMode == AppCompatDelegate.MODE_NIGHT_YES) 
             getString(R.string.theme_dark) else getString(R.string.theme_light)
@@ -125,32 +128,86 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }.show()
         }
 
-        // 2. Version Info (Arrangement: Second)
+        // 2. Version
         try {
             val pInfo = packageManager.getPackageInfo(packageName, 0)
             binding.txtVersion.text = pInfo.versionName
         } catch (e: Exception) { binding.txtVersion.text = "1.0.0" }
 
-        // 3. Source Code (Arrangement: Third)
+        // 3. Source Code
         binding.itemRepo.setOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/huanhoahongso3-collab/ZSticker")))
         }
 
-        // 4. License (Arrangement: Fourth - logic for tapping row)
-        // Ensure you have an 'itemLicense' ID in activity_main.xml
-        val licenseItem = findViewById<View>(R.id.itemLicense)
-        licenseItem?.setOnClickListener {
+        // 4. License
+        binding.itemLicense.setOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.gnu.org/licenses/gpl-3.0.html")))
         }
 
-        // 5. Export All (Arrangement: Last)
+        // 5. Export All
         binding.itemExportAll.setOnClickListener { exportAllStickers() }
+    }
+
+    /** RESTORED: Zalo Sticker Intent */
+    override fun onStickerClick(uri: Uri) {
+        try {
+            // Ensure we are sending a FileProvider URI
+            val file = File(filesDir, uri.lastPathSegment ?: "")
+            val contentUri = FileProvider.getUriForFile(this, "$packageName.provider", file)
+
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"
+                putExtra(Intent.EXTRA_STREAM, contentUri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                // Specific Zalo Sticker Extras
+                putExtra("is_sticker", true)
+                putExtra("type", 3)
+                setClassName("com.zing.zalo", "com.zing.zalo.ui.TempShareViaActivity")
+            }
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Zalo not found or share failed", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /** RESTORED: 3-Option Long Click Dialog */
+    override fun onStickerLongClick(uri: Uri) {
+        val options = arrayOf("Export to Gallery", "Delete Sticker")
+        AlertDialog.Builder(this)
+            .setTitle("Sticker Options")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> exportSingleSticker(uri)
+                    1 -> deleteSticker(uri)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun exportSingleSticker(uri: Uri) {
+        try {
+            val fileName = uri.lastPathSegment ?: "sticker_${System.currentTimeMillis()}.png"
+            val file = File(filesDir, fileName)
+            val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
+            if (!outDir.exists()) outDir.mkdirs()
+            val dest = File(outDir, file.name)
+            file.inputStream().use { input -> dest.outputStream().use { output -> input.copyTo(output) } }
+            Toast.makeText(this, "Saved to Pictures/ZSticker", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) { e.printStackTrace() }
+    }
+
+    private fun deleteSticker(uri: Uri) {
+        val fileName = uri.lastPathSegment ?: ""
+        val file = File(filesDir, fileName)
+        if (file.exists()) file.delete()
+        adapter.refreshData(this)
     }
 
     private fun exportAllStickers() {
         val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
         if (stickerFiles.isNullOrEmpty()) {
-            Toast.makeText(this, "No stickers found", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "No stickers to export", Toast.LENGTH_SHORT).show()
             return
         }
         try {
@@ -160,8 +217,27 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 val dest = File(outDir, src.name)
                 src.inputStream().use { input -> dest.outputStream().use { output -> input.copyTo(output) } }
             }
-            Toast.makeText(this, "Exported to Pictures/ZSticker", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "All exported to Pictures/ZSticker", Toast.LENGTH_LONG).show()
         } catch (e: Exception) { e.printStackTrace() }
+    }
+
+    /** RESTORED: Single and Multiple Photo Import */
+    private fun handleIncomingShare(intent: Intent?) {
+        if (intent == null) return
+        when (intent.action) {
+            Intent.ACTION_SEND -> {
+                if (intent.type?.startsWith("image/") == true) {
+                    val uri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                    uri?.let { importToApp(it) }
+                }
+            }
+            Intent.ACTION_SEND_MULTIPLE -> {
+                if (intent.type?.startsWith("image/") == true) {
+                    val uris = intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)
+                    uris?.forEach { importToApp(it) }
+                }
+            }
+        }
     }
 
     private fun openSystemImagePicker() {
@@ -191,52 +267,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 FileOutputStream(file).use { out -> input.copyTo(out) }
                 adapter.refreshData(this)
             }
-        } catch (e: Exception) { 
-            Toast.makeText(this, "Failed to import", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    override fun onStickerClick(uri: Uri) {
-        try {
-            val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "image/png"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                setPackage("com.zing.zalo")
-            }
-            startActivity(intent)
-        } catch (e: Exception) { 
-            val fallback = Intent(Intent.ACTION_SEND).apply {
-                type = "image/png"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-            startActivity(Intent.createChooser(fallback, "Share Sticker"))
-        }
-    }
-
-    override fun onStickerLongClick(uri: Uri) {
-        AlertDialog.Builder(this)
-            .setMessage("Delete this sticker?")
-            .setPositiveButton("Delete") { _, _ ->
-                val file = File(uri.path!!)
-                if (file.exists()) file.delete()
-                adapter.refreshData(this)
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun handleIncomingShare(intent: Intent?) {
-        if (intent?.action == Intent.ACTION_SEND && intent.type?.startsWith("image/") == true) {
-            val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
-            } else {
-                @Suppress("DEPRECATION")
-                intent.getParcelableExtra(Intent.EXTRA_STREAM)
-            }
-            uri?.let { importToApp(it) }
-        }
+        } catch (e: Exception) { e.printStackTrace() }
     }
 
     private fun requestLegacyPermissions() {
