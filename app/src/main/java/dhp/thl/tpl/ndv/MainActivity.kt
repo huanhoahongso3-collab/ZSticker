@@ -38,7 +38,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var adapter: StickerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 1. MUST APPLY DYNAMIC COLORS FIRST
+        // 1. MATERIAL COLOR FIX: Apply before EVERYTHING
         DynamicColors.applyToActivityIfAvailable(this)
 
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
@@ -56,7 +56,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // 4. ANDROID 15 ALIGNMENT FIX (Window Insets)
+        // Android 15 Alignment Fix
         handleEdgeToEdge()
 
         setupNavigation()
@@ -73,10 +73,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         binding.addButton.setOnClickListener { openSystemImagePicker() }
     }
 
-    /**
-     * Fixes misaligned Bottom Navigation and FAB on Android 15+ 
-     * by applying system navigation bar heights as padding/margins.
-     */
     private fun handleEdgeToEdge() {
         ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigation) { view, insets ->
             val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
@@ -87,76 +83,16 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
             val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
             view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                // 80dp base + the height of the system nav bar
-                bottomMargin = (80 * resources.displayMetrics.density).toInt() + navInsets.bottom
+                bottomMargin = (96 * resources.displayMetrics.density).toInt() + navInsets.bottom
             }
             insets
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        syncUIState()
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        handleIncomingShare(intent)
-    }
-
-    private fun setLocale(langCode: String) {
-        val locale = Locale(langCode)
-        Locale.setDefault(locale)
-        val config = Configuration()
-        config.setLocale(locale)
-        resources.updateConfiguration(config, resources.displayMetrics)
-    }
-
-    private fun syncUIState() {
-        updateLayoutVisibility(binding.bottomNavigation.selectedItemId)
-    }
-
-    private fun setupNavigation() {
-        binding.bottomNavigation.setOnItemSelectedListener { item ->
-            updateLayoutVisibility(item.itemId)
-            true
-        }
-    }
-
-    private fun updateLayoutVisibility(itemId: Int) {
-        when (itemId) {
-            R.id.nav_home -> {
-                binding.toolbar.title = "ZSticker"
-                binding.recycler.visibility = View.VISIBLE
-                binding.infoLayout.visibility = View.GONE
-                binding.addButton.show()
-            }
-            R.id.nav_info -> {
-                binding.toolbar.title = getString(R.string.nav_info)
-                binding.recycler.visibility = View.GONE
-                binding.infoLayout.visibility = View.VISIBLE
-                binding.addButton.hide()
-            }
-        }
-    }
-
-    private fun setupStickerList() {
-        val items = StickerAdapter.loadOrdered(this)
-        adapter = StickerAdapter(items, this)
-        val layoutManager = GridLayoutManager(this, 3)
-        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-            override fun getSpanSize(position: Int): Int = 
-                if (adapter.getItemViewType(position) == 0) 3 else 1
-        }
-        binding.recycler.layoutManager = layoutManager
-        binding.recycler.adapter = adapter
-    }
-
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         
-        // Theme Toggle
+        // --- Theme ---
         val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
         binding.txtCurrentTheme.text = if (savedMode == AppCompatDelegate.MODE_NIGHT_YES) 
             getString(R.string.theme_dark) else getString(R.string.theme_light)
@@ -172,7 +108,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }.show()
         }
 
-        // Language Toggle
+        // --- Language ---
         val currentLang = prefs.getString("lang", "en") ?: "en"
         binding.txtCurrentLanguage.text = if (currentLang == "vi") "Tiếng Việt" else "English"
         
@@ -189,32 +125,65 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }.show()
         }
 
-        // Version Info
+        // --- Version ---
         try {
             val pInfo = packageManager.getPackageInfo(packageName, 0)
             binding.txtVersion.text = pInfo.versionName
         } catch (e: Exception) { binding.txtVersion.text = "1.0.0" }
 
-        // Social Links
+        // --- FIX: Pressable Source Code & License ---
+        binding.itemRepo.isClickable = true
         binding.itemRepo.setOnClickListener {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/huanhoahongso3-collab/ZSticker")))
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/huanhoahongso3-collab/ZSticker"))
+            startActivity(intent)
         }
 
+        binding.itemLicense.isClickable = true
         binding.itemLicense.setOnClickListener {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.gnu.org/licenses/gpl-3.0.html")))
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.gnu.org/licenses/gpl-3.0.html"))
+            startActivity(intent)
         }
 
+        // --- FIX: Export All ---
         binding.itemExportAll.setOnClickListener { exportAllStickers() }
     }
 
-    /** Zalo Sticker Sharing Logic */
+    private fun exportAllStickers() {
+        // Files created with "zsticker_" prefix
+        val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
+        
+        if (stickerFiles.isNullOrEmpty()) {
+            Toast.makeText(this, "No stickers to export", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        try {
+            val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
+            if (!outDir.exists()) outDir.mkdirs()
+
+            var count = 0
+            stickerFiles.forEach { src ->
+                val dest = File(outDir, src.name)
+                src.inputStream().use { input -> 
+                    dest.outputStream().use { output -> 
+                        input.copyTo(output) 
+                    } 
+                }
+                count++
+            }
+            Toast.makeText(this, "Exported $count stickers to Pictures/ZSticker", Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Export failed: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // ... (Keep existing setupNavigation, setupStickerList, onStickerClick etc. from previous version) ...
+
     override fun onStickerClick(uri: Uri) {
         try {
             val fileName = uri.lastPathSegment ?: throw Exception("Invalid URI")
             val file = File(filesDir, fileName)
-            
             val contentUri = FileProvider.getUriForFile(this, "$packageName.provider", file)
-
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "image/png"
                 putExtra(Intent.EXTRA_STREAM, contentUri)
@@ -233,9 +202,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         val title = getString(R.string.sticker_options_title)
         val boldTitle = SpannableString(title)
         boldTitle.setSpan(StyleSpan(Typeface.BOLD), 0, title.length, 0)
-
         val options = arrayOf(getString(R.string.export), getString(R.string.delete))
-
         MaterialAlertDialogBuilder(this)
             .setTitle(boldTitle)
             .setItems(options) { _, which ->
@@ -265,20 +232,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         val file = File(filesDir, fileName)
         if (file.exists()) file.delete()
         adapter.refreshData(this)
-    }
-
-    private fun exportAllStickers() {
-        val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
-        if (stickerFiles.isNullOrEmpty()) return
-        try {
-            val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
-            if (!outDir.exists()) outDir.mkdirs()
-            stickerFiles.forEach { src ->
-                val dest = File(outDir, src.name)
-                src.inputStream().use { input -> dest.outputStream().use { output -> input.copyTo(output) } }
-            }
-            Toast.makeText(this, "Exported All", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) { e.printStackTrace() }
     }
 
     private fun handleIncomingShare(intent: Intent?) {
@@ -333,5 +286,53 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 999)
         }
+    }
+
+    private fun setLocale(langCode: String) {
+        val locale = Locale(langCode)
+        Locale.setDefault(locale)
+        val config = Configuration()
+        config.setLocale(locale)
+        resources.updateConfiguration(config, resources.displayMetrics)
+    }
+
+    private fun syncUIState() {
+        updateLayoutVisibility(binding.bottomNavigation.selectedItemId)
+    }
+
+    private fun setupNavigation() {
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
+            updateLayoutVisibility(item.itemId)
+            true
+        }
+    }
+
+    private fun updateLayoutVisibility(itemId: Int) {
+        when (itemId) {
+            R.id.nav_home -> {
+                binding.toolbar.title = "ZSticker"
+                binding.recycler.visibility = View.VISIBLE
+                binding.infoLayout.visibility = View.GONE
+                binding.addButton.show()
+            }
+            R.id.nav_info -> {
+                binding.toolbar.title = getString(R.string.nav_info)
+                binding.recycler.visibility = View.GONE
+                binding.infoLayout.visibility = View.VISIBLE
+                binding.addButton.hide()
+            }
+        }
+    }
+
+    private fun setupStickerList() {
+        val items = StickerAdapter.loadOrdered(this)
+        adapter = StickerAdapter(items, this)
+        val layoutManager = GridLayoutManager(this, 3)
+        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(position: Int): Int = 
+                if (adapter.getItemViewType(position) == 0) 3 else 1
+        }
+        binding.recycler.layoutManager = layoutManager
+        binding.recycler.adapter = adapter
     }
 }
