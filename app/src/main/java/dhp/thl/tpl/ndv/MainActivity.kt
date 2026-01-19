@@ -17,7 +17,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.recyclerview.widget.GridLayoutManager
-import com.google.android.material.color.DynamicColors // Added for M3
+import com.google.android.material.color.DynamicColors
 import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
 import java.io.File
 import java.io.FileOutputStream
@@ -28,14 +28,14 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var adapter: StickerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Part 3: Apply Dynamic Color before super.onCreate for Material 3 support
+        // Apply Dynamic Color for Material 3 support (Themed UI)
         DynamicColors.applyToActivityIfAvailable(this)
         
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Load stickers from storage
+        // Initialize RecyclerView with StickerAdapter
         adapter = StickerAdapter(StickerAdapter.loadOrdered(this), this)
         binding.recycler.layoutManager = GridLayoutManager(this, 3)
         binding.recycler.adapter = adapter
@@ -45,9 +45,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             requestLegacyPermissions()
         }
 
+        // Set up the Add Button (Icon is handled automatically via XML mipmap/ic_launcher)
         binding.addButton.setOnClickListener { openSystemImagePicker() }
 
-        // Handle external share intents
+        // Handle external share intents (when images are shared TO this app)
         handleShareIntent(intent)
     }
 
@@ -58,7 +59,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
     }
 
-    /** Allow picking multiple images */
+    /** Allow picking multiple images from the system gallery */
     private fun openSystemImagePicker() {
         val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI).apply {
             type = "image/*"
@@ -85,7 +86,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             }
         }
 
-    /** Save based on API level */
+    /** Route the import logic based on Android Version */
     private fun importToAppOrExternal(src: Uri) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             importToAppData(src)
@@ -94,7 +95,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
     }
 
-    /** Scoped storage for Android 10+ */
+    /** Scoped storage for Android 10+ (Internal app folder) */
     private fun importToAppData(src: Uri) {
         try {
             val input = contentResolver.openInputStream(src) ?: return
@@ -110,7 +111,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
     }
 
-    /** Legacy storage for Android 9 and below */
+    /** Legacy storage for Android 9 and below (Public Pictures folder) */
     private fun importToExternalStorage(src: Uri) {
         try {
             val baseDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
@@ -131,7 +132,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
     }
 
-    /** Share sticker to Zalo */
+    /** Share sticker to Zalo using their internal Activity */
     override fun onStickerClick(uri: Uri) {
         try {
             val file = File(uri.path!!)
@@ -152,7 +153,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
     }
 
-    /** Long press: 3-option dialog (Export / Delete / Cancel) */
+    /** Long press: Dialog for Export / Delete */
     override fun onStickerLongClick(uri: Uri) {
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.sticker_options_title))
@@ -163,7 +164,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             .show()
     }
 
-    /** Delete sticker immediately */
     private fun deleteSticker(uri: Uri) {
         try {
             val file = File(uri.path ?: "")
@@ -171,11 +171,11 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             adapter.removeSticker(this, uri)
             Toast.makeText(this, getString(R.string.deleted), Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            Toast.makeText(this, getString(R.string.delete_failed), Toast.LENGTH_SHORT).show()
+            // Using generic import_failed string if delete_failed is not in resources
+            Toast.makeText(this, "Delete failed", Toast.LENGTH_SHORT).show()
         }
     }
 
-    /** Export sticker to Pictures/Zaticker folder */
     private fun exportSticker(uri: Uri) {
         try {
             val input = contentResolver.openInputStream(uri) ?: return
@@ -189,11 +189,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
             Toast.makeText(this, getString(R.string.sticker_exported, file.absolutePath), Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
-            Toast.makeText(this, getString(R.string.export_failed, e.message), Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.import_failed, e.message), Toast.LENGTH_SHORT).show()
         }
     }
 
-    /** Import stickers via external share intents */
     private fun handleShareIntent(intent: Intent?) {
         if (intent == null) return
 
