@@ -38,36 +38,24 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var adapter: StickerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
-        // -------------------------------------
-        // FORCE LIGHT THEME ON FIRST INSTALL
-        // -------------------------------------
-        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
-        val firstRun = prefs.getBoolean("first_run", true)
-        if (firstRun) {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-            prefs.edit().putBoolean("first_run", false).apply()
-        } else {
-            val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
-            AppCompatDelegate.setDefaultNightMode(savedMode)
-        }
-
-        // -------------------------------------
-        // APPLY DYNAMIC COLORS BEFORE INFLATE
-        // -------------------------------------
+        // BUG FIX: DynamicColors must be applied BEFORE super.onCreate 
+        // and ideally before setLocale to ensure the theme context is correct.
         DynamicColors.applyToActivityIfAvailable(this)
 
-        // -------------------------------------
-        // LANGUAGE APPLY
-        // -------------------------------------
+        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+        
         val langCode = prefs.getString("lang", "en") ?: "en"
         setLocale(langCode)
+
+        val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
+        if (AppCompatDelegate.getDefaultNightMode() != savedMode) {
+            AppCompatDelegate.setDefaultNightMode(savedMode)
+        }
 
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Restore nav state
         val lastTab = prefs.getInt("last_tab", R.id.nav_home)
         binding.bottomNavigation.selectedItemId = lastTab
         updateLayoutVisibility(lastTab)
@@ -91,10 +79,16 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             view.updatePadding(bottom = navInsets.bottom)
             insets
         }
+        
         ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
             val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
             view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                bottomMargin = (128 * resources.displayMetrics.density).toInt() + navInsets.bottom
+                // BUG FIX: Standardized spacing. Ensure the XML layout for addButton 
+                // uses 'layout_gravity="bottom|end"' and 'layout_margin="16dp"'
+                val baseMargin = (16 * resources.displayMetrics.density).toInt()
+                val navHeight = (80 * resources.displayMetrics.density).toInt() // Approx height of Bottom Nav
+                bottomMargin = baseMargin + navHeight + navInsets.bottom
+                rightMargin = baseMargin
             }
             insets
         }
@@ -119,9 +113,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
-
+        
         val currentMode = AppCompatDelegate.getDefaultNightMode()
-        binding.txtCurrentTheme.text = if (currentMode == AppCompatDelegate.MODE_NIGHT_YES)
+        binding.txtCurrentTheme.text = if (currentMode == AppCompatDelegate.MODE_NIGHT_YES) 
             getString(R.string.theme_dark) else getString(R.string.theme_light)
 
         binding.itemTheme.setOnClickListener {
@@ -137,7 +131,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
         val currentLang = prefs.getString("lang", "en") ?: "en"
         binding.txtCurrentLanguage.text = if (currentLang == "vi") "Tiếng Việt" else "English"
-
+        
         binding.itemLanguage.setOnClickListener {
             val langs = arrayOf("English", "Tiếng Việt")
             MaterialAlertDialogBuilder(this)
@@ -146,7 +140,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     val langCode = if (which == 0) "en" else "vi"
                     if (currentLang != langCode) {
                         prefs.edit().putString("lang", langCode).apply()
-                        recreate()
+                        recreate() 
                     }
                 }.show()
         }
@@ -170,8 +164,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
         binding.itemExportAll.setOnClickListener { exportAllStickers() }
     }
-
-    // --- EXPORT/DELETE/STICKER SHARE (unchanged) ---
 
     private fun exportAllStickers() {
         val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
@@ -246,6 +238,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         Locale.setDefault(locale)
         val config = Configuration(resources.configuration)
         config.setLocale(locale)
+        // Note: updateConfiguration is deprecated but kept as requested to maintain logic flow
         resources.updateConfiguration(config, resources.displayMetrics)
     }
 
@@ -259,22 +252,17 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     }
 
     private fun setupStickerList() {
-
-        // --- INFINITE SCROLL FIX ---
-        binding.recycler.setHasFixedSize(false)
-        binding.recycler.isNestedScrollingEnabled = true
-
         val items = StickerAdapter.loadOrdered(this)
         adapter = StickerAdapter(items, this)
-
         val layoutManager = GridLayoutManager(this, 3)
         layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-            override fun getSpanSize(pos: Int): Int =
-                if (adapter.getItemViewType(pos) == 0) 3 else 1
+            override fun getSpanSize(pos: Int): Int = if (adapter.getItemViewType(pos) == 0) 3 else 1
         }
-
         binding.recycler.layoutManager = layoutManager
         binding.recycler.adapter = adapter
+        
+        // BUG FIX: Ensure the RecyclerView doesn't clip content behind the nav bar
+        binding.recycler.clipToPadding = false
     }
 
     private fun handleIncomingShare(intent: Intent?) {
