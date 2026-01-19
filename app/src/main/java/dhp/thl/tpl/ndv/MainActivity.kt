@@ -38,17 +38,16 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var adapter: StickerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 1. DYNAMIC COLORS: Must be the absolute first line
+        // 1. Force Dynamic Colors 
         DynamicColors.applyToActivityIfAvailable(this)
 
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         
-        // 2. LANGUAGE: Set before super.onCreate
+        // 2. Persistent Language
         val langCode = prefs.getString("lang", "en") ?: "en"
         setLocale(langCode)
 
-        // 3. THEME FIX: Default to LIGHT on first run, and force apply
-        // This prevents the "Dark app, Light text" bug on first launch
+        // 3. Theme Fix: Default to Light Mode (MODE_NIGHT_NO)
         val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
         if (AppCompatDelegate.getDefaultNightMode() != savedMode) {
             AppCompatDelegate.setDefaultNightMode(savedMode)
@@ -58,7 +57,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // 4. NAVIGATION STATE: Restore tab to prevent jumping to Home on recreate()
+        // 4. State Persistence: Restore the last selected tab
         val lastTab = prefs.getInt("last_tab", R.id.nav_home)
         binding.bottomNavigation.selectedItemId = lastTab
         updateLayoutVisibility(lastTab)
@@ -85,17 +84,34 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
             val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
             view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                // Large spacing from bottom to clear the Nav Bar comfortably
-                bottomMargin = (110 * resources.displayMetrics.density).toInt() + navInsets.bottom
+                // High spacing (128dp) to sit elegantly above the Bottom Nav
+                bottomMargin = (128 * resources.displayMetrics.density).toInt() + navInsets.bottom
             }
             insets
+        }
+    }
+
+    private fun updateLayoutVisibility(itemId: Int) {
+        when (itemId) {
+            R.id.nav_home -> {
+                // FIXED: Now uses app_name from strings.xml
+                binding.toolbar.title = getString(R.string.app_name)
+                binding.recycler.visibility = View.VISIBLE
+                binding.infoLayout.visibility = View.GONE
+                binding.addButton.show()
+            }
+            R.id.nav_info -> {
+                binding.toolbar.title = getString(R.string.nav_info)
+                binding.recycler.visibility = View.GONE
+                binding.infoLayout.visibility = View.VISIBLE
+                binding.addButton.hide()
+            }
         }
     }
 
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         
-        // Sync Theme text with actual current mode
         val currentMode = AppCompatDelegate.getDefaultNightMode()
         binding.txtCurrentTheme.text = if (currentMode == AppCompatDelegate.MODE_NIGHT_YES) 
             getString(R.string.theme_dark) else getString(R.string.theme_light)
@@ -127,7 +143,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }.show()
         }
 
-        // Version fix: compatibility for all Android versions
         try {
             val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
@@ -148,7 +163,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         binding.itemExportAll.setOnClickListener { exportAllStickers() }
     }
 
-    // --- CORE LOGIC (STICKERS & FILES) ---
+    // --- SHARED STICKER LOGIC ---
 
     private fun exportAllStickers() {
         val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
@@ -218,8 +233,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
     }
 
-    // --- HELPERS ---
-
     private fun setLocale(langCode: String) {
         val locale = Locale(langCode)
         Locale.setDefault(locale)
@@ -234,23 +247,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 .putInt("last_tab", item.itemId).apply()
             updateLayoutVisibility(item.itemId)
             true
-        }
-    }
-
-    private fun updateLayoutVisibility(itemId: Int) {
-        when (itemId) {
-            R.id.nav_home -> {
-                binding.toolbar.title = "ZSticker"
-                binding.recycler.visibility = View.VISIBLE
-                binding.infoLayout.visibility = View.GONE
-                binding.addButton.show()
-            }
-            R.id.nav_info -> {
-                binding.toolbar.title = getString(R.string.nav_info)
-                binding.recycler.visibility = View.GONE
-                binding.infoLayout.visibility = View.VISIBLE
-                binding.addButton.hide()
-            }
         }
     }
 
