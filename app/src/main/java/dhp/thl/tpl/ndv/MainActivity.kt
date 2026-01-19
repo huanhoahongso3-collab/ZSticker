@@ -142,7 +142,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     }
 
     private fun exportAllStickers() {
-        val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zaticker_") }
+        val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
         if (stickerFiles.isNullOrEmpty()) {
             Toast.makeText(this, "No stickers found", Toast.LENGTH_SHORT).show()
             return
@@ -181,7 +181,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private fun importToApp(src: Uri) {
         try {
             contentResolver.openInputStream(src)?.use { input ->
-                val file = File(filesDir, "zaticker_${System.currentTimeMillis()}.png")
+                val file = File(filesDir, "zsticker_${System.currentTimeMillis()}.png")
                 FileOutputStream(file).use { out -> input.copyTo(out) }
                 adapter.refreshData(this)
             }
