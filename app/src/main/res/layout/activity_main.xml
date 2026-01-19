@@ -29,8 +29,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
-            android:padding="4dp"
-            android:visibility="visible" />
+            android:padding="4dp" />
 
         <ScrollView
             android:id="@+id/info_layout"
@@ -44,134 +43,43 @@
                 android:orientation="vertical"
                 android:padding="8dp">
 
-                <LinearLayout 
-                    android:id="@+id/itemTheme" 
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:background="?attr/selectableItemBackground"
-                    android:gravity="center_vertical">
-                    
-                    <ImageView 
-                        android:layout_width="24dp" 
-                        android:layout_height="24dp" 
-                        android:src="@drawable/ic_palette" 
-                        app:tint="?attr/colorPrimary"/>
-                    
-                    <LinearLayout 
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="16dp"
-                        android:orientation="vertical">
-                        <TextView 
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/info_theme_title" 
-                            style="@style/TextAppearance.Material3.TitleMedium"/>
-                        <TextView 
-                            android:id="@+id/txtCurrentTheme" 
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/theme_system" 
-                            style="@style/TextAppearance.Material3.BodySmall" 
-                            android:alpha="0.7"/>
+                <LinearLayout android:id="@+id/itemTheme" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="16dp" android:background="?attr/selectableItemBackground" android:gravity="center_vertical">
+                    <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_palette" app:tint="?attr/colorPrimary"/>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_theme_title" style="@style/TextAppearance.Material3.TitleMedium"/>
+                        <TextView android:id="@+id/txtCurrentTheme" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/theme_system" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
                     </LinearLayout>
                 </LinearLayout>
 
-                <LinearLayout 
-                    android:id="@+id/itemExportAll" 
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:background="?attr/selectableItemBackground"
-                    android:gravity="center_vertical">
-                    
-                    <ImageView 
-                        android:layout_width="24dp" 
-                        android:layout_height="24dp" 
-                        android:src="@drawable/ic_export" 
-                        app:tint="?attr/colorPrimary"/>
-                    
-                    <LinearLayout 
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="16dp"
-                        android:orientation="vertical">
-                        <TextView 
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/info_export_all_title" 
-                            style="@style/TextAppearance.Material3.TitleMedium"/>
+                <LinearLayout android:id="@+id/itemExportAll" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="16dp" android:background="?attr/selectableItemBackground" android:gravity="center_vertical">
+                    <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_export" app:tint="?attr/colorPrimary"/>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_export_all_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                     </LinearLayout>
                 </LinearLayout>
 
-                <LinearLayout 
-                    android:id="@+id/itemRepo" 
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:background="?attr/selectableItemBackground"
-                    android:gravity="center_vertical">
-                    
-                    <ImageView 
-                        android:layout_width="24dp" 
-                        android:layout_height="24dp" 
-                        android:src="@drawable/ic_code" 
-                        app:tint="?attr/colorPrimary"/>
-                    
-                    <LinearLayout 
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="16dp"
-                        android:orientation="vertical">
-                        <TextView 
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/info_repo_title" 
-                            style="@style/TextAppearance.Material3.TitleMedium"/>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="16dp" android:gravity="center_vertical">
+                    <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_gavel" app:tint="?attr/colorPrimary"/>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_license_title" style="@style/TextAppearance.Material3.TitleMedium"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_license_note" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
                     </LinearLayout>
                 </LinearLayout>
 
-                <LinearLayout 
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:gravity="center_vertical">
-                    
-                    <ImageView 
-                        android:layout_width="24dp" 
-                        android:layout_height="24dp" 
-                        android:src="@drawable/ic_info" 
-                        app:tint="?attr/colorPrimary"/>
-                    
-                    <LinearLayout 
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="16dp"
-                        android:orientation="vertical">
-                        <TextView 
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/info_version_title" 
-                            style="@style/TextAppearance.Material3.TitleMedium"/>
-                        <TextView 
-                            android:id="@+id/txtVersion" 
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="1.0.0" 
-                            style="@style/TextAppearance.Material3.BodySmall" 
-                            android:alpha="0.7"/>
+                <LinearLayout android:id="@+id/itemRepo" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="16dp" android:background="?attr/selectableItemBackground" android:gravity="center_vertical">
+                    <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_code" app:tint="?attr/colorPrimary"/>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_repo_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                     </LinearLayout>
                 </LinearLayout>
 
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="16dp" android:gravity="center_vertical">
+                    <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_info" app:tint="?attr/colorPrimary"/>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_version_title" style="@style/TextAppearance.Material3.TitleMedium"/>
+                        <TextView android:id="@+id/txtVersion" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1.0.0" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
+                    </LinearLayout>
+                </LinearLayout>
             </LinearLayout>
         </ScrollView>
     </FrameLayout>
@@ -182,7 +90,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="80dp"
+        android:layout_marginBottom="96dp"
         app:srcCompat="@drawable/ic_add"
         app:tint="?attr/colorOnPrimaryContainer"
         app:backgroundTint="?attr/colorPrimaryContainer" />

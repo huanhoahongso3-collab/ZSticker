@@ -6,8 +6,9 @@
 
     <string name="info_theme_title">Giao diện</string>
     <string name="info_export_all_title">Xuất tất cả nhãn dán</string>
-    <string name="info_repo_title">Mã nguồn (GitHub)</string>
+    <string name="info_repo_title">Mã nguồn</string>
     <string name="info_license_title">Giấy phép</string>
+    <string name="info_license_note">GPL-3.0</string>
     <string name="info_version_title">Phiên bản</string>
 
     <string name="theme_system">Theo hệ thống</string>

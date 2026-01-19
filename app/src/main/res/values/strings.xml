@@ -6,8 +6,9 @@
 
     <string name="info_theme_title">Theme</string>
     <string name="info_export_all_title">Export All Stickers</string>
-    <string name="info_repo_title">Source Code (GitHub)</string>
+    <string name="info_repo_title">Source Code</string>
     <string name="info_license_title">License</string>
+    <string name="info_license_note">GPL-3.0</string>
     <string name="info_version_title">Version</string>
 
     <string name="theme_system">System Default</string>
