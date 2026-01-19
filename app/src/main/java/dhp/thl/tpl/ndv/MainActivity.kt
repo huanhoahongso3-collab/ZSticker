@@ -13,12 +13,17 @@ import android.provider.MediaStore
 import android.text.SpannableString
 import android.text.style.StyleSpan
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
 import androidx.core.content.FileProvider
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
+import androidx.core.view.updatePadding
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.color.DynamicColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -51,6 +56,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // 4. ANDROID 15 ALIGNMENT FIX (Window Insets)
+        handleEdgeToEdge()
+
         setupNavigation()
         setupStickerList()
         setupInfoSection()
@@ -63,6 +71,27 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
 
         binding.addButton.setOnClickListener { openSystemImagePicker() }
+    }
+
+    /**
+     * Fixes misaligned Bottom Navigation and FAB on Android 15+ 
+     * by applying system navigation bar heights as padding/margins.
+     */
+    private fun handleEdgeToEdge() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigation) { view, insets ->
+            val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            view.updatePadding(bottom = navInsets.bottom)
+            insets
+        }
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
+            val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                // 80dp base + the height of the system nav bar
+                bottomMargin = (80 * resources.displayMetrics.density).toInt() + navInsets.bottom
+            }
+            insets
+        }
     }
 
     override fun onResume() {
@@ -127,7 +156,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         
-        // Theme
+        // Theme Toggle
         val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
         binding.txtCurrentTheme.text = if (savedMode == AppCompatDelegate.MODE_NIGHT_YES) 
             getString(R.string.theme_dark) else getString(R.string.theme_light)
@@ -140,11 +169,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     val mode = if (which == 0) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
                     prefs.edit().putInt("theme_mode", mode).apply()
                     AppCompatDelegate.setDefaultNightMode(mode)
-                    // No need to recreate, setDefaultNightMode does it
                 }.show()
         }
 
-        // Language
+        // Language Toggle
         val currentLang = prefs.getString("lang", "en") ?: "en"
         binding.txtCurrentLanguage.text = if (currentLang == "vi") "Tiếng Việt" else "English"
         
@@ -161,13 +189,27 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }.show()
         }
 
-        // Version, Repo, License (OMITTED FOR BREVITY - KEEP YOUR REPO CLICKS HERE)
+        // Version Info
+        try {
+            val pInfo = packageManager.getPackageInfo(packageName, 0)
+            binding.txtVersion.text = pInfo.versionName
+        } catch (e: Exception) { binding.txtVersion.text = "1.0.0" }
+
+        // Social Links
+        binding.itemRepo.setOnClickListener {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/huanhoahongso3-collab/ZSticker")))
+        }
+
+        binding.itemLicense.setOnClickListener {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.gnu.org/licenses/gpl-3.0.html")))
+        }
+
+        binding.itemExportAll.setOnClickListener { exportAllStickers() }
     }
 
-    /** FIXED: Zalo Sticker Intent */
+    /** Zalo Sticker Sharing Logic */
     override fun onStickerClick(uri: Uri) {
         try {
-            // FIX: Robust way to get the file from internal storage URI
             val fileName = uri.lastPathSegment ?: throw Exception("Invalid URI")
             val file = File(filesDir, fileName)
             
@@ -177,12 +219,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 type = "image/png"
                 putExtra(Intent.EXTRA_STREAM, contentUri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                // Mandatory Zalo Sticker Extras
                 putExtra("is_sticker", true)
                 putExtra("type", 3)
                 setClassName("com.zing.zalo", "com.zing.zalo.ui.TempShareViaActivity")
             }
-
             startActivity(intent)
         } catch (e: Exception) {
             Toast.makeText(this, getString(R.string.zalo_share_failed), Toast.LENGTH_SHORT).show()
@@ -225,6 +265,20 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         val file = File(filesDir, fileName)
         if (file.exists()) file.delete()
         adapter.refreshData(this)
+    }
+
+    private fun exportAllStickers() {
+        val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
+        if (stickerFiles.isNullOrEmpty()) return
+        try {
+            val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
+            if (!outDir.exists()) outDir.mkdirs()
+            stickerFiles.forEach { src ->
+                val dest = File(outDir, src.name)
+                src.inputStream().use { input -> dest.outputStream().use { output -> input.copyTo(output) } }
+            }
+            Toast.makeText(this, "Exported All", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) { e.printStackTrace() }
     }
 
     private fun handleIncomingShare(intent: Intent?) {
