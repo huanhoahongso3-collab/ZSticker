@@ -3,7 +3,8 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
@@ -14,6 +15,7 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
+            app:title="ZSticker"
             app:titleCentered="true" />
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -49,11 +51,19 @@
                     </LinearLayout>
                 </LinearLayout>
 
-                <LinearLayout style="@style/InfoItemStyle">
-                    <ImageView style="@style/InfoIconStyle" android:src="@drawable/ic_info" />
+                <LinearLayout android:id="@+id/itemExportAll" style="@style/InfoItemStyle">
+                    <ImageView style="@style/InfoIconStyle" android:src="@drawable/ic_export" />
                     <LinearLayout style="@style/InfoTextStyle">
-                        <TextView android:text="@string/info_version_title" style="@style/TextAppearance.Material3.TitleMedium"/>
-                        <TextView android:id="@+id/txtVersion" android:text="1.0.0" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
+                        <TextView android:text="@string/info_export_all_title" style="@style/TextAppearance.Material3.TitleMedium"/>
+                        <TextView android:text="@string/export_success" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout android:id="@+id/itemRepo" style="@style/InfoItemStyle">
+                    <ImageView style="@style/InfoIconStyle" android:src="@drawable/ic_code" />
+                    <LinearLayout style="@style/InfoTextStyle">
+                        <TextView android:text="@string/info_repo_title" style="@style/TextAppearance.Material3.TitleMedium"/>
+                        <TextView android:text="https://github.com/huanhoahongso3-collab/ZSticker" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
                     </LinearLayout>
                 </LinearLayout>
 
@@ -65,13 +75,14 @@
                     </LinearLayout>
                 </LinearLayout>
 
-                <LinearLayout android:id="@+id/itemRepo" style="@style/InfoItemStyle">
-                    <ImageView style="@style/InfoIconStyle" android:src="@drawable/ic_code" />
+                <LinearLayout style="@style/InfoItemStyle">
+                    <ImageView style="@style/InfoIconStyle" android:src="@drawable/ic_info" />
                     <LinearLayout style="@style/InfoTextStyle">
-                        <TextView android:text="@string/info_repo_title" style="@style/TextAppearance.Material3.TitleMedium"/>
-                        <TextView android:text="https://github.com/huanhoahongso3-collab/ZSticker" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
+                        <TextView android:text="@string/info_version_title" style="@style/TextAppearance.Material3.TitleMedium"/>
+                        <TextView android:id="@+id/txtVersion" android:text="1.0.0" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
                     </LinearLayout>
                 </LinearLayout>
+
             </LinearLayout>
         </ScrollView>
     </FrameLayout>
@@ -85,8 +96,7 @@
         android:layout_marginBottom="96dp"
         app:srcCompat="@drawable/ic_add"
         app:tint="?attr/colorOnPrimaryContainer"
-        app:backgroundTint="?attr/colorPrimaryContainer"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.MediumComponent" />
+        app:backgroundTint="?attr/colorPrimaryContainer" />
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation"
