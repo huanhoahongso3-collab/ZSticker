@@ -38,35 +38,26 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var adapter: StickerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 1. DYNAMIC COLOR FORCE FIX: Apply before anything else
+        // 1. Force Dynamic Colors 
         DynamicColors.applyToActivityIfAvailable(this)
 
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         
-        // 2. LANGUAGE: Set before super.onCreate
+        // 2. Persistent Language
         val langCode = prefs.getString("lang", "en") ?: "en"
         setLocale(langCode)
 
-        // 3. THEME FIRST-RUN FIX: Default to Light and check if we need to force dynamic refresh
+        // 3. Theme Fix: Default to Light Mode (MODE_NIGHT_NO)
         val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
         if (AppCompatDelegate.getDefaultNightMode() != savedMode) {
             AppCompatDelegate.setDefaultNightMode(savedMode)
         }
 
         super.onCreate(savedInstanceState)
-        
-        // Special First-Install Logic: If color hasn't been applied yet, recreate once
-        val colorApplied = prefs.getBoolean("dynamic_color_applied", false)
-        if (!colorApplied && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            prefs.edit().putBoolean("dynamic_color_applied", true).apply()
-            recreate()
-            return // Stop here, the recreated activity will handle the rest
-        }
-
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // 4. RESTORE STATE: Navigation tab persistence
+        // 4. State Persistence: Restore the last selected tab
         val lastTab = prefs.getInt("last_tab", R.id.nav_home)
         binding.bottomNavigation.selectedItemId = lastTab
         updateLayoutVisibility(lastTab)
@@ -93,7 +84,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
             val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
             view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                // FIXED SPACING: 128dp from bottom nav
+                // High spacing (128dp) to sit elegantly above the Bottom Nav
                 bottomMargin = (128 * resources.displayMetrics.density).toInt() + navInsets.bottom
             }
             insets
@@ -103,7 +94,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private fun updateLayoutVisibility(itemId: Int) {
         when (itemId) {
             R.id.nav_home -> {
-                // FIXED: Bind to app_name string
+                // FIXED: Now uses app_name from strings.xml
                 binding.toolbar.title = getString(R.string.app_name)
                 binding.recycler.visibility = View.VISIBLE
                 binding.infoLayout.visibility = View.GONE
@@ -121,7 +112,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         
-        // Dynamic Theme UI Sync
         val currentMode = AppCompatDelegate.getDefaultNightMode()
         binding.txtCurrentTheme.text = if (currentMode == AppCompatDelegate.MODE_NIGHT_YES) 
             getString(R.string.theme_dark) else getString(R.string.theme_light)
@@ -153,7 +143,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }.show()
         }
 
-        // Correct Version Logic
         try {
             val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
@@ -174,7 +163,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         binding.itemExportAll.setOnClickListener { exportAllStickers() }
     }
 
-    // --- SHARED METHODS (NO CHANGES TO PRESERVE STABILITY) ---
+    // --- SHARED STICKER LOGIC ---
 
     private fun exportAllStickers() {
         val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
