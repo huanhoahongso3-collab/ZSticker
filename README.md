@@ -1,6 +1,7 @@
-# 📦 Zaticker — Share custom sticker to Zalo
+# 📦 ZSticker — Share custom sticker to Zalo
+(Currently is a fork of Zaticker)
 
-Zaticker is a vibe-driven coding project focused on how Zalo handles sticker share by Intent in Android.
+ZSticker is a vibe-driven coding project focused on how Zalo handles sticker share by Intent in Android.
 
 It is inspired by how Zamoji - a VNG app can send sticker to Zalo
 
@@ -29,6 +30,6 @@ Working features include:
 - Import single and multiple images both in the app and share intent
 
 ## License
-Zaticker Copyright (c) 2026
+ZSticker Copyright (c) 2026
 
 Licensed under the GNU General Public License v2.0 (GPL-2.0)

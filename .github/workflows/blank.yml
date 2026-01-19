@@ -52,12 +52,12 @@ jobs:
       - name: Upload Debug APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Zaticker-debug-apk
+          name: ZSticker-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
 
       # 8️⃣ Upload Unsigned Release APK artifact
       - name: Upload Unsigned Release APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Zaticker-release-unsigned-apk
+          name: ZSticker-release-unsigned-apk
           path: app/build/outputs/apk/release/app-release-unsigned.apk
