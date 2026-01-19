@@ -38,25 +38,27 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var adapter: StickerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 1. Force Dynamic Colors
+        // 1. DYNAMIC COLORS: Must be the absolute first line
         DynamicColors.applyToActivityIfAvailable(this)
 
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         
-        // 2. Language Persistence
+        // 2. LANGUAGE: Set before super.onCreate
         val langCode = prefs.getString("lang", "en") ?: "en"
         setLocale(langCode)
 
-        // 3. FIX: Default to Light Mode on first install
-        // Using MODE_NIGHT_NO as the default instead of FOLLOW_SYSTEM
+        // 3. THEME FIX: Default to LIGHT on first run, and force apply
+        // This prevents the "Dark app, Light text" bug on first launch
         val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
-        AppCompatDelegate.setDefaultNightMode(savedMode)
+        if (AppCompatDelegate.getDefaultNightMode() != savedMode) {
+            AppCompatDelegate.setDefaultNightMode(savedMode)
+        }
 
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // 4. Restore Tab State
+        // 4. NAVIGATION STATE: Restore tab to prevent jumping to Home on recreate()
         val lastTab = prefs.getInt("last_tab", R.id.nav_home)
         binding.bottomNavigation.selectedItemId = lastTab
         updateLayoutVisibility(lastTab)
@@ -83,7 +85,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
             val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
             view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                // INCREASED SPACING: 110dp instead of 80/96dp
+                // Large spacing from bottom to clear the Nav Bar comfortably
                 bottomMargin = (110 * resources.displayMetrics.density).toInt() + navInsets.bottom
             }
             insets
@@ -93,7 +95,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         
-        // Theme UI Sync
+        // Sync Theme text with actual current mode
         val currentMode = AppCompatDelegate.getDefaultNightMode()
         binding.txtCurrentTheme.text = if (currentMode == AppCompatDelegate.MODE_NIGHT_YES) 
             getString(R.string.theme_dark) else getString(R.string.theme_light)
@@ -109,7 +111,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }.show()
         }
 
-        // Language UI Sync
         val currentLang = prefs.getString("lang", "en") ?: "en"
         binding.txtCurrentLanguage.text = if (currentLang == "vi") "Tiếng Việt" else "English"
         
@@ -126,14 +127,14 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }.show()
         }
 
-        // FIX: Version showing correctly
+        // Version fix: compatibility for all Android versions
         try {
-            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
             } else {
                 packageManager.getPackageInfo(packageName, 0)
             }
-            binding.txtVersion.text = packageInfo.versionName
+            binding.txtVersion.text = pInfo.versionName
         } catch (e: Exception) {
             binding.txtVersion.text = "1.0.0"
         }
@@ -147,7 +148,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         binding.itemExportAll.setOnClickListener { exportAllStickers() }
     }
 
-    // --- SHARED LOGIC (Export, Delete, etc.) ---
+    // --- CORE LOGIC (STICKERS & FILES) ---
 
     private fun exportAllStickers() {
         val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
@@ -216,6 +217,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
         }
     }
+
+    // --- HELPERS ---
 
     private fun setLocale(langCode: String) {
         val locale = Locale(langCode)
