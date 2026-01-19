@@ -15,7 +15,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.color.DynamicColors
@@ -29,13 +28,18 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var adapter: StickerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 1. Persistent Theme Load (Prevents resetting to system default)
+        // 1. Theme persistence with Loop Prevention (Fixes the "Blinking" issue)
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-        AppCompatDelegate.setDefaultNightMode(savedMode)
+        
+        // Only set mode if it's actually different from the current one
+        if (AppCompatDelegate.getDefaultNightMode() != savedMode) {
+            AppCompatDelegate.setDefaultNightMode(savedMode)
+        }
 
         DynamicColors.applyToActivityIfAvailable(this)
         super.onCreate(savedInstanceState)
+        
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -94,20 +98,32 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 @Suppress("DEPRECATION") packageManager.getPackageInfo(packageName, 0)
             }
             binding.txtVersion.text = pInfo.versionName
-        } catch (e: Exception) { binding.txtVersion.text = "1.0.0" }
+        } catch (e: Exception) { 
+            binding.txtVersion.text = "1.0.0" 
+        }
 
         // Theme Switcher with Persistence
         binding.itemTheme.setOnClickListener {
-            val options = arrayOf(getString(R.string.theme_system), getString(R.string.theme_light), getString(R.string.theme_dark))
-            AlertDialog.Builder(this).setTitle(R.string.info_theme_title).setItems(options) { _, which ->
-                val mode = when (which) {
-                    0 -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-                    1 -> AppCompatDelegate.MODE_NIGHT_NO
-                    else -> AppCompatDelegate.MODE_NIGHT_YES
-                }
-                getSharedPreferences("settings", MODE_PRIVATE).edit().putInt("theme_mode", mode).apply()
-                AppCompatDelegate.setDefaultNightMode(mode)
-            }.show()
+            val options = arrayOf(
+                getString(R.string.theme_system), 
+                getString(R.string.theme_light), 
+                getString(R.string.theme_dark)
+            )
+            AlertDialog.Builder(this)
+                .setTitle(R.string.info_theme_title)
+                .setItems(options) { _, which ->
+                    val mode = when (which) {
+                        0 -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                        1 -> AppCompatDelegate.MODE_NIGHT_NO
+                        else -> AppCompatDelegate.MODE_NIGHT_YES
+                    }
+                    // Save preference
+                    getSharedPreferences("settings", MODE_PRIVATE).edit()
+                        .putInt("theme_mode", mode).apply()
+                    
+                    // Apply theme (this will trigger a clean activity recreation)
+                    AppCompatDelegate.setDefaultNightMode(mode)
+                }.show()
         }
 
         // Export All Feature
@@ -121,7 +137,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private fun exportAllStickers() {
         val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zaticker_") }
         if (stickerFiles.isNullOrEmpty()) {
-            Toast.makeText(this, "No stickers to export", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.no_stickers), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -131,15 +147,16 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
             stickerFiles.forEach { src ->
                 val dest = File(outDir, src.name)
-                src.inputStream().use { input -> dest.outputStream().use { output -> input.copyTo(output) } }
+                src.inputStream().use { input -> 
+                    dest.outputStream().use { output -> input.copyTo(output) } 
+                }
             }
-            Toast.makeText(this, "Exported ${stickerFiles.size} stickers to Pictures/ZSticker", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.export_success), Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             Toast.makeText(this, "Export failed: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
-    // Logic for Single Sticker Click/Import remains same as previous stable version...
     private fun openSystemImagePicker() {
         val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI).apply {
             type = "image/*"
@@ -165,9 +182,13 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             contentResolver.openInputStream(src)?.use { input ->
                 val file = File(filesDir, "zaticker_${System.currentTimeMillis()}.png")
                 FileOutputStream(file).use { out -> input.copyTo(out) }
+                // Ensure refreshData exists in StickerAdapter
                 adapter.refreshData(this)
+                Toast.makeText(this, getString(R.string.import_success), Toast.LENGTH_SHORT).show()
             }
-        } catch (e: Exception) { Toast.makeText(this, "Import failed", Toast.LENGTH_SHORT).show() }
+        } catch (e: Exception) { 
+            Toast.makeText(this, getString(R.string.import_failed, e.message), Toast.LENGTH_SHORT).show() 
+        }
     }
 
     override fun onStickerClick(uri: Uri) {
@@ -183,19 +204,28 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 setClassName("com.zing.zalo", "com.zing.zalo.ui.TempShareViaActivity")
             }
             startActivity(intent)
-        } catch (e: Exception) { Toast.makeText(this, "Zalo share failed", Toast.LENGTH_SHORT).show() }
+        } catch (e: Exception) { 
+            Toast.makeText(this, getString(R.string.zalo_share_failed), Toast.LENGTH_SHORT).show() 
+        }
     }
 
     override fun onStickerLongClick(uri: Uri) {
-        AlertDialog.Builder(this).setItems(arrayOf("Delete")) { _, _ ->
-            File(uri.path!!).delete()
-            adapter.refreshData(this)
-        }.show()
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.sticker_options_title))
+            .setItems(arrayOf(getString(R.string.delete))) { _, _ ->
+                File(uri.path!!).delete()
+                adapter.refreshData(this)
+                Toast.makeText(this, getString(R.string.deleted), Toast.LENGTH_SHORT).show()
+            }.show()
     }
 
     private fun handleShareIntent(intent: Intent?) {
         if (intent?.action == Intent.ACTION_SEND) {
-            val uri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+            val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+            } else {
+                @Suppress("DEPRECATION") intent.getParcelableExtra(Intent.EXTRA_STREAM)
+            }
             uri?.let { importToApp(it) }
         }
     }
