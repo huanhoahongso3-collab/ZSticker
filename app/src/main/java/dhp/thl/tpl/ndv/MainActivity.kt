@@ -38,26 +38,35 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var adapter: StickerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 1. Force Dynamic Colors 
+        // 1. DYNAMIC COLOR FIX: Apply before super.onCreate
         DynamicColors.applyToActivityIfAvailable(this)
 
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         
-        // 2. Persistent Language
+        // 2. LANGUAGE: Set before super.onCreate
         val langCode = prefs.getString("lang", "en") ?: "en"
         setLocale(langCode)
 
-        // 3. Theme Fix: Default to Light Mode (MODE_NIGHT_NO)
+        // 3. THEME FIRST-RUN FIX: Default to Light and force refresh if needed
         val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
         if (AppCompatDelegate.getDefaultNightMode() != savedMode) {
             AppCompatDelegate.setDefaultNightMode(savedMode)
         }
 
         super.onCreate(savedInstanceState)
+        
+        // FIRST-TIME INSTALL COLOR FIX: Force a one-time recreate to grab wallpaper colors
+        val colorApplied = prefs.getBoolean("dynamic_color_applied", false)
+        if (!colorApplied && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            prefs.edit().putBoolean("dynamic_color_applied", true).apply()
+            recreate()
+            return 
+        }
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // 4. State Persistence: Restore the last selected tab
+        // 4. RESTORE TAB STATE
         val lastTab = prefs.getInt("last_tab", R.id.nav_home)
         binding.bottomNavigation.selectedItemId = lastTab
         updateLayoutVisibility(lastTab)
@@ -76,15 +85,20 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     }
 
     private fun handleEdgeToEdge() {
+        // SCROLL FIX: Apply bottom padding to recycler so the last items aren't hidden by the Nav Bar
         ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigation) { view, insets ->
             val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
             view.updatePadding(bottom = navInsets.bottom)
+            
+            // Apply that same inset as padding to the Recycler to allow scrolling past the bar
+            binding.recycler.updatePadding(bottom = navInsets.bottom + (100 * resources.displayMetrics.density).toInt())
             insets
         }
+
         ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
             val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
             view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                // High spacing (128dp) to sit elegantly above the Bottom Nav
+                // SPACING FIX: Elevated 128dp above the system navigation area
                 bottomMargin = (128 * resources.displayMetrics.density).toInt() + navInsets.bottom
             }
             insets
@@ -94,7 +108,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private fun updateLayoutVisibility(itemId: Int) {
         when (itemId) {
             R.id.nav_home -> {
-                // FIXED: Now uses app_name from strings.xml
                 binding.toolbar.title = getString(R.string.app_name)
                 binding.recycler.visibility = View.VISIBLE
                 binding.infoLayout.visibility = View.GONE
@@ -109,9 +122,23 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
     }
 
+    private fun setupStickerList() {
+        val items = StickerAdapter.loadOrdered(this)
+        adapter = StickerAdapter(items, this)
+        val layoutManager = GridLayoutManager(this, 3)
+        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(pos: Int): Int = if (adapter.getItemViewType(pos) == 0) 3 else 1
+        }
+        binding.recycler.layoutManager = layoutManager
+        binding.recycler.adapter = adapter
+        // INFINITE SCROLL PREP: Ensure the recycler doesn't clip children
+        binding.recycler.clipToPadding = false
+    }
+
+    // --- REMAINING METHODS PRESERVED FOR STABILITY ---
+
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
-        
         val currentMode = AppCompatDelegate.getDefaultNightMode()
         binding.txtCurrentTheme.text = if (currentMode == AppCompatDelegate.MODE_NIGHT_YES) 
             getString(R.string.theme_dark) else getString(R.string.theme_light)
@@ -162,8 +189,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
         binding.itemExportAll.setOnClickListener { exportAllStickers() }
     }
-
-    // --- SHARED STICKER LOGIC ---
 
     private fun exportAllStickers() {
         val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
@@ -248,17 +273,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             updateLayoutVisibility(item.itemId)
             true
         }
-    }
-
-    private fun setupStickerList() {
-        val items = StickerAdapter.loadOrdered(this)
-        adapter = StickerAdapter(items, this)
-        val layoutManager = GridLayoutManager(this, 3)
-        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-            override fun getSpanSize(pos: Int): Int = if (adapter.getItemViewType(pos) == 0) 3 else 1
-        }
-        binding.recycler.layoutManager = layoutManager
-        binding.recycler.adapter = adapter
     }
 
     private fun handleIncomingShare(intent: Intent?) {
