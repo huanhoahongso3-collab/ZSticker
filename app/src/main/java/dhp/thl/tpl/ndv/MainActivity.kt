@@ -38,18 +38,21 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var adapter: StickerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // --- 1. THEME ENGINE: INITIALIZATION ---
+        // --- 1. THEME & COLOR ENGINE (CRITICAL ORDER) ---
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         
-        // Force state before Activity is created to prevent color loss
+        // Step A: Set the Night Mode first
         AppCompatDelegate.setDefaultNightMode(savedTheme)
+        
+        // Step B: Apply Dynamic Colors before super.onCreate to patch resources correctly
         DynamicColors.applyToActivityIfAvailable(this)
 
         // --- 2. LANGUAGE ENGINE ---
         val langCode = prefs.getString("lang", "en") ?: "en"
         setLocale(langCode)
 
+        // Step C: Now call super and inflate
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -74,8 +77,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
-
-        // --- THEME ENGINE: SELECTION LOGIC ---
         val currentSavedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         
         binding.txtCurrentTheme.text = when (currentSavedMode) {
@@ -106,16 +107,15 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
                     }
 
-                    // Save choice and force a hard refresh
                     prefs.edit().putInt("theme_mode", newMode).apply()
                     dialog.dismiss()
                     
+                    // We call recreate() to ensure DynamicColors re-initializes with the new uiMode
                     AppCompatDelegate.setDefaultNightMode(newMode)
-                    recreate() // Forces engine to re-bind DynamicColors
+                    recreate() 
                 }.show()
         }
 
-        // --- LANGUAGE ENGINE ---
         val currentLang = prefs.getString("lang", "en") ?: "en"
         binding.txtCurrentLanguage.text = if (currentLang == "vi") "Tiếng Việt" else "English"
 
@@ -132,7 +132,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }.show()
         }
 
-        // --- APP INFO ---
         try {
             val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
@@ -153,12 +152,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         binding.itemExportAll.setOnClickListener { exportAllStickers() }
     }
 
-    // --- STICKER OPERATIONS & ERROR HANDLING ---
-
     private fun exportAllStickers() {
         val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
-        
-        // Error: No stickers to export
         if (stickerFiles.isNullOrEmpty()) {
             Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
             return
@@ -177,12 +172,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
                 }
             }
-
-            if (successCount > 0) {
-                Toast.makeText(this, getString(R.string.success), Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
-            }
+            Toast.makeText(this, if (successCount > 0) getString(R.string.success) else getString(R.string.failed), Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
         }
@@ -193,28 +183,24 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             contentResolver.openInputStream(src)?.use { input ->
                 val file = File(filesDir, "zsticker_${System.currentTimeMillis()}.png")
                 FileOutputStream(file).use { out -> 
-                    val bytesCopied = input.copyTo(out)
-                    if (bytesCopied > 0) {
+                    if (input.copyTo(out) > 0) {
                         adapter.refreshData(this)
                     } else {
-                        // Error: Empty file or unsupported
                         Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
                     }
                 }
             } ?: throw Exception("Stream null")
         } catch (e: Exception) {
-            // Error: Unsupported file or system error
             Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
         }
     }
-
-    // --- STANDARD OVERRIDES & HELPERS ---
 
     private fun setLocale(langCode: String) {
         val locale = Locale(langCode)
         Locale.setDefault(locale)
         val config = Configuration(resources.configuration)
         config.setLocale(locale)
+        @Suppress("DEPRECATION")
         resources.updateConfiguration(config, resources.displayMetrics)
     }
 
@@ -319,6 +305,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
     private fun handleIncomingShare(intent: Intent?) {
         if (intent?.action == Intent.ACTION_SEND && intent.type?.startsWith("image/") == true) {
+            @Suppress("DEPRECATION")
             intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.let { importToApp(it) }
         }
     }
