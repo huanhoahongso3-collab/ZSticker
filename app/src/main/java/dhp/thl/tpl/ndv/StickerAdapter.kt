@@ -3,99 +3,101 @@ package dhp.thl.tpl.ndv
 import android.content.Context
 import android.net.Uri
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.TextView
+import androidx.core.content.FileProvider
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import dhp.thl.tpl.ndv.databinding.ItemStickerBinding
-import org.json.JSONArray
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 
 class StickerAdapter(
-    private val stickers: MutableList<Uri>,
+    private var items: MutableList<Any>,
     private val listener: StickerListener
-) : RecyclerView.Adapter<StickerAdapter.StickerViewHolder>() {
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     interface StickerListener {
         fun onStickerClick(uri: Uri)
         fun onStickerLongClick(uri: Uri)
     }
 
-    inner class StickerViewHolder(val binding: ItemStickerBinding) :
-        RecyclerView.ViewHolder(binding.root)
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): StickerViewHolder {
-        val binding = ItemStickerBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return StickerViewHolder(binding)
+    override fun getItemViewType(position: Int): Int {
+        return if (items[position] is String) 0 else 1
     }
 
-    override fun onBindViewHolder(holder: StickerViewHolder, position: Int) {
-        val uri = stickers[position]
-
-        // Load sticker image efficiently
-        Glide.with(holder.binding.image.context)
-            .load(uri)
-            .centerCrop()
-            .into(holder.binding.image)
-
-        // Tap → share
-        holder.binding.image.setOnClickListener {
-            listener.onStickerClick(uri)
-        }
-
-        // Long press → confirm delete
-        holder.binding.image.setOnLongClickListener {
-            listener.onStickerLongClick(uri)
-            true
-        }
-    }
-
-    override fun getItemCount(): Int = stickers.size
-
-    /** ✅ Add a new sticker, optionally at the top */
-    fun addSticker(context: Context, uri: Uri, toTop: Boolean = false) {
-        if (toTop) {
-            stickers.add(0, uri)
-            notifyItemInserted(0)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        return if (viewType == 0) {
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_header, parent, false)
+            HeaderViewHolder(view)
         } else {
-            stickers.add(uri)
-            notifyItemInserted(stickers.size - 1)
-        }
-        saveOrder(context)
-    }
-
-    /** ✅ Shortcut for adding new sticker at top */
-    fun addStickerAtTop(context: Context, uri: Uri) {
-        addSticker(context, uri, toTop = true)
-    }
-
-    /** ✅ Remove sticker safely and persist */
-    fun removeSticker(context: Context, uri: Uri) {
-        val index = stickers.indexOf(uri)
-        if (index != -1) {
-            stickers.removeAt(index)
-            notifyItemRemoved(index)
-            saveOrder(context)
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_sticker, parent, false)
+            StickerViewHolder(view)
         }
     }
 
-    // --- Persistence helpers (fixes random order on restart) ---
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        val item = items[position]
+        if (holder is HeaderViewHolder && item is String) {
+            holder.text.text = item
+        } else if (holder is StickerViewHolder && item is File) {
+            Glide.with(holder.image).load(item).into(holder.image)
+            
+            holder.itemView.setOnClickListener {
+                val uri = FileProvider.getUriForFile(
+                    holder.itemView.context,
+                    "${holder.itemView.context.packageName}.provider",
+                    item
+                )
+                listener.onStickerClick(uri)
+            }
+            
+            holder.itemView.setOnLongClickListener {
+                val uri = Uri.fromFile(item)
+                listener.onStickerLongClick(uri)
+                true
+            }
+        }
+    }
 
-    /** ✅ Save order as JSON array (keeps exact order) */
-    private fun saveOrder(context: Context) {
-        val prefs = context.getSharedPreferences("stickers", Context.MODE_PRIVATE)
-        val jsonArray = JSONArray()
-        stickers.forEach { jsonArray.put(it.toString()) }
-        prefs.edit().putString("uris_json", jsonArray.toString()).apply()
+    override fun getItemCount(): Int = items.size
+
+    fun refreshData(context: Context) {
+        this.items.clear()
+        this.items.addAll(loadOrdered(context))
+        notifyDataSetChanged()
+    }
+
+    class HeaderViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val text: TextView = view.findViewById(R.id.headerText)
+    }
+
+    class StickerViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val image: ImageView = view.findViewById(R.id.stickerImage)
     }
 
     companion object {
-        /** ✅ Load ordered stickers */
-        fun loadOrdered(context: Context): MutableList<Uri> {
-            val prefs = context.getSharedPreferences("stickers", Context.MODE_PRIVATE)
-            val json = prefs.getString("uris_json", "[]")
-            val array = JSONArray(json)
-            val list = mutableListOf<Uri>()
-            for (i in 0 until array.length()) {
-                list.add(Uri.parse(array.getString(i)))
+        fun loadOrdered(context: Context): MutableList<Any> {
+            val list = mutableListOf<Any>()
+            val folder = context.filesDir
+            
+            // FIX: Updated to zsticker_
+            val files = folder.listFiles { file ->
+                file.name.startsWith("zsticker_") && file.name.endsWith(".png")
+            }?.sortedByDescending { it.lastModified() } ?: emptyList()
+
+            var lastDate = ""
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+
+            files.forEach { file ->
+                val date = sdf.format(Date(file.lastModified()))
+                if (date != lastDate) {
+                    list.add(date)
+                    lastDate = date
+                }
+                list.add(file)
             }
             return list
         }
