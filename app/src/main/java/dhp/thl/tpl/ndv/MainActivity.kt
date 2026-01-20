@@ -39,7 +39,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var adapter: StickerAdapter
 
     // --- 1. THE CACHING & CONFIG ENGINE ---
-    // This runs before the Activity is created to prevent the "Purple Fallback"
     override fun attachBaseContext(newBase: Context) {
         val prefs = newBase.getSharedPreferences("settings", MODE_PRIVATE)
         val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
@@ -47,18 +46,14 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
         val config = Configuration(newBase.resources.configuration)
 
-        // Cache/Sync Logic: We determine the intended UI Mode
         val targetUiMode = when (savedTheme) {
             AppCompatDelegate.MODE_NIGHT_YES -> Configuration.UI_MODE_NIGHT_YES
             AppCompatDelegate.MODE_NIGHT_NO -> Configuration.UI_MODE_NIGHT_NO
             else -> config.uiMode and Configuration.UI_MODE_NIGHT_MASK
         }
 
-        // Force the configuration to match our saved theme preference
-        // This stops SDK 31 from defaulting to Purple when App Theme != System Theme
         config.uiMode = targetUiMode or (config.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv())
         
-        // Language sync
         val locale = Locale(langCode)
         Locale.setDefault(locale)
         config.setLocale(locale)
@@ -68,22 +63,16 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // --- 2. DYNAMIC COLOR INITIALIZATION ---
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         
-        // Set the delegate so the app "knows" its state
         AppCompatDelegate.setDefaultNightMode(savedTheme)
-        
-        // Apply Material You. Because we forced the config in attachBaseContext,
-        // it will now correctly map the wallpaper colors to the current UI Mode.
         DynamicColors.applyToActivityIfAvailable(this)
 
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // --- 3. UI SETUP ---
         val lastTab = prefs.getInt("last_tab", R.id.nav_home)
         binding.bottomNavigation.selectedItemId = lastTab
         updateLayoutVisibility(lastTab)
@@ -111,29 +100,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             else -> getString(R.string.theme_system)
         }
 
+        // --- THEME OPTION DISABLED ---
         binding.itemTheme.setOnClickListener {
-            val options = arrayOf(getString(R.string.theme_light), getString(R.string.theme_dark), getString(R.string.theme_system))
-            val checkedItem = when (currentSavedMode) {
-                AppCompatDelegate.MODE_NIGHT_NO -> 0
-                AppCompatDelegate.MODE_NIGHT_YES -> 1
-                else -> 2
-            }
-
-            MaterialAlertDialogBuilder(this)
-                .setTitle(getString(R.string.info_theme_title))
-                .setSingleChoiceItems(options, checkedItem) { dialog, which ->
-                    val newMode = when (which) {
-                        0 -> AppCompatDelegate.MODE_NIGHT_NO
-                        1 -> AppCompatDelegate.MODE_NIGHT_YES
-                        else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-                    }
-                    prefs.edit().putInt("theme_mode", newMode).apply()
-                    dialog.dismiss()
-                    
-                    // Recreate forces the engine to re-cache and re-apply colors
-                    AppCompatDelegate.setDefaultNightMode(newMode)
-                    recreate() 
-                }.show()
+            // Click listener is active but logic is removed to disable the feature
         }
 
         val currentLang = prefs.getString("lang", "en") ?: "en"
@@ -171,8 +140,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
         binding.itemExportAll.setOnClickListener { exportAllStickers() }
     }
-
-    // --- STICKER OPERATIONS ---
 
     private fun exportAllStickers() {
         val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
