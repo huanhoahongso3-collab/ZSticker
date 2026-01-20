@@ -13,6 +13,8 @@
 
     <string name="theme_light">Light Mode</string>
     <string name="theme_dark">Dark Mode</string>
+    <string name="theme_system">Follow System</string>
+    
     <string name="info_license_note">GNU General Public License v3.0</string>
     
     <string name="sticker_options_title">Sticker Options</string>
