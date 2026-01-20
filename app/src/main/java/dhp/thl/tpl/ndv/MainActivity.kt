@@ -1,4 +1,4 @@
-package dhp.thl.tpl.ndv
+ package dhp.thl.tpl.ndv
 
 import android.Manifest
 import android.content.Context
@@ -39,7 +39,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var adapter: StickerAdapter
 
-    // --- 1. THE CACHING & CONFIG ENGINE ---
     override fun attachBaseContext(newBase: Context) {
         val prefs = newBase.getSharedPreferences("settings", MODE_PRIVATE)
         val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
@@ -81,14 +80,13 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         setupNavigation()
         setupStickerList()
         setupInfoSection()
-        handleIncomingShare(intent)
+        handleIncomingShare(intent) // This handles single and multiple shares
         handleEdgeToEdge()
 
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
             requestLegacyPermissions()
         }
 
-        // Updated for modern multi-select
         binding.addButton.setOnClickListener { 
             pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
@@ -105,9 +103,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
 
         // --- THEME OPTION DISABLED ---
-        binding.itemTheme.setOnClickListener {
-            // Click listener is active but logic is removed to disable the feature
-        }
+        binding.itemTheme.setOnClickListener { }
 
         val currentLang = prefs.getString("lang", "en") ?: "en"
         binding.txtCurrentLanguage.text = if (currentLang == "vi") "Tiếng Việt" else "English"
@@ -144,6 +140,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
         binding.itemExportAll.setOnClickListener { exportAllStickers() }
     }
+
+    // --- STICKER OPERATIONS ---
 
     private fun exportAllStickers() {
         val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
@@ -184,6 +182,28 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             }
         } catch (e: Exception) {
             Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // --- FIXED INCOMING SHARE HANDLER ---
+    private fun handleIncomingShare(intent: Intent?) {
+        if (intent == null) return
+        
+        when (intent.action) {
+            Intent.ACTION_SEND -> {
+                if (intent.type?.startsWith("image/") == true) {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.let { importToApp(it) }
+                }
+            }
+            Intent.ACTION_SEND_MULTIPLE -> {
+                if (intent.type?.startsWith("image/") == true) {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)?.let { list ->
+                        list.forEach { importToApp(it) }
+                    }
+                }
+            }
         }
     }
 
@@ -286,14 +306,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
     }
 
-    private fun handleIncomingShare(intent: Intent?) {
-        if (intent?.action == Intent.ACTION_SEND && intent.type?.startsWith("image/") == true) {
-            @Suppress("DEPRECATION")
-            intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.let { importToApp(it) }
-        }
-    }
-
-    // --- REFACTORED MULTI-SELECT HANDLER ---
     private val pickImages = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
         if (uris.isNotEmpty()) {
             uris.forEach { importToApp(it) }
