@@ -40,7 +40,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
 
-        // ---- THEME INIT ----
+        // ---- 1. UNIFIED THEME INITIALIZATION ----
+        // We handle Dark and Light identicaly to ensure the engine attaches correctly.
         val isFirstRun = prefs.getBoolean("is_first_run", true)
         val mode = if (isFirstRun) {
             prefs.edit()
@@ -49,26 +50,26 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 .apply()
             AppCompatDelegate.MODE_NIGHT_YES
         } else {
-            prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
+            prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         }
 
-        // Apply delegate BEFORE creating activity + BEFORE dynamic color injection
+        // Apply the delegate before super.onCreate to set the resource bucket (Night vs Light)
         AppCompatDelegate.setDefaultNightMode(mode)
 
-        // ---- FIX: MATERIAL YOU FOR LIGHT THEME ----
-        // Ensures both dark & light use dynamic Monet palette on Android 12+
-        // Prevents light theme from falling back to default M3 base palette on restart
+        // Inject Dynamic Colors from wallpaper BEFORE the UI is inflated.
+        // This is critical for the colors to survive a restart.
         DynamicColors.applyToActivityIfAvailable(this)
 
-        // ---- LANGUAGE ----
+        // ---- 2. LANGUAGE INITIALIZATION ----
         val langCode = prefs.getString("lang", "en") ?: "en"
         setLocale(langCode)
 
+        // ---- 3. ACTIVITY LIFECYCLE ----
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // ---- RESTORE TAB ----
+        // ---- 4. RESTORE PREVIOUS STATE ----
         val lastTab = prefs.getInt("last_tab", R.id.nav_home)
         binding.bottomNavigation.selectedItemId = lastTab
         updateLayoutVisibility(lastTab)
@@ -95,7 +96,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
             val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
             view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                // Reduced: 128dp -> 96dp (user request)
                 bottomMargin = (96 * resources.displayMetrics.density).toInt() + navInsets.bottom
             }
             insets
@@ -136,6 +136,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
 
+        // Update Theme text display
         val currentMode = AppCompatDelegate.getDefaultNightMode()
         binding.txtCurrentTheme.text = if (currentMode == AppCompatDelegate.MODE_NIGHT_YES)
             getString(R.string.theme_dark) else getString(R.string.theme_light)
@@ -147,11 +148,13 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 .setItems(options) { _, which ->
                     val mode = if (which == 0) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
                     prefs.edit().putInt("theme_mode", mode).apply()
-                    // Force delegate refresh to update Dynamic colors
+                    
+                    // Re-applying delegate triggers a recreate which uses our new logic
                     AppCompatDelegate.setDefaultNightMode(mode)
                 }.show()
         }
 
+        // Language setup
         val currentLang = prefs.getString("lang", "en") ?: "en"
         binding.txtCurrentLanguage.text = if (currentLang == "vi") "Tiếng Việt" else "English"
 
@@ -168,6 +171,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }.show()
         }
 
+        // Version info
         try {
             val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
