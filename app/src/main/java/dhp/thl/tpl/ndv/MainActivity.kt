@@ -40,8 +40,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
 
-        // ---- 1. UNIFIED THEME INITIALIZATION ----
-        // We handle Dark and Light identicaly to ensure the engine attaches correctly.
+        // --- UNIFIED MATERIAL COLOR & THEME INIT ---
+        // 1. Resolve the desired mode
         val isFirstRun = prefs.getBoolean("is_first_run", true)
         val mode = if (isFirstRun) {
             prefs.edit()
@@ -53,23 +53,24 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         }
 
-        // Apply the delegate before super.onCreate to set the resource bucket (Night vs Light)
+        // 2. Set Night Mode BEFORE super.onCreate
+        // This ensures the correct resource bucket (values-night or values) is chosen
         AppCompatDelegate.setDefaultNightMode(mode)
 
-        // Inject Dynamic Colors from wallpaper BEFORE the UI is inflated.
-        // This is critical for the colors to survive a restart.
+        // 3. Apply Dynamic Colors to the Activity context
+        // This injects the Monet/Wallpaper palette into the theme attributes
         DynamicColors.applyToActivityIfAvailable(this)
 
-        // ---- 2. LANGUAGE INITIALIZATION ----
+        // --- LANGUAGE INIT ---
         val langCode = prefs.getString("lang", "en") ?: "en"
         setLocale(langCode)
 
-        // ---- 3. ACTIVITY LIFECYCLE ----
+        // --- STANDARD LIFECYCLE ---
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // ---- 4. RESTORE PREVIOUS STATE ----
+        // --- UI RESTORATION ---
         val lastTab = prefs.getInt("last_tab", R.id.nav_home)
         binding.bottomNavigation.selectedItemId = lastTab
         updateLayoutVisibility(lastTab)
@@ -136,7 +137,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
 
-        // Update Theme text display
         val currentMode = AppCompatDelegate.getDefaultNightMode()
         binding.txtCurrentTheme.text = if (currentMode == AppCompatDelegate.MODE_NIGHT_YES)
             getString(R.string.theme_dark) else getString(R.string.theme_light)
@@ -148,13 +148,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 .setItems(options) { _, which ->
                     val mode = if (which == 0) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
                     prefs.edit().putInt("theme_mode", mode).apply()
-                    
-                    // Re-applying delegate triggers a recreate which uses our new logic
                     AppCompatDelegate.setDefaultNightMode(mode)
                 }.show()
         }
 
-        // Language setup
         val currentLang = prefs.getString("lang", "en") ?: "en"
         binding.txtCurrentLanguage.text = if (currentLang == "vi") "Tiếng Việt" else "English"
 
@@ -171,7 +168,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }.show()
         }
 
-        // Version info
         try {
             val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
