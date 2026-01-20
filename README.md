@@ -7,7 +7,7 @@ ZSticker is a vibe-driven coding project focused on how Zalo handles sticker sha
 
 It is inspired by how Zamoji - a VNG app can send sticker to Zalo
 
-Released under **GPLv2** to keep it open.
+Released under **GPLv3** to keep it open.
 
 ---
 
