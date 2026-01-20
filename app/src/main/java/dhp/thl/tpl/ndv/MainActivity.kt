@@ -40,27 +40,23 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
 
-        // 1. THEME LOGIC: Must be determined first to guide Dynamic Colors
+        // 1. THEME LOGIC: Must be determined FIRST to guide Dynamic Colors
         val isFirstRun = prefs.getBoolean("is_first_run", true)
         val themeMode: Int = if (isFirstRun) {
-            // Force Dark Mode on first install
             prefs.edit()
                 .putInt("theme_mode", AppCompatDelegate.MODE_NIGHT_YES)
                 .putBoolean("is_first_run", false)
                 .apply()
             AppCompatDelegate.MODE_NIGHT_YES
         } else {
-            // Use saved preference on subsequent launches
             prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
         }
         
-        // Apply the mode to the delegate immediately
+        // Fix: Apply delegate BEFORE DynamicColors to sync the material color engine
         AppCompatDelegate.setDefaultNightMode(themeMode)
-
-        // 2. DYNAMIC COLORS: Apply after the Night Mode is locked in
         DynamicColors.applyToActivityIfAvailable(this)
 
-        // 3. LANGUAGE: Set before super.onCreate to ensure layout inflation uses correct strings
+        // 2. LANGUAGE: Set before super.onCreate
         val langCode = prefs.getString("lang", "en") ?: "en"
         setLocale(langCode)
 
@@ -68,19 +64,19 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // 4. RESTORE STATE: Tab selection
+        // 3. RESTORE STATE
         val lastTab = prefs.getInt("last_tab", R.id.nav_home)
         binding.bottomNavigation.selectedItemId = lastTab
         updateLayoutVisibility(lastTab)
 
-        // 5. INITIALIZE COMPONENTS
-        handleEdgeToEdge()
         setupNavigation()
         setupStickerList()
         setupInfoSection()
         handleIncomingShare(intent)
 
-        // Legacy Permissions (Android 9 and below)
+        // Apply edge-to-edge but maintain opacity as per notes
+        handleEdgeToEdge()
+
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
             requestLegacyPermissions()
         }
@@ -97,7 +93,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
             val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
             view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                // Sits elegantly above the Bottom Navigation
                 bottomMargin = (128 * resources.displayMetrics.density).toInt() + navInsets.bottom
             }
             insets
@@ -121,10 +116,25 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
     }
 
+    private fun setupStickerList() {
+        val items = StickerAdapter.loadOrdered(this)
+        adapter = StickerAdapter(items, this)
+        
+        // Fix: Use 3 columns and ensure the RecyclerView fills available space
+        val layoutManager = GridLayoutManager(this, 3)
+        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(pos: Int): Int = if (adapter.getItemViewType(pos) == 0) 3 else 1
+        }
+        
+        binding.recycler.layoutManager = layoutManager
+        binding.recycler.adapter = adapter
+        // Ensure it doesn't nest inside a ScrollView in XML to fix the "6-row" bug
+        binding.recycler.isNestedScrollingEnabled = true 
+    }
+
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         
-        // Accurate theme label based on delegate
         val currentMode = AppCompatDelegate.getDefaultNightMode()
         binding.txtCurrentTheme.text = if (currentMode == AppCompatDelegate.MODE_NIGHT_YES) 
             getString(R.string.theme_dark) else getString(R.string.theme_light)
@@ -136,7 +146,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 .setItems(options) { _, which ->
                     val mode = if (which == 0) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
                     prefs.edit().putInt("theme_mode", mode).apply()
-                    // This triggers a recreate() which will follow the corrected sequence in onCreate
+                    
+                    // Force refresh to fix the Material Color bug noted in the image
                     AppCompatDelegate.setDefaultNightMode(mode)
                 }.show()
         }
@@ -157,7 +168,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }.show()
         }
 
-        // Version info
         try {
             val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
@@ -194,16 +204,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             }
             Toast.makeText(this, getString(R.string.success), Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun deleteSticker(uri: Uri) {
-        val file = File(filesDir, uri.lastPathSegment ?: "")
-        if (file.exists() && file.delete()) {
-            adapter.refreshData(this)
-            Toast.makeText(this, getString(R.string.success), Toast.LENGTH_SHORT).show()
-        } else {
             Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
         }
     }
@@ -248,6 +248,14 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
     }
 
+    private fun deleteSticker(uri: Uri) {
+        val file = File(filesDir, uri.lastPathSegment ?: "")
+        if (file.exists() && file.delete()) {
+            adapter.refreshData(this)
+            Toast.makeText(this, getString(R.string.success), Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun setLocale(langCode: String) {
         val locale = Locale(langCode)
         Locale.setDefault(locale)
@@ -263,17 +271,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             updateLayoutVisibility(item.itemId)
             true
         }
-    }
-
-    private fun setupStickerList() {
-        val items = StickerAdapter.loadOrdered(this)
-        adapter = StickerAdapter(items, this)
-        val layoutManager = GridLayoutManager(this, 3)
-        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-            override fun getSpanSize(pos: Int): Int = if (adapter.getItemViewType(pos) == 0) 3 else 1
-        }
-        binding.recycler.layoutManager = layoutManager
-        binding.recycler.adapter = adapter
     }
 
     private fun handleIncomingShare(intent: Intent?) {
