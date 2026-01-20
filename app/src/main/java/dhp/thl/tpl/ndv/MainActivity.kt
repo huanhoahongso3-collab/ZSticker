@@ -40,24 +40,28 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
 
-        // ---- THEME INIT ----
+        // ---- UNIFIED THEME REBUILD ----
+        // We treat Light and Dark exactly the same to ensure the Dynamic engine 
+        // attaches correctly to both profiles.
         val isFirstRun = prefs.getBoolean("is_first_run", true)
-        val mode = if (isFirstRun) {
+        val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+
+        val targetMode = if (isFirstRun) {
             prefs.edit()
                 .putInt("theme_mode", AppCompatDelegate.MODE_NIGHT_YES)
                 .putBoolean("is_first_run", false)
                 .apply()
             AppCompatDelegate.MODE_NIGHT_YES
         } else {
-            prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
+            savedMode
         }
 
-        // Apply delegate BEFORE creating activity + BEFORE dynamic color injection
-        AppCompatDelegate.setDefaultNightMode(mode)
-
-        // ---- FIX: MATERIAL YOU FOR LIGHT THEME ----
-        // Ensures both dark & light use dynamic Monet palette on Android 12+
-        // Prevents light theme from falling back to default M3 base palette on restart
+        // 1. Set the night mode delegate
+        AppCompatDelegate.setDefaultNightMode(targetMode)
+        
+        // 2. IMMEDIATELY apply Dynamic Colors. 
+        // This must happen before super.onCreate for the wallpaper palette to 
+        // be injected into the Light/Dark theme attributes.
         DynamicColors.applyToActivityIfAvailable(this)
 
         // ---- LANGUAGE ----
@@ -95,7 +99,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
             val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
             view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                // Reduced: 128dp -> 96dp (user request)
                 bottomMargin = (96 * resources.displayMetrics.density).toInt() + navInsets.bottom
             }
             insets
@@ -147,7 +150,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 .setItems(options) { _, which ->
                     val mode = if (which == 0) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
                     prefs.edit().putInt("theme_mode", mode).apply()
-                    // Force delegate refresh to update Dynamic colors
+                    
+                    // Re-applying delegate will trigger an activity recreate, 
+                    // and our new onCreate logic will handle the light theme dynamic color.
                     AppCompatDelegate.setDefaultNightMode(mode)
                 }.show()
         }
