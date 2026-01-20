@@ -1,6 +1,8 @@
 # 📦 ZSticker — Share custom sticker to Zalo
 (Currently is a fork of Zaticker)
 
+Warning: removebg branch. Need to use third-party API to remove background. Still in beta because API longevity is not sure. 
+
 Support min SDK 26 (Android 8.0). Recommend using SDK 34 (Android 14)
 
 ZSticker is a vibe-driven coding project focused on how Zalo handles sticker share by Intent in Android.
