@@ -40,23 +40,23 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
 
-        // 1. THEME LOGIC: Must be determined FIRST to guide Dynamic Colors
+        // === FIXED: FIRST RUN BOOT THEME ===
         val isFirstRun = prefs.getBoolean("is_first_run", true)
         val themeMode: Int = if (isFirstRun) {
             prefs.edit()
-                .putInt("theme_mode", AppCompatDelegate.MODE_NIGHT_YES)
                 .putBoolean("is_first_run", false)
+                .putInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO) // default light first run
                 .apply()
-            AppCompatDelegate.MODE_NIGHT_YES
+            AppCompatDelegate.MODE_NIGHT_NO
         } else {
             prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
         }
-        
-        // Fix: Apply delegate BEFORE DynamicColors to sync the material color engine
+
+        // must set delegate BEFORE dynamic colors + inflation
         AppCompatDelegate.setDefaultNightMode(themeMode)
         DynamicColors.applyToActivityIfAvailable(this)
 
-        // 2. LANGUAGE: Set before super.onCreate
+        // LANGUAGE BEFORE SUPER
         val langCode = prefs.getString("lang", "en") ?: "en"
         setLocale(langCode)
 
@@ -64,7 +64,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // 3. RESTORE STATE
+        // RESTORE LAST TAB
         val lastTab = prefs.getInt("last_tab", R.id.nav_home)
         binding.bottomNavigation.selectedItemId = lastTab
         updateLayoutVisibility(lastTab)
@@ -73,8 +73,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         setupStickerList()
         setupInfoSection()
         handleIncomingShare(intent)
-
-        // Apply edge-to-edge but maintain opacity as per notes
         handleEdgeToEdge()
 
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
@@ -119,26 +117,26 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private fun setupStickerList() {
         val items = StickerAdapter.loadOrdered(this)
         adapter = StickerAdapter(items, this)
-        
-        // Fix: Use 3 columns and ensure the RecyclerView fills available space
+
         val layoutManager = GridLayoutManager(this, 3)
         layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
             override fun getSpanSize(pos: Int): Int = if (adapter.getItemViewType(pos) == 0) 3 else 1
         }
-        
+
         binding.recycler.layoutManager = layoutManager
         binding.recycler.adapter = adapter
-        // Ensure it doesn't nest inside a ScrollView in XML to fix the "6-row" bug
-        binding.recycler.isNestedScrollingEnabled = true 
+        binding.recycler.isNestedScrollingEnabled = true
     }
 
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
-        
-        val currentMode = AppCompatDelegate.getDefaultNightMode()
-        binding.txtCurrentTheme.text = if (currentMode == AppCompatDelegate.MODE_NIGHT_YES) 
-            getString(R.string.theme_dark) else getString(R.string.theme_light)
 
+        val currentMode = AppCompatDelegate.getDefaultNightMode()
+        binding.txtCurrentTheme.text =
+            if (currentMode == AppCompatDelegate.MODE_NIGHT_YES) getString(R.string.theme_dark)
+            else getString(R.string.theme_light)
+
+        // === FIXED: THEME SWITCH ===
         binding.itemTheme.setOnClickListener {
             val options = arrayOf(getString(R.string.theme_light), getString(R.string.theme_dark))
             MaterialAlertDialogBuilder(this)
@@ -146,15 +144,14 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 .setItems(options) { _, which ->
                     val mode = if (which == 0) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
                     prefs.edit().putInt("theme_mode", mode).apply()
-                    
-                    // Force refresh to fix the Material Color bug noted in the image
                     AppCompatDelegate.setDefaultNightMode(mode)
+                    recreate() // required for dynamic material colors to rebind
                 }.show()
         }
 
         val currentLang = prefs.getString("lang", "en") ?: "en"
         binding.txtCurrentLanguage.text = if (currentLang == "vi") "Tiếng Việt" else "English"
-        
+
         binding.itemLanguage.setOnClickListener {
             val langs = arrayOf("English", "Tiếng Việt")
             MaterialAlertDialogBuilder(this)
@@ -163,7 +160,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     val langCode = if (which == 0) "en" else "vi"
                     if (currentLang != langCode) {
                         prefs.edit().putString("lang", langCode).apply()
-                        recreate() 
+                        recreate()
                     }
                 }.show()
         }
@@ -171,9 +168,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         try {
             val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
-            } else {
-                packageManager.getPackageInfo(packageName, 0)
-            }
+            } else packageManager.getPackageInfo(packageName, 0)
             binding.txtVersion.text = pInfo.versionName
         } catch (e: Exception) {
             binding.txtVersion.text = "1.0.0"
@@ -185,10 +180,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         binding.itemLicense.setOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.gnu.org/licenses/gpl-3.0.html")))
         }
+
         binding.itemExportAll.setOnClickListener { exportAllStickers() }
     }
-
-    // --- STICKER OPERATIONS ---
 
     private fun exportAllStickers() {
         val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
@@ -230,7 +224,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         val title = SpannableString(getString(R.string.sticker_options_title)).apply {
             setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
         }
-        MaterialAlertDialogBuilder(this).setTitle(title)
+        MaterialAlertDialogBuilder(this)
+            .setTitle(title)
             .setItems(arrayOf(getString(R.string.export), getString(R.string.delete))) { _, which ->
                 if (which == 0) exportSingleSticker(uri) else deleteSticker(uri)
             }.setNegativeButton(getString(R.string.cancel), null).show()
@@ -283,7 +278,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
     private fun openSystemImagePicker() {
         pickImages.launch(Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI).apply {
-            type = "image/*"; putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+            type = "image/*"
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         })
     }
 
