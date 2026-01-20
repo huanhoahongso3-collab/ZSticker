@@ -38,48 +38,49 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var adapter: StickerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 1. Force Dynamic Colors 
-        DynamicColors.applyToActivityIfAvailable(this)
-
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
-        
-        // 2. Persistent Language
-        val langCode = prefs.getString("lang", "en") ?: "en"
-        setLocale(langCode)
 
-        // 3. Theme Logic: Force Dark on First Install
+        // 1. THEME LOGIC: Must be determined first to guide Dynamic Colors
         val isFirstRun = prefs.getBoolean("is_first_run", true)
         val themeMode: Int = if (isFirstRun) {
-            // First time opening: Force Dark Mode
+            // Force Dark Mode on first install
             prefs.edit()
                 .putInt("theme_mode", AppCompatDelegate.MODE_NIGHT_YES)
                 .putBoolean("is_first_run", false)
                 .apply()
             AppCompatDelegate.MODE_NIGHT_YES
         } else {
-            // Future openings: Respect the saved preference (defaulting to Light if somehow lost)
+            // Use saved preference on subsequent launches
             prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
         }
+        
+        // Apply the mode to the delegate immediately
+        AppCompatDelegate.setDefaultNightMode(themeMode)
 
-        if (AppCompatDelegate.getDefaultNightMode() != themeMode) {
-            AppCompatDelegate.setDefaultNightMode(themeMode)
-        }
+        // 2. DYNAMIC COLORS: Apply after the Night Mode is locked in
+        DynamicColors.applyToActivityIfAvailable(this)
+
+        // 3. LANGUAGE: Set before super.onCreate to ensure layout inflation uses correct strings
+        val langCode = prefs.getString("lang", "en") ?: "en"
+        setLocale(langCode)
 
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // 4. State Persistence: Restore the last selected tab
+        // 4. RESTORE STATE: Tab selection
         val lastTab = prefs.getInt("last_tab", R.id.nav_home)
         binding.bottomNavigation.selectedItemId = lastTab
         updateLayoutVisibility(lastTab)
 
+        // 5. INITIALIZE COMPONENTS
         handleEdgeToEdge()
         setupNavigation()
         setupStickerList()
         setupInfoSection()
         handleIncomingShare(intent)
 
+        // Legacy Permissions (Android 9 and below)
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
             requestLegacyPermissions()
         }
@@ -96,6 +97,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
             val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
             view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                // Sits elegantly above the Bottom Navigation
                 bottomMargin = (128 * resources.displayMetrics.density).toInt() + navInsets.bottom
             }
             insets
@@ -122,7 +124,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         
-        // Use AppCompatDelegate.getDefaultNightMode() to ensure UI label matches current state
+        // Accurate theme label based on delegate
         val currentMode = AppCompatDelegate.getDefaultNightMode()
         binding.txtCurrentTheme.text = if (currentMode == AppCompatDelegate.MODE_NIGHT_YES) 
             getString(R.string.theme_dark) else getString(R.string.theme_light)
@@ -134,8 +136,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 .setItems(options) { _, which ->
                     val mode = if (which == 0) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
                     prefs.edit().putInt("theme_mode", mode).apply()
+                    // This triggers a recreate() which will follow the corrected sequence in onCreate
                     AppCompatDelegate.setDefaultNightMode(mode)
-                    // The activity will recreate, updating the text via onCreate logic
                 }.show()
         }
 
@@ -155,6 +157,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }.show()
         }
 
+        // Version info
         try {
             val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
@@ -174,6 +177,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
         binding.itemExportAll.setOnClickListener { exportAllStickers() }
     }
+
+    // --- STICKER OPERATIONS ---
 
     private fun exportAllStickers() {
         val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
