@@ -1,5 +1,5 @@
 package dhp.thl.tpl.ndv
-
+// No theming here, dark and light disabled
 import android.Manifest
 import android.content.Context
 import android.content.Intent
