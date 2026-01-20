@@ -38,16 +38,12 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var adapter: StickerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // --- 1. CORE THEMING ENGINE (REWRITTEN) ---
+        // --- 1. THEME ENGINE: INITIALIZATION ---
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
-        
-        // Always read the explicit saved preference first
         val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         
-        // Force the Delegate to use the saved preference before the window is created
+        // Force state before Activity is created to prevent color loss
         AppCompatDelegate.setDefaultNightMode(savedTheme)
-        
-        // Apply Material You (Dynamic Colors) to this activity instance
         DynamicColors.applyToActivityIfAvailable(this)
 
         // --- 2. LANGUAGE ENGINE ---
@@ -58,7 +54,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // --- 3. UI INITIALIZATION ---
+        // --- 3. UI SETUP ---
         val lastTab = prefs.getInt("last_tab", R.id.nav_home)
         binding.bottomNavigation.selectedItemId = lastTab
         updateLayoutVisibility(lastTab)
@@ -79,7 +75,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
 
-        // --- THEME PICKER LOGIC (REWRITTEN) ---
+        // --- THEME ENGINE: SELECTION LOGIC ---
         val currentSavedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         
         binding.txtCurrentTheme.text = when (currentSavedMode) {
@@ -110,18 +106,16 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
                     }
 
-                    // Save the choice immediately
+                    // Save choice and force a hard refresh
                     prefs.edit().putInt("theme_mode", newMode).apply()
                     dialog.dismiss()
-
-                    // Apply and Force Recreate
-                    // This is necessary to fix the "System -> Light" bug when already light
+                    
                     AppCompatDelegate.setDefaultNightMode(newMode)
-                    recreate() 
+                    recreate() // Forces engine to re-bind DynamicColors
                 }.show()
         }
 
-        // --- LANGUAGE PICKER ---
+        // --- LANGUAGE ENGINE ---
         val currentLang = prefs.getString("lang", "en") ?: "en"
         binding.txtCurrentLanguage.text = if (currentLang == "vi") "Tiếng Việt" else "English"
 
@@ -138,7 +132,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }.show()
         }
 
-        // --- APP INFO SECTION ---
+        // --- APP INFO ---
         try {
             val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
@@ -159,7 +153,62 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         binding.itemExportAll.setOnClickListener { exportAllStickers() }
     }
 
-    // --- HELPER METHODS ---
+    // --- STICKER OPERATIONS & ERROR HANDLING ---
+
+    private fun exportAllStickers() {
+        val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
+        
+        // Error: No stickers to export
+        if (stickerFiles.isNullOrEmpty()) {
+            Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        try {
+            val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
+            if (!outDir.exists()) outDir.mkdirs()
+            
+            var successCount = 0
+            stickerFiles.forEach { src ->
+                val destFile = File(outDir, src.name)
+                src.inputStream().use { input ->
+                    destFile.outputStream().use { output ->
+                        if (input.copyTo(output) > 0) successCount++
+                    }
+                }
+            }
+
+            if (successCount > 0) {
+                Toast.makeText(this, getString(R.string.success), Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun importToApp(src: Uri) {
+        try {
+            contentResolver.openInputStream(src)?.use { input ->
+                val file = File(filesDir, "zsticker_${System.currentTimeMillis()}.png")
+                FileOutputStream(file).use { out -> 
+                    val bytesCopied = input.copyTo(out)
+                    if (bytesCopied > 0) {
+                        adapter.refreshData(this)
+                    } else {
+                        // Error: Empty file or unsupported
+                        Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } ?: throw Exception("Stream null")
+        } catch (e: Exception) {
+            // Error: Unsupported file or system error
+            Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // --- STANDARD OVERRIDES & HELPERS ---
 
     private fun setLocale(langCode: String) {
         val locale = Locale(langCode)
@@ -214,27 +263,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
     private fun setupNavigation() {
         binding.bottomNavigation.setOnItemSelectedListener { item ->
-            getSharedPreferences("settings", MODE_PRIVATE).edit()
-                .putInt("last_tab", item.itemId).apply()
+            getSharedPreferences("settings", MODE_PRIVATE).edit().putInt("last_tab", item.itemId).apply()
             updateLayoutVisibility(item.itemId)
             true
-        }
-    }
-
-    // --- STICKER OPERATIONS ---
-
-    private fun exportAllStickers() {
-        val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
-        if (stickerFiles.isNullOrEmpty()) return
-        try {
-            val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
-            if (!outDir.exists()) outDir.mkdirs()
-            stickerFiles.forEach { src ->
-                File(outDir, src.name).outputStream().use { out -> src.inputStream().use { it.copyTo(out) } }
-            }
-            Toast.makeText(this, getString(R.string.success), Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -293,27 +324,17 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     }
 
     private fun openSystemImagePicker() {
-        pickImages.launch(Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI).apply {
-            type = "image/*"; putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-        })
+        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI).apply {
+            type = "image/*"
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+        }
+        pickImages.launch(intent)
     }
 
     private val pickImages = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
         if (res.resultCode == RESULT_OK) {
             res.data?.clipData?.let { for (i in 0 until it.itemCount) importToApp(it.getItemAt(i).uri) }
                 ?: res.data?.data?.let { importToApp(it) }
-        }
-    }
-
-    private fun importToApp(src: Uri) {
-        try {
-            contentResolver.openInputStream(src)?.use { input ->
-                val file = File(filesDir, "zsticker_${System.currentTimeMillis()}.png")
-                FileOutputStream(file).use { out -> input.copyTo(out) }
-                adapter.refreshData(this)
-            }
-        } catch (e: Exception) {
-            Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
         }
     }
 
