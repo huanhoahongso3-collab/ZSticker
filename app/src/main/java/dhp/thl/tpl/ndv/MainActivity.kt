@@ -23,6 +23,7 @@ import androidx.core.content.FileProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
+import androidx.core.view.updatePadding
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.color.DynamicColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -37,41 +38,44 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var adapter: StickerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 1. Apply Dynamic Colors BEFORE super.onCreate
+        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+
+        // 1. THEME LOGIC: Must be determined FIRST to guide Dynamic Colors
+        val isFirstRun = prefs.getBoolean("is_first_run", true)
+        val themeMode: Int = if (isFirstRun) {
+            prefs.edit()
+                .putInt("theme_mode", AppCompatDelegate.MODE_NIGHT_YES)
+                .putBoolean("is_first_run", false)
+                .apply()
+            AppCompatDelegate.MODE_NIGHT_YES
+        } else {
+            prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
+        }
+        
+        // Fix: Apply delegate BEFORE DynamicColors to sync the material color engine
+        AppCompatDelegate.setDefaultNightMode(themeMode)
         DynamicColors.applyToActivityIfAvailable(this)
 
-        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
-        
-        // 2. Persistent Language & Theme
+        // 2. LANGUAGE: Set before super.onCreate
         val langCode = prefs.getString("lang", "en") ?: "en"
         setLocale(langCode)
 
-        val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
-        AppCompatDelegate.setDefaultNightMode(savedMode)
-
         super.onCreate(savedInstanceState)
-
-        // 3. FIX: Force Dynamic Color sync on first launch (Android 12+)
-        val isFirstRun = prefs.getBoolean("is_first_run_color", true)
-        if (isFirstRun && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            prefs.edit().putBoolean("is_first_run_color", false).apply()
-            recreate()
-            return 
-        }
-
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // 4. Restore Tab State
+        // 3. RESTORE STATE
         val lastTab = prefs.getInt("last_tab", R.id.nav_home)
         binding.bottomNavigation.selectedItemId = lastTab
         updateLayoutVisibility(lastTab)
 
-        handleEdgeToEdge()
         setupNavigation()
         setupStickerList()
         setupInfoSection()
         handleIncomingShare(intent)
+
+        // Apply edge-to-edge but maintain opacity as per notes
+        handleEdgeToEdge()
 
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
             requestLegacyPermissions()
@@ -81,12 +85,15 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     }
 
     private fun handleEdgeToEdge() {
-        // Adjust FAB margin to account for system navigation bars (Gestures vs 3-button)
+        ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigation) { view, insets ->
+            val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            view.updatePadding(bottom = navInsets.bottom)
+            insets
+        }
         ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
             val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
             view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                // Keep the XML margin (80dp) and add the system bar height
-                bottomMargin = (80 * resources.displayMetrics.density).toInt() + navInsets.bottom
+                bottomMargin = (128 * resources.displayMetrics.density).toInt() + navInsets.bottom
             }
             insets
         }
@@ -112,6 +119,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private fun setupStickerList() {
         val items = StickerAdapter.loadOrdered(this)
         adapter = StickerAdapter(items, this)
+        
+        // Fix: Use 3 columns and ensure the RecyclerView fills available space
         val layoutManager = GridLayoutManager(this, 3)
         layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
             override fun getSpanSize(pos: Int): Int = if (adapter.getItemViewType(pos) == 0) 3 else 1
@@ -119,10 +128,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         
         binding.recycler.layoutManager = layoutManager
         binding.recycler.adapter = adapter
-        
-        // FIX: Ensure the list can scroll past the FAB/Nav Bar
-        binding.recycler.clipToPadding = false
-        // Padding bottom is already set in XML (e.g., 100dp) to ensure full visibility
+        // Ensure it doesn't nest inside a ScrollView in XML to fix the "6-row" bug
+        binding.recycler.isNestedScrollingEnabled = true 
     }
 
     private fun setupInfoSection() {
@@ -139,6 +146,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 .setItems(options) { _, which ->
                     val mode = if (which == 0) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
                     prefs.edit().putInt("theme_mode", mode).apply()
+                    
+                    // Force refresh to fix the Material Color bug noted in the image
                     AppCompatDelegate.setDefaultNightMode(mode)
                 }.show()
         }
@@ -244,12 +253,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         if (file.exists() && file.delete()) {
             adapter.refreshData(this)
             Toast.makeText(this, getString(R.string.success), Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
         }
     }
-
-    // --- SYSTEM LOGIC ---
 
     private fun setLocale(langCode: String) {
         val locale = Locale(langCode)
