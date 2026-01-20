@@ -1,5 +1,5 @@
 package dhp.thl.tpl.ndv
-// No theming here, dark and light disabled
+
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -16,6 +16,7 @@ import android.text.style.StyleSpan
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -87,7 +88,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             requestLegacyPermissions()
         }
 
-        binding.addButton.setOnClickListener { openSystemImagePicker() }
+        // Updated for modern multi-select
+        binding.addButton.setOnClickListener { 
+            pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        }
     }
 
     private fun setupInfoSection() {
@@ -289,18 +293,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
     }
 
-    private fun openSystemImagePicker() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI).apply {
-            type = "image/*"
-            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-        }
-        pickImages.launch(intent)
-    }
-
-    private val pickImages = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
-        if (res.resultCode == RESULT_OK) {
-            res.data?.clipData?.let { for (i in 0 until it.itemCount) importToApp(it.getItemAt(i).uri) }
-                ?: res.data?.data?.let { importToApp(it) }
+    // --- REFACTORED MULTI-SELECT HANDLER ---
+    private val pickImages = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
+        if (uris.isNotEmpty()) {
+            uris.forEach { importToApp(it) }
         }
     }
 
