@@ -2,9 +2,9 @@ name: Android ZSticker
 
 on:
   push:
-    branches: [ main ]
+    branches: [ removebgm3 ]
   pull_request:
-    branches: [ main ]
+    branches: [ removebgm3 ]
 
 jobs:
   build:

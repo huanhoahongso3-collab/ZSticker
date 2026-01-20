@@ -24,4 +24,7 @@
     <string name="zalo_share_failed">Không tìm thấy Zalo hoặc chia sẻ thất bại</string>
     <string name="success">Thành công</string>
     <string name="failed">Thất bại</string>
+    <string name="remove_bg">Xóa phông nền</string>
+    <string name="rb_completed">Xóa phông nền hoàn tất</string>
+    <string name="rb_failed">Xóa phông nền thất bại</string>
 </resources>

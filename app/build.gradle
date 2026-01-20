@@ -10,8 +10,8 @@ android {
         applicationId 'dhp.thl.tpl.ndv'
         minSdk 26
         targetSdk 34
-        versionCode 4131
-        versionName '4.1'  // ✅ updated version name
+        versionCode 5031
+        versionName '5.0'  // ✅ updated version name
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

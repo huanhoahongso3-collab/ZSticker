@@ -1,4 +1,4 @@
- package dhp.thl.tpl.ndv
+package dhp.thl.tpl.ndv
 
 import android.Manifest
 import android.content.Context
@@ -10,7 +10,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.provider.MediaStore
 import android.text.SpannableString
 import android.text.style.StyleSpan
 import android.view.View
@@ -32,7 +31,11 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
 import java.io.File
 import java.io.FileOutputStream
+import java.io.OutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.Locale
+import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
@@ -80,7 +83,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         setupNavigation()
         setupStickerList()
         setupInfoSection()
-        handleIncomingShare(intent) // This handles single and multiple shares
+        handleIncomingShare(intent) 
         handleEdgeToEdge()
 
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
@@ -102,7 +105,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             else -> getString(R.string.theme_system)
         }
 
-        // --- THEME OPTION DISABLED ---
         binding.itemTheme.setOnClickListener { }
 
         val currentLang = prefs.getString("lang", "en") ?: "en"
@@ -185,7 +187,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
     }
 
-    // --- FIXED INCOMING SHARE HANDLER ---
     private fun handleIncomingShare(intent: Intent?) {
         if (intent == null) return
         
@@ -280,9 +281,18 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         val title = SpannableString(getString(R.string.sticker_options_title)).apply {
             setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
         }
+        
         MaterialAlertDialogBuilder(this).setTitle(title)
-            .setItems(arrayOf(getString(R.string.export), getString(R.string.delete))) { _, which ->
-                if (which == 0) exportSingleSticker(uri) else deleteSticker(uri)
+            .setItems(arrayOf(
+                getString(R.string.export), 
+                getString(R.string.delete),
+                getString(R.string.remove_bg) // Localized string
+            )) { _, which ->
+                when (which) {
+                    0 -> exportSingleSticker(uri)
+                    1 -> deleteSticker(uri)
+                    2 -> removeBackground(uri)
+                }
             }.setNegativeButton(getString(R.string.cancel), null).show()
     }
 
@@ -303,6 +313,61 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         if (file.exists() && file.delete()) {
             adapter.refreshData(this)
             Toast.makeText(this, getString(R.string.success), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // ================= REMOVE BACKGROUND LOGIC ==================
+    private fun removeBackground(uri: Uri) {
+        // Show the transparent overlay + progress bar
+        binding.progressBar.visibility = View.VISIBLE
+        
+        thread {
+            var isSuccess = false
+            var resultUri: Uri? = null
+
+            try {
+                val inputStream = contentResolver.openInputStream(uri) ?: throw Exception()
+                val url = URL("https://briarmbg20.vercel.app/api/rmbg")
+                val connection = url.openConnection() as HttpURLConnection
+                connection.apply {
+                    requestMethod = "POST"
+                    doOutput = true
+                    setRequestProperty("Content-Type", "application/octet-stream")
+                    connectTimeout = 30000
+                    readTimeout = 30000
+                }
+
+                connection.outputStream.use { out: OutputStream ->
+                    inputStream.copyTo(out)
+                }
+
+                if (connection.responseCode == 200) {
+                    val name = "zsticker_rb_${System.currentTimeMillis()}.png"
+                    val file = File(filesDir, name)
+                    connection.inputStream.use { input ->
+                        FileOutputStream(file).use { out -> input.copyTo(out) }
+                    }
+                    resultUri = Uri.fromFile(file)
+                    isSuccess = true
+                }
+            } catch (e: Exception) {
+                isSuccess = false
+            }
+
+            runOnUiThread {
+                // Hide overlay
+                binding.progressBar.visibility = View.GONE
+                
+                if (isSuccess && resultUri != null) {
+                    adapter.refreshData(this@MainActivity)
+                    binding.recycler.scrollToPosition(0)
+                    // Output: Remove background completed! / Xóa phông nền hoàn tất!
+                    Toast.makeText(this, getString(R.string.rb_completed), Toast.LENGTH_SHORT).show()
+                } else {
+                    // Output: Failed to remove background / Xóa phông nền thất bại
+                    Toast.makeText(this, getString(R.string.rb_failed), Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
 

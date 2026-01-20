@@ -24,4 +24,7 @@
     <string name="zalo_share_failed">Zalo not found or share failed</string>
     <string name="success">Successful</string>
     <string name="failed">Failed</string>
+    <string name="remove_bg">Remove background</string>
+    <string name="rb_completed">Remove background completed!</string>
+    <string name="rb_failed">Failed to remove background</string>
 </resources>
