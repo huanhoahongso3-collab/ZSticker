@@ -40,37 +40,38 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
 
-        // --- UNIFIED MATERIAL COLOR & THEME INIT ---
-        // 1. Resolve the desired mode
+        // ---- THEME & DYNAMIC COLOR UNIFICATION ----
+        // We resolve this before super.onCreate to prevent the "restart bug"
         val isFirstRun = prefs.getBoolean("is_first_run", true)
-        val mode = if (isFirstRun) {
+        val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_YES)
+        
+        val modeToApply = if (isFirstRun) {
             prefs.edit()
                 .putInt("theme_mode", AppCompatDelegate.MODE_NIGHT_YES)
                 .putBoolean("is_first_run", false)
                 .apply()
             AppCompatDelegate.MODE_NIGHT_YES
         } else {
-            prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+            savedMode
         }
 
-        // 2. Set Night Mode BEFORE super.onCreate
-        // This ensures the correct resource bucket (values-night or values) is chosen
-        AppCompatDelegate.setDefaultNightMode(mode)
+        // 1. Force the Night Mode delegate immediately
+        AppCompatDelegate.setDefaultNightMode(modeToApply)
 
-        // 3. Apply Dynamic Colors to the Activity context
-        // This injects the Monet/Wallpaper palette into the theme attributes
+        // 2. Apply Dynamic Colors. On Android 12+, this checks the CURRENT Night Mode 
+        // set above and pulls the correct wallpaper palette (Dark vs Light)
         DynamicColors.applyToActivityIfAvailable(this)
 
-        // --- LANGUAGE INIT ---
+        // ---- LANGUAGE ----
         val langCode = prefs.getString("lang", "en") ?: "en"
         setLocale(langCode)
 
-        // --- STANDARD LIFECYCLE ---
+        // ---- ACTIVITY LIFECYCLE ----
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // --- UI RESTORATION ---
+        // ---- UI STATE RESTORATION ----
         val lastTab = prefs.getInt("last_tab", R.id.nav_home)
         binding.bottomNavigation.selectedItemId = lastTab
         updateLayoutVisibility(lastTab)
@@ -148,6 +149,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 .setItems(options) { _, which ->
                     val mode = if (which == 0) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
                     prefs.edit().putInt("theme_mode", mode).apply()
+                    // Re-setting this triggers an automatic activity recreate with our fixed logic
                     AppCompatDelegate.setDefaultNightMode(mode)
                 }.show()
         }
