@@ -38,23 +38,27 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var adapter: StickerAdapter
 
-    // --- 1. THE FOUNDATION: Fixes the Purple Bug on SDK 31 ---
+    // --- 1. THE CACHING & CONFIG ENGINE ---
+    // This runs before the Activity is created to prevent the "Purple Fallback"
     override fun attachBaseContext(newBase: Context) {
         val prefs = newBase.getSharedPreferences("settings", MODE_PRIVATE)
         val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         val langCode = prefs.getString("lang", "en") ?: "en"
 
         val config = Configuration(newBase.resources.configuration)
-        
-        // Force UI Mode
-        val uiMode = when (savedTheme) {
+
+        // Cache/Sync Logic: We determine the intended UI Mode
+        val targetUiMode = when (savedTheme) {
             AppCompatDelegate.MODE_NIGHT_YES -> Configuration.UI_MODE_NIGHT_YES
             AppCompatDelegate.MODE_NIGHT_NO -> Configuration.UI_MODE_NIGHT_NO
             else -> config.uiMode and Configuration.UI_MODE_NIGHT_MASK
         }
-        config.uiMode = uiMode or (config.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv())
+
+        // Force the configuration to match our saved theme preference
+        // This stops SDK 31 from defaulting to Purple when App Theme != System Theme
+        config.uiMode = targetUiMode or (config.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv())
         
-        // Force Locale
+        // Language sync
         val locale = Locale(langCode)
         Locale.setDefault(locale)
         config.setLocale(locale)
@@ -64,14 +68,15 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // --- 2. ENGINE INITIALIZATION ---
+        // --- 2. DYNAMIC COLOR INITIALIZATION ---
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         
-        // Sync the delegate state
+        // Set the delegate so the app "knows" its state
         AppCompatDelegate.setDefaultNightMode(savedTheme)
         
-        // Apply Dynamic Colors (now it sees the forced config from attachBaseContext)
+        // Apply Material You. Because we forced the config in attachBaseContext,
+        // it will now correctly map the wallpaper colors to the current UI Mode.
         DynamicColors.applyToActivityIfAvailable(this)
 
         super.onCreate(savedInstanceState)
@@ -96,17 +101,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         binding.addButton.setOnClickListener { openSystemImagePicker() }
     }
 
-    // --- 4. MODIFIED SET_LOCALE (Safe for Configuration) ---
-    private fun setLocale(langCode: String) {
-        val locale = Locale(langCode)
-        Locale.setDefault(locale)
-        val config = resources.configuration
-        config.setLocale(locale)
-        // updateConfiguration is deprecated but needed for immediate effect in some views
-        @Suppress("DEPRECATION")
-        resources.updateConfiguration(config, resources.displayMetrics)
-    }
-
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         val currentSavedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
@@ -118,12 +112,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
 
         binding.itemTheme.setOnClickListener {
-            val options = arrayOf(
-                getString(R.string.theme_light),
-                getString(R.string.theme_dark),
-                getString(R.string.theme_system)
-            )
-
+            val options = arrayOf(getString(R.string.theme_light), getString(R.string.theme_dark), getString(R.string.theme_system))
             val checkedItem = when (currentSavedMode) {
                 AppCompatDelegate.MODE_NIGHT_NO -> 0
                 AppCompatDelegate.MODE_NIGHT_YES -> 1
@@ -138,11 +127,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         1 -> AppCompatDelegate.MODE_NIGHT_YES
                         else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
                     }
-
                     prefs.edit().putInt("theme_mode", newMode).apply()
                     dialog.dismiss()
                     
-                    // Force the delegate and recreate
+                    // Recreate forces the engine to re-cache and re-apply colors
                     AppCompatDelegate.setDefaultNightMode(newMode)
                     recreate() 
                 }.show()
@@ -164,7 +152,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }.show()
         }
 
-        // App version info
         try {
             val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
@@ -185,7 +172,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         binding.itemExportAll.setOnClickListener { exportAllStickers() }
     }
 
-    // --- REMAINING STICKER LOGIC (NO CHANGES NEEDED) ---
+    // --- STICKER OPERATIONS ---
 
     private fun exportAllStickers() {
         val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
@@ -193,6 +180,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
             return
         }
+
         try {
             val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
             if (!outDir.exists()) outDir.mkdirs()
@@ -222,7 +210,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
                     }
                 }
-            } ?: throw Exception("Stream null")
+            }
         } catch (e: Exception) {
             Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
         }
