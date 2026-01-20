@@ -1,6 +1,7 @@
 package dhp.thl.tpl.ndv
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -37,22 +38,42 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var adapter: StickerAdapter
 
+    // --- 1. THE FOUNDATION: Fixes the Purple Bug on SDK 31 ---
+    override fun attachBaseContext(newBase: Context) {
+        val prefs = newBase.getSharedPreferences("settings", MODE_PRIVATE)
+        val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        val langCode = prefs.getString("lang", "en") ?: "en"
+
+        val config = Configuration(newBase.resources.configuration)
+        
+        // Force UI Mode
+        val uiMode = when (savedTheme) {
+            AppCompatDelegate.MODE_NIGHT_YES -> Configuration.UI_MODE_NIGHT_YES
+            AppCompatDelegate.MODE_NIGHT_NO -> Configuration.UI_MODE_NIGHT_NO
+            else -> config.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        }
+        config.uiMode = uiMode or (config.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv())
+        
+        // Force Locale
+        val locale = Locale(langCode)
+        Locale.setDefault(locale)
+        config.setLocale(locale)
+
+        val context = newBase.createConfigurationContext(config)
+        super.attachBaseContext(context)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        // --- 1. THEME & COLOR ENGINE (CRITICAL ORDER) ---
+        // --- 2. ENGINE INITIALIZATION ---
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         
-        // Step A: Set the Night Mode first
+        // Sync the delegate state
         AppCompatDelegate.setDefaultNightMode(savedTheme)
         
-        // Step B: Apply Dynamic Colors before super.onCreate to patch resources correctly
+        // Apply Dynamic Colors (now it sees the forced config from attachBaseContext)
         DynamicColors.applyToActivityIfAvailable(this)
 
-        // --- 2. LANGUAGE ENGINE ---
-        val langCode = prefs.getString("lang", "en") ?: "en"
-        setLocale(langCode)
-
-        // Step C: Now call super and inflate
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -73,6 +94,17 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
 
         binding.addButton.setOnClickListener { openSystemImagePicker() }
+    }
+
+    // --- 4. MODIFIED SET_LOCALE (Safe for Configuration) ---
+    private fun setLocale(langCode: String) {
+        val locale = Locale(langCode)
+        Locale.setDefault(locale)
+        val config = resources.configuration
+        config.setLocale(locale)
+        // updateConfiguration is deprecated but needed for immediate effect in some views
+        @Suppress("DEPRECATION")
+        resources.updateConfiguration(config, resources.displayMetrics)
     }
 
     private fun setupInfoSection() {
@@ -110,7 +142,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     prefs.edit().putInt("theme_mode", newMode).apply()
                     dialog.dismiss()
                     
-                    // We call recreate() to ensure DynamicColors re-initializes with the new uiMode
+                    // Force the delegate and recreate
                     AppCompatDelegate.setDefaultNightMode(newMode)
                     recreate() 
                 }.show()
@@ -132,6 +164,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }.show()
         }
 
+        // App version info
         try {
             val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
@@ -152,17 +185,17 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         binding.itemExportAll.setOnClickListener { exportAllStickers() }
     }
 
+    // --- REMAINING STICKER LOGIC (NO CHANGES NEEDED) ---
+
     private fun exportAllStickers() {
         val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
         if (stickerFiles.isNullOrEmpty()) {
             Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
             return
         }
-
         try {
             val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
             if (!outDir.exists()) outDir.mkdirs()
-            
             var successCount = 0
             stickerFiles.forEach { src ->
                 val destFile = File(outDir, src.name)
@@ -193,15 +226,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         } catch (e: Exception) {
             Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
         }
-    }
-
-    private fun setLocale(langCode: String) {
-        val locale = Locale(langCode)
-        Locale.setDefault(locale)
-        val config = Configuration(resources.configuration)
-        config.setLocale(locale)
-        @Suppress("DEPRECATION")
-        resources.updateConfiguration(config, resources.displayMetrics)
     }
 
     private fun handleEdgeToEdge() {
