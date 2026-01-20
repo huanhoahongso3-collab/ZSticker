@@ -38,24 +38,38 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var adapter: StickerAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // BUG FIX: DynamicColors must be applied BEFORE super.onCreate 
-        // and ideally before setLocale to ensure the theme context is correct.
+        // 1. Force Dynamic Colors 
         DynamicColors.applyToActivityIfAvailable(this)
 
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         
+        // 2. Persistent Language
         val langCode = prefs.getString("lang", "en") ?: "en"
         setLocale(langCode)
 
-        val savedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
-        if (AppCompatDelegate.getDefaultNightMode() != savedMode) {
-            AppCompatDelegate.setDefaultNightMode(savedMode)
+        // 3. Theme Logic: Force Dark on First Install
+        val isFirstRun = prefs.getBoolean("is_first_run", true)
+        val themeMode: Int = if (isFirstRun) {
+            // First time opening: Force Dark Mode
+            prefs.edit()
+                .putInt("theme_mode", AppCompatDelegate.MODE_NIGHT_YES)
+                .putBoolean("is_first_run", false)
+                .apply()
+            AppCompatDelegate.MODE_NIGHT_YES
+        } else {
+            // Future openings: Respect the saved preference (defaulting to Light if somehow lost)
+            prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_NO)
+        }
+
+        if (AppCompatDelegate.getDefaultNightMode() != themeMode) {
+            AppCompatDelegate.setDefaultNightMode(themeMode)
         }
 
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // 4. State Persistence: Restore the last selected tab
         val lastTab = prefs.getInt("last_tab", R.id.nav_home)
         binding.bottomNavigation.selectedItemId = lastTab
         updateLayoutVisibility(lastTab)
@@ -79,16 +93,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             view.updatePadding(bottom = navInsets.bottom)
             insets
         }
-        
         ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
             val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
             view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                // BUG FIX: Standardized spacing. Ensure the XML layout for addButton 
-                // uses 'layout_gravity="bottom|end"' and 'layout_margin="16dp"'
-                val baseMargin = (16 * resources.displayMetrics.density).toInt()
-                val navHeight = (80 * resources.displayMetrics.density).toInt() // Approx height of Bottom Nav
-                bottomMargin = baseMargin + navHeight + navInsets.bottom
-                rightMargin = baseMargin
+                bottomMargin = (128 * resources.displayMetrics.density).toInt() + navInsets.bottom
             }
             insets
         }
@@ -114,6 +122,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         
+        // Use AppCompatDelegate.getDefaultNightMode() to ensure UI label matches current state
         val currentMode = AppCompatDelegate.getDefaultNightMode()
         binding.txtCurrentTheme.text = if (currentMode == AppCompatDelegate.MODE_NIGHT_YES) 
             getString(R.string.theme_dark) else getString(R.string.theme_light)
@@ -126,6 +135,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     val mode = if (which == 0) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
                     prefs.edit().putInt("theme_mode", mode).apply()
                     AppCompatDelegate.setDefaultNightMode(mode)
+                    // The activity will recreate, updating the text via onCreate logic
                 }.show()
         }
 
@@ -238,7 +248,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         Locale.setDefault(locale)
         val config = Configuration(resources.configuration)
         config.setLocale(locale)
-        // Note: updateConfiguration is deprecated but kept as requested to maintain logic flow
         resources.updateConfiguration(config, resources.displayMetrics)
     }
 
@@ -260,9 +269,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
         binding.recycler.layoutManager = layoutManager
         binding.recycler.adapter = adapter
-        
-        // BUG FIX: Ensure the RecyclerView doesn't clip content behind the nav bar
-        binding.recycler.clipToPadding = false
     }
 
     private fun handleIncomingShare(intent: Intent?) {
