@@ -1,6 +1,8 @@
 # 📦 ZSticker — Share custom sticker to Zalo
 (Currently is a fork of Zaticker)
 
+Support min SDK 26 (Android 8.0). Recommend using SDK 34 (Android 14)
+
 ZSticker is a vibe-driven coding project focused on how Zalo handles sticker share by Intent in Android.
 
 It is inspired by how Zamoji - a VNG app can send sticker to Zalo
@@ -28,8 +30,9 @@ Working features include:
 - Share intents (`ACTION_SEND` / `ACTION_SEND_MULTIPLE`) directly to Zalo
 - Export stickers when needed
 - Import single and multiple images both in the app and share intent
+- New Material Design 3 from Google
 
 ## License
 ZSticker Copyright (c) 2026
 
-Licensed under the GNU General Public License v2.0 (GPL-2.0)
+Licensed under the GNU General Public License v3.0 (GPL-3.0)
