@@ -2,8 +2,10 @@ package dhp.thl.tpl.ndv
 
 import android.os.Bundle
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
 import android.view.View
 import android.view.animation.AlphaAnimation
+import android.view.animation.ScaleAnimation
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
@@ -18,31 +20,55 @@ class EasterEggActivity : AppCompatActivity() {
         private val random = Random()
 
         private val localStickers = intArrayOf(R.drawable.thl, R.drawable.tpl, R.drawable.ndv)
-        private val androidStickers = arrayOf(
-            "😎", "🐱", "🚀", "🌈", "🔥", "💎", "🍦", "🎸", "👾", "🦊",
-            "🍀", "🍄", "⭐", "🌙", "🌍", "🎨", "🎭", "🍕", "🎈", "🍭",
-            "🦄", "🌸", "⚡", "🐳", "🥨", "🥑", "🧿", "🛸", "🧸", "🕹️"
-        )
+
+        // Programmatically generate a huge list of Android system emojis
+        private val allAndroidStickers: List<String> by lazy {
+            val list = mutableListOf<String>()
+            // Ranges for common emojis (Smilies, Food, Activities, etc.)
+            val ranges = listOf(
+                0x1F600..0x1F64F, // Emoticons
+                0x1F680..0x1F6C0, // Transport/Maps
+                0x1F300..0x1F5FF, // Misc Symbols
+                0x1F900..0x1F9FF  // Supplemental Symbols
+            )
+            for (range in ranges) {
+                for (codePoint in range) {
+                    list.add(String(Character.toCodePoints(codePoint)))
+                }
+            }
+            list
+        }
 
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
             binding = ActivityEasterEggBinding.inflate(layoutInflater)
             setContentView(binding.root)
 
-            // Generate the Android 13 style mosaic
-            generateAndroid13Mosaic()
+            generateFullAndroidMosaic()
 
-            // 1-20 Stickers + Random Emoji Toast
             binding.imgLogo.setOnClickListener {
-                val stickerCount = random.nextInt(20) + 1
-                val randomEmoji = androidStickers[random.nextInt(androidStickers.size)]
+                // Vibrate
+                it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
 
-                val displayString = StringBuilder().apply {
-                    repeat(stickerCount) { append("🖼️ ") }
-                    append(randomEmoji)
-                }.toString()
+                // Pop Animation
+                val pop = ScaleAnimation(1f, 1.1f, 1f, 1.1f,
+                                         ScaleAnimation.RELATIVE_TO_SELF, 0.5f,
+                                         ScaleAnimation.RELATIVE_TO_SELF, 0.5f).apply {
+                                             duration = 100
+                                             repeatMode = ScaleAnimation.REVERSE
+                                             repeatCount = 1
+                                         }
+                                         it.startAnimation(pop)
 
-                Toast.makeText(this, displayString, Toast.LENGTH_SHORT).show()
+                                         // Random 1-20 Toast
+                                         val count = random.nextInt(20) + 1
+                                         val randomEmoji = allAndroidStickers[random.nextInt(allAndroidStickers.size)]
+                                         val toastMsg = StringBuilder().apply {
+                                             repeat(count) { append("🖼️ ") }
+                                             append(randomEmoji)
+                                         }.toString()
+
+                                         Toast.makeText(this, toastMsg, Toast.LENGTH_SHORT).show()
             }
 
             binding.imgLogo.setOnLongClickListener {
@@ -51,51 +77,50 @@ class EasterEggActivity : AppCompatActivity() {
             }
         }
 
-        private fun generateAndroid13Mosaic() {
+        private fun generateFullAndroidMosaic() {
             binding.easterRoot.post {
                 val width = binding.easterRoot.width
                 val height = binding.easterRoot.height
+                if (width <= 0 || height <= 0) return@post
 
-                // Spawning 100 items to ensure high density across all screen sizes
-                for (i in 0 until 100) {
-                    // Random size: small (30dp) to very large (180dp)
-                    val sizeBase = random.nextInt(150) + 30
-                    val sizePx = (sizeBase * resources.displayMetrics.density).toInt()
+                    // Increase to 120 items for a dense "Android 13" look
+                    for (i in 0 until 120) {
+                        val sizeBase = random.nextInt(100) + 50
+                        val sizePx = (sizeBase * resources.displayMetrics.density).toInt()
 
-                    val view: View = if (random.nextInt(3) == 0) { // 33% chance for local image
-                        ImageView(this).apply {
-                            setImageResource(localStickers[random.nextInt(localStickers.size)])
-                            scaleType = ImageView.ScaleType.CENTER_CROP
+                        val view: View = if (random.nextInt(5) == 0) { // 20% local images
+                            ImageView(this).apply {
+                                setImageResource(localStickers[random.nextInt(localStickers.size)])
+                                scaleType = ImageView.ScaleType.FIT_CENTER
+                            }
+                        } else { // 80% system emojis
+                            TextView(this).apply {
+                                text = allAndroidStickers[random.nextInt(allAndroidStickers.size)]
+                                textSize = sizeBase.toFloat() / 2.2f
+                                gravity = Gravity.CENTER
+                            }
                         }
-                    } else { // 66% chance for emoji sticker
-                        TextView(this).apply {
-                            text = androidStickers[random.nextInt(androidStickers.size)]
-                            textSize = sizeBase.toFloat() / 2.2f
-                            gravity = Gravity.CENTER
+
+                        val params = FrameLayout.LayoutParams(sizePx, sizePx)
+                        // Expanded bounds to ensure edge-to-edge bleed
+                        params.leftMargin = random.nextInt(width + sizePx) - sizePx
+                        params.topMargin = random.nextInt(height + sizePx) - sizePx
+
+                        view.apply {
+                            layoutParams = params
+                            rotation = random.nextFloat() * 360f
+                            alpha = 0f
                         }
-                    }
 
-                    view.apply {
-                        layoutParams = FrameLayout.LayoutParams(sizePx, sizePx).apply {
-                            // Allow stickers to bleed off screen (Android 13 style)
-                            // By subtracting sizePx from the random bound, we allow negative margins
-                            leftMargin = random.nextInt(width + sizePx) - (sizePx / 1)
-                            topMargin = random.nextInt(height + sizePx) - (sizePx / 1)
+                        binding.easterRoot.addView(view, 0)
+
+                        val fadeIn = AlphaAnimation(0f, 0.3f + random.nextFloat() * 0.5f).apply {
+                            duration = 700
+                            startOffset = random.nextLong(1000)
+                            fillAfter = true
                         }
-                        rotation = random.nextFloat() * 360f
-                        alpha = 0f // Start invisible for fade-in
+                        view.startAnimation(fadeIn)
                     }
-
-                    binding.easterRoot.addView(view, 0)
-
-                    // Smooth fade-in animation
-                    val fadeIn = AlphaAnimation(0f, 0.3f + random.nextFloat() * 0.5f).apply {
-                        duration = 500
-                        startOffset = (random.nextInt(500)).toLong()
-                        fillAfter = true
-                    }
-                    view.startAnimation(fadeIn)
-                }
             }
         }
 }
