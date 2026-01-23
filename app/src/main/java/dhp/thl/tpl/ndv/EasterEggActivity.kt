@@ -1,10 +1,11 @@
 package dhp.thl.tpl.ndv
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
 import android.view.HapticFeedbackConstants
 import android.view.View
-import android.view.ViewTreeObserver
 import android.view.animation.AlphaAnimation
 import android.view.animation.ScaleAnimation
 import android.widget.FrameLayout
@@ -37,32 +38,32 @@ class EasterEggActivity : AppCompatActivity() {
         binding = ActivityEasterEggBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Use GlobalLayoutListener to ensure width/height are fully measured
-        binding.easterRoot.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
-            override fun onGlobalLayout() {
-                binding.easterRoot.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                setupAndroid13Mosaic()
-            }
-        })
+        // Wait for the UI to settle before generating stickers
+        Handler(Looper.getMainLooper()).postDelayed({
+            generateMosaic()
+        }, 300)
 
         binding.imgLogo.setOnClickListener {
             it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-            val pop = ScaleAnimation(1f, 1.1f, 1f, 1.1f, 
+            
+            // Pop animation for the logo
+            val pop = ScaleAnimation(1f, 1.15f, 1f, 1.15f, 
                 ScaleAnimation.RELATIVE_TO_SELF, 0.5f, 
                 ScaleAnimation.RELATIVE_TO_SELF, 0.5f).apply {
-                duration = 100
+                duration = 150
                 repeatMode = ScaleAnimation.REVERSE
                 repeatCount = 1
             }
             it.startAnimation(pop)
 
+            // Random Toast with 1-20 unique stickers
             val count = random.nextInt(20) + 1
             val toastMsg = StringBuilder().apply {
                 repeat(count) {
                     append(allAndroidStickers[random.nextInt(allAndroidStickers.size)]).append(" ")
                 }
             }.toString()
-            Toast.makeText(this@EasterEggActivity, toastMsg, Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, toastMsg, Toast.LENGTH_SHORT).show()
         }
 
         binding.imgLogo.setOnLongClickListener {
@@ -71,20 +72,22 @@ class EasterEggActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupAndroid13Mosaic() {
-        val width = binding.easterRoot.width
-        val height = binding.easterRoot.height
+    private fun generateMosaic() {
+        val root = binding.easterRoot
+        val screenWidth = root.width
+        val screenHeight = root.height
 
-        if (width <= 0 || height <= 0) return
+        // If screen hasn't measured yet, don't proceed
+        if (screenWidth <= 0 || screenHeight <= 0) return
 
-        for (i in 0 until 120) {
-            val sizeBase = random.nextInt(100) + 60 
+        for (i in 0 until 100) {
+            val sizeBase = random.nextInt(80) + 60 // Size between 60-140dp
             val sizePx = (sizeBase * resources.displayMetrics.density).toInt()
             
             val view: View = if (random.nextInt(4) == 0) { 
                 ImageView(this).apply {
                     setImageResource(localStickers[random.nextInt(localStickers.size)])
-                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    scaleType = ImageView.ScaleType.CENTER_INSIDE
                 }
             } else { 
                 TextView(this).apply {
@@ -94,10 +97,11 @@ class EasterEggActivity : AppCompatActivity() {
                 }
             }
 
+            // Android 13 Style: Allow center of sticker to be anywhere on screen
+            // This ensures they bleed off the edges correctly
             val params = FrameLayout.LayoutParams(sizePx, sizePx)
-            // Ensure they scatter across the ENTIRE screen area
-            params.leftMargin = random.nextInt(width + (sizePx / 2)) - (sizePx / 2)
-            params.topMargin = random.nextInt(height + (sizePx / 2)) - (sizePx / 2)
+            params.leftMargin = random.nextInt(screenWidth) - (sizePx / 2)
+            params.topMargin = random.nextInt(screenHeight) - (sizePx / 2)
 
             view.apply {
                 layoutParams = params
@@ -105,17 +109,19 @@ class EasterEggActivity : AppCompatActivity() {
                 alpha = 0f
             }
             
-            binding.easterRoot.addView(view)
+            // Add stickers at the bottom of the view stack
+            root.addView(view, 0)
             
+            // Subtle fade-in
             val fadeIn = AlphaAnimation(0f, 0.4f + random.nextFloat() * 0.4f).apply {
-                duration = 1000
-                startOffset = random.nextInt(1500).toLong()
+                duration = 800
+                startOffset = random.nextInt(1000).toLong()
                 fillAfter = true
             }
             view.startAnimation(fadeIn)
         }
         
-        // IMPORTANT: Keep the logo on top of the stickers
+        // Force the logo to stay on top just in case
         binding.imgLogo.bringToFront()
     }
 }
