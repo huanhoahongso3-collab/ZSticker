@@ -30,47 +30,31 @@ class EasterEggActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         rootLayout = FrameLayout(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
+            layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         }
         setContentView(rootLayout)
-
         initEmojiPool()
         setupLogo()
-
-        rootLayout.post {
-            spawnDenseMosaic()
-            imgLogo.bringToFront()
-        }
+        rootLayout.post { spawnDenseMosaic(); imgLogo.bringToFront() }
     }
 
     private fun setupLogo() {
         imgLogo = ImageView(this)
         val size = (126 * resources.displayMetrics.density).toInt()
         imgLogo.layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
-        
         imgLogo.outlineProvider = object : ViewOutlineProvider() {
-            override fun getOutline(view: View, outline: Outline) {
-                outline.setOval(0, 0, view.width, view.height)
-            }
+            override fun getOutline(view: View, outline: Outline) { outline.setOval(0, 0, view.width, view.height) }
         }
         imgLogo.clipToOutline = true
         imgLogo.scaleType = ImageView.ScaleType.CENTER_CROP
         imgLogo.setImageResource(R.drawable.ic_launcher_foreground)
-        
-        imgLogo.background = GradientDrawable().apply {
-            shape = GradientDrawable.OVAL
-            setColor(Color.WHITE)
-        }
+        imgLogo.background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Color.WHITE) }
         imgLogo.elevation = 100f
-
         imgLogo.setOnClickListener { v ->
             if (!isToastActive) {
                 isToastActive = true
                 v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                reshuffleMosaic() // Note: Scale is NOT reset here now
+                reshuffleMosaic()
                 showRandomEmojiToast()
                 Handler(Looper.getMainLooper()).postDelayed({ isToastActive = false }, 2000)
             }
@@ -82,19 +66,16 @@ class EasterEggActivity : AppCompatActivity() {
         val width = rootLayout.width
         val height = rootLayout.height
         val density = resources.displayMetrics.density
-
         repeat(150) {
             val sticker = ImageView(this)
             val sizePx = ((random.nextInt(60) + 70) * density).toInt()
             sticker.setImageResource(stickerRes[random.nextInt(stickerRes.size)])
             sticker.layoutParams = FrameLayout.LayoutParams(sizePx, sizePx)
-            
             sticker.translationX = random.nextInt(width).toFloat() - (sizePx / 2f)
             sticker.translationY = random.nextInt(height).toFloat() - (sizePx / 2f)
             sticker.rotation = random.nextFloat() * 360f
             sticker.alpha = 0.7f
-
-            setupTransformations(sticker)
+            setupTransformEngine(sticker)
             rootLayout.addView(sticker)
             mosaicStickers.add(sticker)
         }
@@ -106,7 +87,7 @@ class EasterEggActivity : AppCompatActivity() {
                 .translationX(random.nextInt(rootLayout.width).toFloat() - (v.width / 2f))
                 .translationY(random.nextInt(rootLayout.height).toFloat() - (v.height / 2f))
                 .rotation(random.nextFloat() * 360f)
-                // v.scale is NOT changed here, so it persists
+                // Note: .scaleX/Y are NOT modified here to persist zoom
                 .setDuration(700)
                 .setInterpolator(OvershootInterpolator())
                 .start()
@@ -114,99 +95,98 @@ class EasterEggActivity : AppCompatActivity() {
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun setupTransformations(view: View) {
-        var dX = 0f
-        var dY = 0f
-        var lastAngle = 0f
-        var lastDist = 0f
+    private fun setupTransformEngine(view: View) {
+        var lastX = 0f
+        var lastY = 0f
+        var lastRotation = 0f
+        var lastDistance = 0f
 
         view.setOnTouchListener { v, event ->
+            // Use parent-relative coordinates to prevent rotation-induced jitter
+            val parentX = event.rawX
+            val parentY = event.rawY
+
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     v.bringToFront()
                     imgLogo.bringToFront()
-                    // Capture initial offset for dragging
-                    dX = v.x - event.rawX
-                    dY = v.y - event.rawY
+                    lastX = parentX
+                    lastY = parentY
                     v.alpha = 1.0f
                 }
 
                 MotionEvent.ACTION_POINTER_DOWN -> {
                     if (event.pointerCount == 2) {
-                        // Initialize rotation and scale trackers
-                        lastAngle = calculateAngle(event)
-                        lastDist = calculateDist(event)
+                        lastDistance = getDistance(event)
+                        lastRotation = getAngle(event)
                     }
                 }
 
                 MotionEvent.ACTION_MOVE -> {
-                    if (event.pointerCount == 1) {
-                        // Standard Drag
-                        v.x = event.rawX + dX
-                        v.y = event.rawY + dY
-                    } else if (event.pointerCount == 2) {
-                        // Handle Zoom (Scale)
-                        val currentDist = calculateDist(event)
-                        if (lastDist > 0) {
-                            val ratio = currentDist / lastDist
-                            v.scaleX *= ratio
-                            v.scaleY *= ratio
-                            // Constraints
-                            v.scaleX = v.scaleX.coerceIn(0.3f, 8.0f)
-                            v.scaleY = v.scaleY.coerceIn(0.3f, 8.0f)
-                        }
-                        lastDist = currentDist
+                    // 1. DRAG (Works for 1 or 2 fingers)
+                    val deltaX = parentX - lastX
+                    val deltaY = parentY - lastY
+                    v.translationX += deltaX
+                    v.translationY += deltaY
+                    lastX = parentX
+                    lastY = parentY
 
-                        // Handle Rotation
-                        val currentAngle = calculateAngle(event)
-                        val deltaAngle = currentAngle - lastAngle
-                        // Multiply by 2.0f for that "larger" rotation feel
-                        v.rotation += (deltaAngle * 2.0f)
-                        lastAngle = currentAngle
+                    // 2. ZOOM & ROTATE (2 fingers only)
+                    if (event.pointerCount == 2) {
+                        // Zoom
+                        val currentDist = getDistance(event)
+                        if (lastDistance > 10f) {
+                            val scaleFactor = currentDist / lastDistance
+                            v.scaleX *= scaleFactor
+                            v.scaleY *= scaleFactor
+                            v.scaleX = v.scaleX.coerceIn(0.4f, 7.0f)
+                            v.scaleY = v.scaleY.coerceIn(0.4f, 7.0f)
+                        }
+                        lastDistance = currentDist
+
+                        // Rotate (Amplify for "Larger" feel)
+                        val currentAngle = getAngle(event)
+                        val deltaAngle = currentAngle - lastRotation
+                        v.rotation += (deltaAngle * 1.8f) 
+                        lastRotation = currentAngle
                     }
                 }
 
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     v.alpha = 0.7f
                 }
-                
+
                 MotionEvent.ACTION_POINTER_UP -> {
-                    // Reset trackers to prevent jumping when one finger leaves
-                    if (event.pointerCount > 1) {
-                        val remainingIdx = if (event.actionIndex == 0) 1 else 0
-                        dX = v.x - event.getRawX(remainingIdx)
-                        dY = v.y - event.getRawY(remainingIdx)
-                    }
+                    // When lifting a finger, reset drag anchors to the remaining finger
+                    val remainingIdx = if (event.actionIndex == 0) 1 else 0
+                    lastX = event.getRawX(remainingIdx)
+                    lastY = event.getRawY(remainingIdx)
                 }
             }
             true
         }
     }
 
-    private fun calculateAngle(event: MotionEvent): Float {
-        val x = (event.getX(0) - event.getX(1)).toDouble()
-        val y = (event.getY(0) - event.getY(1)).toDouble()
-        return Math.toDegrees(atan2(y, x)).toFloat()
+    private fun getDistance(e: MotionEvent): Float {
+        val x = e.getX(0) - e.getX(1)
+        val y = e.getY(0) - e.getY(1)
+        return hypot(x, y)
     }
 
-    private fun calculateDist(event: MotionEvent): Float {
-        val x = event.getX(0) - event.getX(1)
-        val y = event.getY(0) - event.getY(1)
-        return hypot(x, y)
+    private fun getAngle(e: MotionEvent): Float {
+        val deltaX = (e.getX(0) - e.getX(1)).toDouble()
+        val deltaY = (e.getY(0) - e.getY(1)).toDouble()
+        return Math.toDegrees(atan2(deltaY, deltaX)).toFloat()
     }
 
     private fun showRandomEmojiToast() {
         val sb = StringBuilder()
-        repeat(random.nextInt(10) + 5) {
-            sb.append(emojiPool[random.nextInt(emojiPool.size)]).append(" ")
-        }
+        repeat(random.nextInt(10) + 5) { sb.append(emojiPool[random.nextInt(emojiPool.size)]).append(" ") }
         Toast.makeText(this, sb.toString().trim(), Toast.LENGTH_SHORT).show()
     }
 
     private fun initEmojiPool() {
         val ranges = arrayOf(0x1F600..0x1F64F, 0x1F400..0x1F4FF, 0x1F300..0x1F3FF, 0x1F680..0x1F6FF)
-        for (range in ranges) {
-            for (i in range) emojiPool.add(String(Character.toChars(i)))
-        }
+        for (range in ranges) { for (i in range) emojiPool.add(String(Character.toChars(i))) }
     }
 }
