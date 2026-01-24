@@ -24,4 +24,8 @@
     <string name="zalo_share_failed">Zalo not found or share failed</string>
     <string name="success">Successful</string>
     <string name="failed">Failed</string>
+
+    <string name="dynamic_color_warning_title">Dynamic Color Notice</string>
+    <string name="dynamic_color_warning_message">Changing to a theme that differs from your system settings may disable Material You dynamic colors on some Android 12+ devices.</string>
+    <string name="ok">OK</string>
 </resources>

@@ -1,8 +1,9 @@
- package dhp.thl.tpl.ndv
+package dhp.thl.tpl.ndv
 
 import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Typeface
@@ -10,7 +11,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.provider.MediaStore
 import android.text.SpannableString
 import android.text.style.StyleSpan
 import android.view.View
@@ -39,24 +39,24 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var adapter: StickerAdapter
 
+    private var versionClickCount = 0
+    private var lastClickTime: Long = 0
+
     override fun attachBaseContext(newBase: Context) {
         val prefs = newBase.getSharedPreferences("settings", MODE_PRIVATE)
-        val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-        val langCode = prefs.getString("lang", "en") ?: "en"
+        val langCode = prefs.getString("lang", "system") ?: "system"
 
         val config = Configuration(newBase.resources.configuration)
-
-        val targetUiMode = when (savedTheme) {
-            AppCompatDelegate.MODE_NIGHT_YES -> Configuration.UI_MODE_NIGHT_YES
-            AppCompatDelegate.MODE_NIGHT_NO -> Configuration.UI_MODE_NIGHT_NO
-            else -> config.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        }
-
-        config.uiMode = targetUiMode or (config.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv())
         
-        val locale = Locale(langCode)
-        Locale.setDefault(locale)
-        config.setLocale(locale)
+        if (langCode != "system") {
+            val locale = Locale(langCode)
+            Locale.setDefault(locale)
+            config.setLocale(locale)
+        } else {
+            // Revert to system default locale
+            val systemLocale = Configuration(newBase.resources.configuration).locales[0]
+            config.setLocale(systemLocale)
+        }
 
         val context = newBase.createConfigurationContext(config)
         super.attachBaseContext(context)
@@ -65,7 +65,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-        
+
+        // Initialize Theme and Dynamic Colors
         AppCompatDelegate.setDefaultNightMode(savedTheme)
         DynamicColors.applyToActivityIfAvailable(this)
 
@@ -80,56 +81,136 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         setupNavigation()
         setupStickerList()
         setupInfoSection()
-        handleIncomingShare(intent) // This handles single and multiple shares
+        handleIncomingShare(intent)
         handleEdgeToEdge()
 
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
             requestLegacyPermissions()
         }
 
-        binding.addButton.setOnClickListener { 
+        binding.addButton.setOnClickListener {
             pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
     }
 
     private fun setupInfoSection() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
-        val currentSavedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         
-        binding.txtCurrentTheme.text = when (currentSavedMode) {
-            AppCompatDelegate.MODE_NIGHT_NO -> getString(R.string.theme_light)
-            AppCompatDelegate.MODE_NIGHT_YES -> getString(R.string.theme_dark)
+        // --- THEME SELECTOR ---
+        updateThemeText(prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM))
+        binding.itemTheme.setOnClickListener {
+            val themes = arrayOf(
+                getString(R.string.theme_light), 
+                getString(R.string.theme_dark), 
+                getString(R.string.theme_system)
+            )
+            val currentMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+            val checkedItem = when (currentMode) {
+                AppCompatDelegate.MODE_NIGHT_NO -> 0
+                AppCompatDelegate.MODE_NIGHT_YES -> 1
+                else -> 2
+            }
+
+            MaterialAlertDialogBuilder(this)
+                .setTitle(getString(R.string.info_theme_title))
+                .setSingleChoiceItems(themes, checkedItem) { dialog, which ->
+                    val newMode = when (which) {
+                        0 -> AppCompatDelegate.MODE_NIGHT_NO
+                        1 -> AppCompatDelegate.MODE_NIGHT_YES
+                        else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                    }
+                    handleThemeSelection(prefs, newMode)
+                    dialog.dismiss()
+                }.show()
+        }
+
+        // --- LANGUAGE SELECTOR ---
+        val currentLang = prefs.getString("lang", "system") ?: "system"
+        binding.txtCurrentLanguage.text = when (currentLang) {
+            "en" -> "English"
+            "vi" -> "Tiếng Việt"
             else -> getString(R.string.theme_system)
         }
 
-        // --- THEME OPTION DISABLED ---
-        binding.itemTheme.setOnClickListener { }
-
-        val currentLang = prefs.getString("lang", "en") ?: "en"
-        binding.txtCurrentLanguage.text = if (currentLang == "vi") "Tiếng Việt" else "English"
-
         binding.itemLanguage.setOnClickListener {
-            val langs = arrayOf("English", "Tiếng Việt")
+            val langs = arrayOf("English", "Tiếng Việt", getString(R.string.theme_system))
+            val checkedLang = when (currentLang) {
+                "en" -> 0
+                "vi" -> 1
+                else -> 2
+            }
+
             MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.info_language_title))
-                .setItems(langs) { _, which ->
-                    val langCode = if (which == 0) "en" else "vi"
+                .setSingleChoiceItems(langs, checkedLang) { dialog, which ->
+                    val langCode = when (which) {
+                        0 -> "en"
+                        1 -> "vi"
+                        else -> "system"
+                    }
                     if (currentLang != langCode) {
                         prefs.edit().putString("lang", langCode).apply()
                         recreate()
                     }
+                    dialog.dismiss()
                 }.show()
         }
 
+        // --- VERSION & LINKS ---
+        setupSecondaryInfo()
+    }
+
+    private fun handleThemeSelection(prefs: SharedPreferences, newMode: Int) {
+        val systemNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        val isDifferentFromSystem = (newMode == AppCompatDelegate.MODE_NIGHT_YES && systemNightMode != Configuration.UI_MODE_NIGHT_YES) || 
+                                    (newMode == AppCompatDelegate.MODE_NIGHT_NO && systemNightMode != Configuration.UI_MODE_NIGHT_NO)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && isDifferentFromSystem && newMode != AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM) {
+            MaterialAlertDialogBuilder(this)
+                .setTitle(getString(R.string.dynamic_color_warning_title))
+                .setMessage(getString(R.string.dynamic_color_warning_message))
+                .setPositiveButton(getString(R.string.ok)) { _, _ -> applyAndSaveTheme(prefs, newMode) }
+                .setNegativeButton(getString(R.string.cancel), null)
+                .show()
+        } else {
+            applyAndSaveTheme(prefs, newMode)
+        }
+    }
+
+    private fun applyAndSaveTheme(prefs: SharedPreferences, mode: Int) {
+        prefs.edit().putInt("theme_mode", mode).apply()
+        AppCompatDelegate.setDefaultNightMode(mode)
+        updateThemeText(mode)
+    }
+
+    private fun updateThemeText(mode: Int) {
+        binding.txtCurrentTheme.text = when (mode) {
+            AppCompatDelegate.MODE_NIGHT_NO -> getString(R.string.theme_light)
+            AppCompatDelegate.MODE_NIGHT_YES -> getString(R.string.theme_dark)
+            else -> getString(R.string.theme_system)
+        }
+    }
+
+    private fun setupSecondaryInfo() {
         try {
             val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
             } else {
-                packageManager.getPackageInfo(packageName, 0)
+                @Suppress("DEPRECATION") packageManager.getPackageInfo(packageName, 0)
             }
             binding.txtVersion.text = pInfo.versionName
         } catch (e: Exception) {
             binding.txtVersion.text = "1.0.0"
+        }
+
+        binding.itemVersion.setOnClickListener {
+            val now = System.currentTimeMillis()
+            versionClickCount = if (now - lastClickTime < 500) versionClickCount + 1 else 1
+            lastClickTime = now
+            if (versionClickCount >= 5) {
+                versionClickCount = 0
+                startActivity(Intent(this, EasterEggActivity::class.java))
+            }
         }
 
         binding.itemRepo.setOnClickListener {
@@ -149,7 +230,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
             return
         }
-
         try {
             val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
             if (!outDir.exists()) outDir.mkdirs()
@@ -157,9 +237,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             stickerFiles.forEach { src ->
                 val destFile = File(outDir, src.name)
                 src.inputStream().use { input ->
-                    destFile.outputStream().use { output ->
-                        if (input.copyTo(output) > 0) successCount++
-                    }
+                    destFile.outputStream().use { output -> if (input.copyTo(output) > 0) successCount++ }
                 }
             }
             Toast.makeText(this, if (successCount > 0) getString(R.string.success) else getString(R.string.failed), Toast.LENGTH_SHORT).show()
@@ -172,12 +250,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         try {
             contentResolver.openInputStream(src)?.use { input ->
                 val file = File(filesDir, "zsticker_${System.currentTimeMillis()}.png")
-                FileOutputStream(file).use { out -> 
-                    if (input.copyTo(out) > 0) {
-                        adapter.refreshData(this)
-                    } else {
-                        Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
-                    }
+                FileOutputStream(file).use { out ->
+                    if (input.copyTo(out) > 0) adapter.refreshData(this)
+                    else Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
                 }
             }
         } catch (e: Exception) {
@@ -185,10 +260,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
     }
 
-    // --- FIXED INCOMING SHARE HANDLER ---
     private fun handleIncomingShare(intent: Intent?) {
         if (intent == null) return
-        
         when (intent.action) {
             Intent.ACTION_SEND -> {
                 if (intent.type?.startsWith("image/") == true) {
@@ -307,9 +380,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     }
 
     private val pickImages = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
-        if (uris.isNotEmpty()) {
-            uris.forEach { importToApp(it) }
-        }
+        if (uris.isNotEmpty()) uris.forEach { importToApp(it) }
     }
 
     private fun requestLegacyPermissions() {

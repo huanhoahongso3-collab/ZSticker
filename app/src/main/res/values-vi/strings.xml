@@ -24,4 +24,8 @@
     <string name="zalo_share_failed">Không tìm thấy Zalo hoặc chia sẻ thất bại</string>
     <string name="success">Thành công</string>
     <string name="failed">Thất bại</string>
+
+    <string name="dynamic_color_warning_title">Lưu ý về màu sắc hệ thống</string>
+    <string name="dynamic_color_warning_message">Việc thay đổi giao diện khác với cài đặt hệ thống có thể làm mất hiệu ứng màu Material You (màu sắc động) trên một số thiết bị Android 12+.</string>
+    <string name="ok">Đã hiểu</string>
 </resources>
