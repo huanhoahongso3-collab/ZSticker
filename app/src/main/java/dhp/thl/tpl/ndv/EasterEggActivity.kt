@@ -15,6 +15,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import java.util.*
 import kotlin.math.atan2
+import kotlin.math.hypot
 
 class EasterEggActivity : AppCompatActivity() {
 
@@ -50,7 +51,6 @@ class EasterEggActivity : AppCompatActivity() {
                 val size = (126 * resources.displayMetrics.density).toInt()
                 imgLogo.layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
 
-                // Fix for Circle: Use OutlineProvider
                 imgLogo.outlineProvider = object : ViewOutlineProvider() {
                     override fun getOutline(view: View, outline: Outline) {
                         outline.setOval(0, 0, view.width, view.height)
@@ -60,12 +60,10 @@ class EasterEggActivity : AppCompatActivity() {
                 imgLogo.scaleType = ImageView.ScaleType.CENTER_CROP
                 imgLogo.setImageResource(R.drawable.ic_launcher_foreground)
 
-                // White Background
-                val shape = GradientDrawable().apply {
+                imgLogo.background = GradientDrawable().apply {
                     shape = GradientDrawable.OVAL
                     setColor(Color.WHITE)
                 }
-                imgLogo.background = shape
                 imgLogo.elevation = 100f
 
                 imgLogo.setOnClickListener { v ->
@@ -96,7 +94,7 @@ class EasterEggActivity : AppCompatActivity() {
                     sticker.rotation = random.nextFloat() * 360f
                     sticker.alpha = 0.7f
 
-                    setupDraggableAndRotatable(sticker)
+                    setupMultiTouch(sticker)
                     rootLayout.addView(sticker)
                     mosaicStickers.add(sticker)
                 }
@@ -108,6 +106,8 @@ class EasterEggActivity : AppCompatActivity() {
                     .translationX(random.nextInt(rootLayout.width).toFloat() - (v.width / 2f))
                     .translationY(random.nextInt(rootLayout.height).toFloat() - (v.height / 2f))
                     .rotation(random.nextFloat() * 360f)
+                    .scaleX(1.0f) // Reset zoom on shuffle
+                    .scaleY(1.0f)
                     .setDuration(700)
                     .setInterpolator(OvershootInterpolator())
                     .start()
@@ -115,17 +115,23 @@ class EasterEggActivity : AppCompatActivity() {
             }
 
             @SuppressLint("ClickableViewAccessibility")
-            private fun setupDraggableAndRotatable(view: View) {
+            private fun setupMultiTouch(view: View) {
                 view.setOnTouchListener(object : View.OnTouchListener {
                     private var dX = 0f
                     private var dY = 0f
+
                     private var initialRotation = 0f
                     private var initialFingerAngle = 0f
+
+                    private var initialScale = 1f
+                    private var initialFingerDist = 1f
+
+                    // Adjust this to make rotation "larger" or "faster"
+                    private val rotationSensitivity = 1.5f
 
                     override fun onTouch(v: View, event: MotionEvent): Boolean {
                         when (event.actionMasked) {
                             MotionEvent.ACTION_DOWN -> {
-                                v.animate().scaleX(1.4f).scaleY(1.4f).alpha(1f).setDuration(150).start()
                                 v.bringToFront()
                                 imgLogo.bringToFront()
 
@@ -136,27 +142,41 @@ class EasterEggActivity : AppCompatActivity() {
 
                             MotionEvent.ACTION_POINTER_DOWN -> {
                                 if (event.pointerCount == 2) {
+                                    // Prepare Rotation
                                     initialFingerAngle = calculateAngle(event)
                                     initialRotation = v.rotation
+
+                                    // Prepare Zoom
+                                    initialFingerDist = calculateDist(event)
+                                    initialScale = v.scaleX
                                 }
                                 return true
                             }
 
                             MotionEvent.ACTION_MOVE -> {
-                                // Translation (Drag)
+                                // Translation (Drag) - Only if one finger or dragging middle
                                 v.x = event.rawX + dX
                                 v.y = event.rawY + dY
 
-                                // Rotation
                                 if (event.pointerCount == 2) {
+                                    // Handle Zoom (Scale)
+                                    val currentDist = calculateDist(event)
+                                    val scaleFactor = currentDist / initialFingerDist
+                                    val newScale = (initialScale * scaleFactor).coerceIn(0.5f, 5.0f)
+                                    v.scaleX = newScale
+                                    v.scaleY = newScale
+
+                                    // Handle Rotation (Amplify by sensitivity)
                                     val currentAngle = calculateAngle(event)
-                                    v.rotation = initialRotation + (currentAngle - initialFingerAngle)
+                                    val angleDiff = currentAngle - initialFingerAngle
+                                    v.rotation = initialRotation + (angleDiff * rotationSensitivity)
                                 }
                                 return true
                             }
 
                             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                                v.animate().scaleX(1.0f).scaleY(1.0f).alpha(0.7f).setDuration(150).start()
+                                // Optional: pulse effect when released
+                                v.alpha = 0.7f
                                 return true
                             }
                         }
@@ -166,8 +186,13 @@ class EasterEggActivity : AppCompatActivity() {
                     private fun calculateAngle(event: MotionEvent): Float {
                         val deltaX = (event.getX(0) - event.getX(1)).toDouble()
                         val deltaY = (event.getY(0) - event.getY(1)).toDouble()
-                        val radians = atan2(deltaY, deltaX)
-                        return Math.toDegrees(radians).toFloat()
+                        return Math.toDegrees(atan2(deltaY, deltaX)).toFloat()
+                    }
+
+                    private fun calculateDist(event: MotionEvent): Float {
+                        val x = event.getX(0) - event.getX(1)
+                        val y = event.getY(0) - event.getY(1)
+                        return hypot(x, y)
                     }
                 })
             }
