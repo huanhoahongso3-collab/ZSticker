@@ -2,6 +2,7 @@ package dhp.thl.tpl.ndv
 
 import android.annotation.SuppressLint
 import android.graphics.Color
+import android.graphics.Outline
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
@@ -48,15 +49,23 @@ class EasterEggActivity : AppCompatActivity() {
                 imgLogo = ImageView(this)
                 val size = (126 * resources.displayMetrics.density).toInt()
                 imgLogo.layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
+
+                // Fix for Circle: Use OutlineProvider
+                imgLogo.outlineProvider = object : ViewOutlineProvider() {
+                    override fun getOutline(view: View, outline: Outline) {
+                        outline.setOval(0, 0, view.width, view.height)
+                    }
+                }
+                imgLogo.clipToOutline = true
                 imgLogo.scaleType = ImageView.ScaleType.CENTER_CROP
                 imgLogo.setImageResource(R.drawable.ic_launcher_foreground)
 
-                imgLogo.background = GradientDrawable().apply {
+                // White Background
+                val shape = GradientDrawable().apply {
                     shape = GradientDrawable.OVAL
                     setColor(Color.WHITE)
-                    setStroke((2 * resources.displayMetrics.density).toInt(), Color.parseColor("#EEEEEE"))
                 }
-                imgLogo.clipToOutline = true
+                imgLogo.background = shape
                 imgLogo.elevation = 100f
 
                 imgLogo.setOnClickListener { v ->
@@ -110,8 +119,8 @@ class EasterEggActivity : AppCompatActivity() {
                 view.setOnTouchListener(object : View.OnTouchListener {
                     private var dX = 0f
                     private var dY = 0f
-                    private var lastRotation = 0f
-                    private var angleOffset = 0f
+                    private var initialRotation = 0f
+                    private var initialFingerAngle = 0f
 
                     override fun onTouch(v: View, event: MotionEvent): Boolean {
                         when (event.actionMasked) {
@@ -124,34 +133,41 @@ class EasterEggActivity : AppCompatActivity() {
                                 dY = v.y - event.rawY
                                 return true
                             }
-                            MotionEvent.ACTION_POINTER_DOWN -> {
-                                // Calculate initial angle between two fingers
-                                val x = event.getX(0) - event.getX(1)
-                                val y = event.getY(0) - event.getY(1)
-                                angleOffset = Math.toDegrees(atan2(y.toDouble(), x.toDouble())).toFloat()
-                                lastRotation = v.rotation
-                                return true
-                            }
-                            MotionEvent.ACTION_MOVE -> {
-                                // Handle Drag
-                                v.x = event.rawX + dX
-                                v.y = event.rawY + dY
 
-                                // Handle Rotation if two fingers are present
+                            MotionEvent.ACTION_POINTER_DOWN -> {
                                 if (event.pointerCount == 2) {
-                                    val x = event.getX(0) - event.getX(1)
-                                    val y = event.getY(0) - event.getY(1)
-                                    val currentAngle = Math.toDegrees(atan2(y.toDouble(), x.toDouble())).toFloat()
-                                    v.rotation = lastRotation + (currentAngle - angleOffset)
+                                    initialFingerAngle = calculateAngle(event)
+                                    initialRotation = v.rotation
                                 }
                                 return true
                             }
-                            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
+
+                            MotionEvent.ACTION_MOVE -> {
+                                // Translation (Drag)
+                                v.x = event.rawX + dX
+                                v.y = event.rawY + dY
+
+                                // Rotation
+                                if (event.pointerCount == 2) {
+                                    val currentAngle = calculateAngle(event)
+                                    v.rotation = initialRotation + (currentAngle - initialFingerAngle)
+                                }
+                                return true
+                            }
+
+                            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                                 v.animate().scaleX(1.0f).scaleY(1.0f).alpha(0.7f).setDuration(150).start()
                                 return true
                             }
                         }
                         return false
+                    }
+
+                    private fun calculateAngle(event: MotionEvent): Float {
+                        val deltaX = (event.getX(0) - event.getX(1)).toDouble()
+                        val deltaY = (event.getY(0) - event.getY(1)).toDouble()
+                        val radians = atan2(deltaY, deltaX)
+                        return Math.toDegrees(radians).toFloat()
                     }
                 })
             }
