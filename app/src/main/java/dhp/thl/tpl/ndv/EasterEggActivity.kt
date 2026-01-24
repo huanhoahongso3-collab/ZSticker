@@ -14,12 +14,16 @@ import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import java.util.*
+import kotlin.math.atan2
 import kotlin.math.hypot
 
 class EasterEggActivity : AppCompatActivity() {
 
     private lateinit var rootLayout: FrameLayout
     private lateinit var imgLogo: ImageView
+    private var rotateHandle: ImageView? = null
+    private var activeSticker: View? = null
+    
     private val random = Random()
     private val mosaicStickers = mutableListOf<View>()
     private val stickerRes = intArrayOf(R.drawable.thl, R.drawable.tpl, R.drawable.ndv)
@@ -29,15 +33,13 @@ class EasterEggActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         rootLayout = FrameLayout(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, 
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
+            layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         }
         setContentView(rootLayout)
 
         initEmojiPool()
         setupLogo()
+        setupRotateHandle()
 
         rootLayout.post {
             spawnDenseMosaic()
@@ -49,21 +51,13 @@ class EasterEggActivity : AppCompatActivity() {
         imgLogo = ImageView(this)
         val size = (126 * resources.displayMetrics.density).toInt()
         imgLogo.layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
-        
-        // Strict circular clipping
         imgLogo.outlineProvider = object : ViewOutlineProvider() {
-            override fun getOutline(view: View, outline: Outline) {
-                outline.setOval(0, 0, view.width, view.height)
-            }
+            override fun getOutline(view: View, outline: Outline) { outline.setOval(0, 0, view.width, view.height) }
         }
         imgLogo.clipToOutline = true
         imgLogo.scaleType = ImageView.ScaleType.CENTER_CROP
         imgLogo.setImageResource(R.drawable.ic_launcher_foreground)
-        
-        imgLogo.background = GradientDrawable().apply {
-            shape = GradientDrawable.OVAL
-            setColor(Color.WHITE)
-        }
+        imgLogo.background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Color.WHITE) }
         imgLogo.elevation = 100f
 
         imgLogo.setOnClickListener { v ->
@@ -78,36 +72,50 @@ class EasterEggActivity : AppCompatActivity() {
         rootLayout.addView(imgLogo)
     }
 
+    private fun setupRotateHandle() {
+        val size = (40 * resources.displayMetrics.density).toInt()
+        rotateHandle = ImageView(this).apply {
+            layoutParams = FrameLayout.LayoutParams(size, size)
+            // Replace with a rotation icon if you have one, or use a simple colored circle
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.WHITE)
+                setStroke(2, Color.BLACK)
+            }
+            setImageResource(android.R.drawable.ic_menu_rotate)
+            elevation = 110f
+            visibility = View.GONE
+        }
+        rootLayout.addView(rotateHandle)
+    }
+
     private fun spawnDenseMosaic() {
         val width = rootLayout.width
         val height = rootLayout.height
         val density = resources.displayMetrics.density
-
         repeat(150) {
             val sticker = ImageView(this)
             val sizePx = ((random.nextInt(60) + 70) * density).toInt()
             sticker.setImageResource(stickerRes[random.nextInt(stickerRes.size)])
             sticker.layoutParams = FrameLayout.LayoutParams(sizePx, sizePx)
-            
-            // Initial random state
             sticker.translationX = random.nextInt(width).toFloat() - (sizePx / 2f)
             sticker.translationY = random.nextInt(height).toFloat() - (sizePx / 2f)
             sticker.rotation = random.nextFloat() * 360f
             sticker.alpha = 0.7f
 
-            setupDragAndZoom(sticker)
+            setupTransformations(sticker)
             rootLayout.addView(sticker)
             mosaicStickers.add(sticker)
         }
     }
 
     private fun reshuffleMosaic() {
+        rotateHandle?.visibility = View.GONE
         mosaicStickers.forEach { v ->
             v.animate()
                 .translationX(random.nextInt(rootLayout.width).toFloat() - (v.width / 2f))
                 .translationY(random.nextInt(rootLayout.height).toFloat() - (v.height / 2f))
                 .rotation(random.nextFloat() * 360f)
-                // Persist scale: .scaleX/Y are NOT animated back to 1.0
                 .setDuration(700)
                 .setInterpolator(OvershootInterpolator())
                 .start()
@@ -115,7 +123,7 @@ class EasterEggActivity : AppCompatActivity() {
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun setupDragAndZoom(view: View) {
+    private fun setupTransformations(view: View) {
         var lastTouchX = 0f
         var lastTouchY = 0f
         var lastFingerDist = 0f
@@ -123,80 +131,81 @@ class EasterEggActivity : AppCompatActivity() {
         view.setOnTouchListener { v, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
+                    activeSticker = v
                     v.bringToFront()
                     imgLogo.bringToFront()
-                    v.alpha = 1.0f
+                    updateHandlePosition(v)
+                    rotateHandle?.visibility = View.VISIBLE
+                    rotateHandle?.bringToFront()
                     
                     lastTouchX = event.rawX
                     lastTouchY = event.rawY
+                    v.alpha = 1.0f
                 }
-
                 MotionEvent.ACTION_POINTER_DOWN -> {
-                    if (event.pointerCount == 2) {
-                        lastFingerDist = calculateDistance(event)
-                    }
+                    if (event.pointerCount == 2) lastFingerDist = calculateDist(event)
                 }
-
                 MotionEvent.ACTION_MOVE -> {
-                    // 1. DRAG LOGIC (Uses raw coordinates for stability)
-                    val newX = event.rawX
-                    val newY = event.rawY
-                    
-                    v.translationX += (newX - lastTouchX)
-                    v.translationY += (newY - lastTouchY)
-                    
-                    lastTouchX = newX
-                    lastTouchY = newY
+                    // Drag sticker
+                    v.translationX += (event.rawX - lastTouchX)
+                    v.translationY += (event.rawY - lastTouchY)
+                    lastTouchX = event.rawX
+                    lastTouchY = event.rawY
+                    updateHandlePosition(v)
 
-                    // 2. ZOOM LOGIC (Pinch to scale)
+                    // Zoom with 2 fingers
                     if (event.pointerCount == 2) {
-                        val currentDist = calculateDistance(event)
-                        if (lastFingerDist > 10f) {
-                            val scaleFactor = currentDist / lastFingerDist
-                            v.scaleX *= scaleFactor
-                            v.scaleY *= scaleFactor
-                            
-                            // Clamp scale so stickers don't disappear or cover the whole screen
-                            v.scaleX = v.scaleX.coerceIn(0.4f, 8.0f)
-                            v.scaleY = v.scaleY.coerceIn(0.4f, 8.0f)
-                        }
+                        val currentDist = calculateDist(event)
+                        val scaleFactor = currentDist / lastFingerDist
+                        v.scaleX = (v.scaleX * scaleFactor).coerceIn(0.4f, 8.0f)
+                        v.scaleY = (v.scaleY * scaleFactor).coerceIn(0.4f, 8.0f)
                         lastFingerDist = currentDist
                     }
                 }
+                MotionEvent.ACTION_UP -> v.alpha = 0.7f
+            }
+            true
+        }
 
-                MotionEvent.ACTION_POINTER_UP -> {
-                    // Reset the drag anchor to the remaining finger to prevent "jumping"
-                    val remainingIdx = if (event.actionIndex == 0) 1 else 0
-                    lastTouchX = event.getRawX(remainingIdx)
-                    lastTouchY = event.getRawY(remainingIdx)
-                }
-
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    v.alpha = 0.7f
+        // Logic for the Canva-style Rotate Handle
+        rotateHandle?.setOnTouchListener { _, event ->
+            val sticker = activeSticker ?: return@setOnTouchListener false
+            when (event.action) {
+                MotionEvent.ACTION_MOVE -> {
+                    // Calculate angle between sticker center and touch point
+                    val centerX = sticker.x + sticker.width / 2
+                    val centerY = sticker.y + sticker.height / 2
+                    val angle = Math.toDegrees(atan2((event.rawY - centerY).toDouble(), (event.rawX - centerX).toDouble())).toFloat()
+                    sticker.rotation = angle + 90f // Offset to make handle sit at top
+                    updateHandlePosition(sticker)
                 }
             }
             true
         }
     }
 
-    private fun calculateDistance(event: MotionEvent): Float {
-        val x = event.getX(0) - event.getX(1)
-        val y = event.getY(0) - event.getY(1)
-        return hypot(x, y)
+    private fun updateHandlePosition(sticker: View) {
+        val handle = rotateHandle ?: return
+        val radius = (sticker.height * sticker.scaleY) / 2 + 60
+        val angleRad = Math.toRadians((sticker.rotation - 90).toDouble())
+        
+        val centerX = sticker.x + sticker.width / 2
+        val centerY = sticker.y + sticker.height / 2
+        
+        handle.x = (centerX + radius * Math.cos(angleRad)).toFloat() - handle.width / 2
+        handle.y = (centerY + radius * Math.sin(angleRad)).toFloat() - handle.height / 2
     }
+
+    private fun calculateDist(event: MotionEvent): Float = hypot(event.getX(0) - event.getX(1), event.getY(0) - event.getY(1))
 
     private fun showRandomEmojiToast() {
         val sb = StringBuilder()
-        repeat(random.nextInt(10) + 5) {
-            sb.append(emojiPool[random.nextInt(emojiPool.size)]).append(" ")
-        }
+        repeat(random.nextInt(10) + 5) { sb.append(emojiPool[random.nextInt(emojiPool.size)]).append(" ") }
         Toast.makeText(this, sb.toString().trim(), Toast.LENGTH_SHORT).show()
     }
 
     private fun initEmojiPool() {
         val ranges = arrayOf(0x1F600..0x1F64F, 0x1F400..0x1F4FF, 0x1F300..0x1F3FF, 0x1F680..0x1F6FF)
-        for (range in ranges) {
-            for (i in range) emojiPool.add(String(Character.toChars(i)))
-        }
+        for (range in ranges) { for (i in range) emojiPool.add(String(Character.toChars(i))) }
     }
 }
