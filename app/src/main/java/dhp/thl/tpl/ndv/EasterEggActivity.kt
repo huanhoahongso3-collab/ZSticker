@@ -4,17 +4,16 @@ import android.annotation.SuppressLint
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
-import android.view.Gravity
-import android.view.HapticFeedbackConstants
-import android.view.MotionEvent
-import android.view.View
-import android.view.ViewGroup
+import android.os.Handler
+import android.os.Looper
+import android.view.*
 import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import java.util.*
+import kotlin.math.atan2
 
 class EasterEggActivity : AppCompatActivity() {
 
@@ -22,15 +21,12 @@ class EasterEggActivity : AppCompatActivity() {
         private lateinit var imgLogo: ImageView
             private val random = Random()
             private val mosaicStickers = mutableListOf<View>()
-
-            // Resource IDs for your specific images
             private val stickerRes = intArrayOf(R.drawable.thl, R.drawable.tpl, R.drawable.ndv)
             private val emojiPool = mutableListOf<String>()
+            private var isToastActive = false
 
             override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
-
-                // 1. Setup Transparent Root
                 rootLayout = FrameLayout(this).apply {
                     layoutParams = FrameLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
@@ -42,41 +38,36 @@ class EasterEggActivity : AppCompatActivity() {
                 initEmojiPool()
                 setupLogo()
 
-                // 2. Spawn Mosaic after layout measurement
                 rootLayout.post {
                     spawnDenseMosaic()
-                    imgLogo.bringToFront() // Ensure logo stays on top
+                    imgLogo.bringToFront()
                 }
             }
 
             private fun setupLogo() {
                 imgLogo = ImageView(this)
                 val size = (126 * resources.displayMetrics.density).toInt()
-                val params = FrameLayout.LayoutParams(size, size).apply {
-                    gravity = Gravity.CENTER
-                }
-                imgLogo.layoutParams = params
-
-                // Foreground Image
+                imgLogo.layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
+                imgLogo.scaleType = ImageView.ScaleType.CENTER_CROP
                 imgLogo.setImageResource(R.drawable.ic_launcher_foreground)
 
-                // Circular White Frame created programmatically
-                val shape = GradientDrawable().apply {
+                imgLogo.background = GradientDrawable().apply {
                     shape = GradientDrawable.OVAL
                     setColor(Color.WHITE)
-                    setStroke(4, Color.LTGRAY)
+                    setStroke((2 * resources.displayMetrics.density).toInt(), Color.parseColor("#EEEEEE"))
                 }
-                imgLogo.background = shape
-
+                imgLogo.clipToOutline = true
                 imgLogo.elevation = 100f
-                imgLogo.isClickable = true
 
                 imgLogo.setOnClickListener { v ->
-                    v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                    reshuffleMosaic()
-                    showRandomEmojiToast()
+                    if (!isToastActive) {
+                        isToastActive = true
+                        v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                        reshuffleMosaic()
+                        showRandomEmojiToast()
+                        Handler(Looper.getMainLooper()).postDelayed({ isToastActive = false }, 2000)
+                    }
                 }
-
                 rootLayout.addView(imgLogo)
             }
 
@@ -87,32 +78,26 @@ class EasterEggActivity : AppCompatActivity() {
 
                 repeat(150) {
                     val sticker = ImageView(this)
-                    val sizeDp = random.nextInt(60) + 70 // 70dp to 130dp
-                    val sizePx = (sizeDp * density).toInt()
-
+                    val sizePx = ((random.nextInt(60) + 70) * density).toInt()
                     sticker.setImageResource(stickerRes[random.nextInt(stickerRes.size)])
                     sticker.layoutParams = FrameLayout.LayoutParams(sizePx, sizePx)
 
-                    // Random scatter
                     sticker.translationX = random.nextInt(width).toFloat() - (sizePx / 2f)
                     sticker.translationY = random.nextInt(height).toFloat() - (sizePx / 2f)
                     sticker.rotation = random.nextFloat() * 360f
                     sticker.alpha = 0.7f
 
-                    setupDraggable(sticker)
+                    setupDraggableAndRotatable(sticker)
                     rootLayout.addView(sticker)
                     mosaicStickers.add(sticker)
                 }
             }
 
             private fun reshuffleMosaic() {
-                val width = rootLayout.width
-                val height = rootLayout.height
-
                 mosaicStickers.forEach { v ->
                     v.animate()
-                    .translationX(random.nextInt(width).toFloat() - (v.width / 2f))
-                    .translationY(random.nextInt(height).toFloat() - (v.height / 2f))
+                    .translationX(random.nextInt(rootLayout.width).toFloat() - (v.width / 2f))
+                    .translationY(random.nextInt(rootLayout.height).toFloat() - (v.height / 2f))
                     .rotation(random.nextFloat() * 360f)
                     .setDuration(700)
                     .setInterpolator(OvershootInterpolator())
@@ -121,30 +106,47 @@ class EasterEggActivity : AppCompatActivity() {
             }
 
             @SuppressLint("ClickableViewAccessibility")
-            private fun setupDraggable(view: View) {
+            private fun setupDraggableAndRotatable(view: View) {
                 view.setOnTouchListener(object : View.OnTouchListener {
                     private var dX = 0f
                     private var dY = 0f
+                    private var lastRotation = 0f
+                    private var angleOffset = 0f
 
                     override fun onTouch(v: View, event: MotionEvent): Boolean {
-                        when (event.action) {
+                        when (event.actionMasked) {
                             MotionEvent.ACTION_DOWN -> {
-                                // "Pop up" effect
                                 v.animate().scaleX(1.4f).scaleY(1.4f).alpha(1f).setDuration(150).start()
                                 v.bringToFront()
-                                imgLogo.bringToFront() // Force logo to stay top-most
+                                imgLogo.bringToFront()
 
                                 dX = v.x - event.rawX
                                 dY = v.y - event.rawY
                                 return true
                             }
-                            MotionEvent.ACTION_MOVE -> {
-                                v.x = event.rawX + dX
-                                v.y = event.rawY + dY
+                            MotionEvent.ACTION_POINTER_DOWN -> {
+                                // Calculate initial angle between two fingers
+                                val x = event.getX(0) - event.getX(1)
+                                val y = event.getY(0) - event.getY(1)
+                                angleOffset = Math.toDegrees(atan2(y.toDouble(), x.toDouble())).toFloat()
+                                lastRotation = v.rotation
                                 return true
                             }
-                            MotionEvent.ACTION_UP -> {
-                                // Settle back down
+                            MotionEvent.ACTION_MOVE -> {
+                                // Handle Drag
+                                v.x = event.rawX + dX
+                                v.y = event.rawY + dY
+
+                                // Handle Rotation if two fingers are present
+                                if (event.pointerCount == 2) {
+                                    val x = event.getX(0) - event.getX(1)
+                                    val y = event.getY(0) - event.getY(1)
+                                    val currentAngle = Math.toDegrees(atan2(y.toDouble(), x.toDouble())).toFloat()
+                                    v.rotation = lastRotation + (currentAngle - angleOffset)
+                                }
+                                return true
+                            }
+                            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
                                 v.animate().scaleX(1.0f).scaleY(1.0f).alpha(0.7f).setDuration(150).start()
                                 return true
                             }
@@ -155,25 +157,17 @@ class EasterEggActivity : AppCompatActivity() {
             }
 
             private fun showRandomEmojiToast() {
-                val count = random.nextInt(10) + 5
                 val sb = StringBuilder()
-                repeat(count) {
+                repeat(random.nextInt(10) + 5) {
                     sb.append(emojiPool[random.nextInt(emojiPool.size)]).append(" ")
                 }
                 Toast.makeText(this, sb.toString().trim(), Toast.LENGTH_SHORT).show()
             }
 
             private fun initEmojiPool() {
-                val ranges = arrayOf(
-                    0x1F600..0x1F64F, // Faces
-                    0x1F400..0x1F4FF, // Animals
-                    0x1F300..0x1F3FF, // Food
-                    0x1F680..0x1F6FF  // Travel
-                )
+                val ranges = arrayOf(0x1F600..0x1F64F, 0x1F400..0x1F4FF, 0x1F300..0x1F3FF, 0x1F680..0x1F6FF)
                 for (range in ranges) {
-                    for (i in range) {
-                        emojiPool.add(String(Character.toChars(i)))
-                    }
+                    for (i in range) emojiPool.add(String(Character.toChars(i)))
                 }
             }
 }
