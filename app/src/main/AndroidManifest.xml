@@ -37,7 +37,7 @@
         <activity
             android:name=".EasterEggActivity"
             android:exported="false"
-            android:theme="@style/Theme.EasterEgg"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
             android:screenOrientation="portrait" />
 
         <activity
@@ -45,7 +45,7 @@
             android:exported="false"
             android:screenOrientation="landscape"
             android:configChanges="orientation|screenSize|keyboardHidden"
-            android:theme="@style/Theme.AppCompat.NoActionBar.Fullscreen" />
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -55,7 +55,7 @@
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
-            </provider>
+        </provider>
 
-        </application>
-    </manifest>
+    </application>
+</manifest>
