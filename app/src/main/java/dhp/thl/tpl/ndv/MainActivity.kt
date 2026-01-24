@@ -51,7 +51,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         Locale.setDefault(locale)
         config.setLocale(locale)
 
-        // Note: We no longer manually force UI_MODE here to let AppCompatDelegate handle 'Follow System'
+        // Only handle Locale here. 
+        // DO NOT manually set config.uiMode, otherwise Follow System will break.
         val context = newBase.createConfigurationContext(config)
         super.attachBaseContext(context)
     }
@@ -91,12 +92,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         
         // --- THEME SECTION ---
-        val currentSavedMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-        binding.txtCurrentTheme.text = when (currentSavedMode) {
-            AppCompatDelegate.MODE_NIGHT_NO -> getString(R.string.theme_light)
-            AppCompatDelegate.MODE_NIGHT_YES -> getString(R.string.theme_dark)
-            else -> getString(R.string.theme_system)
-        }
+        updateThemeText(prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM))
 
         binding.itemTheme.setOnClickListener {
             val themes = arrayOf(
@@ -104,7 +100,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 getString(R.string.theme_dark),
                 getString(R.string.theme_system)
             )
-            val checkedItem = when (currentSavedMode) {
+            val currentMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+            val checkedItem = when (currentMode) {
                 AppCompatDelegate.MODE_NIGHT_NO -> 0
                 AppCompatDelegate.MODE_NIGHT_YES -> 1
                 else -> 2
@@ -119,22 +116,22 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
                     }
 
-                    if (newMode != currentSavedMode) {
-                        val systemNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-                        val isDifferentFromSystem = (newMode == AppCompatDelegate.MODE_NIGHT_YES && systemNightMode != Configuration.UI_MODE_NIGHT_YES) || 
-                                                    (newMode == AppCompatDelegate.MODE_NIGHT_NO && systemNightMode != Configuration.UI_MODE_NIGHT_NO)
+                    // We apply even if newMode == currentMode to force-reset 'Follow System' logic
+                    val systemNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+                    val isDifferentFromSystem = (newMode == AppCompatDelegate.MODE_NIGHT_YES && systemNightMode != Configuration.UI_MODE_NIGHT_YES) || 
+                                                (newMode == AppCompatDelegate.MODE_NIGHT_NO && systemNightMode != Configuration.UI_MODE_NIGHT_NO)
 
-                        // Show warning if on Android 12+ and choosing a theme different from system
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && isDifferentFromSystem && newMode != AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM) {
-                            MaterialAlertDialogBuilder(this)
-                                .setTitle(getString(R.string.dynamic_color_warning_title))
-                                .setMessage(getString(R.string.dynamic_color_warning_message))
-                                .setPositiveButton(getString(R.string.ok)) { _, _ -> applyAndSaveTheme(prefs, newMode) }
-                                .setNegativeButton(getString(R.string.cancel), null)
-                                .show()
-                        } else {
-                            applyAndSaveTheme(prefs, newMode)
-                        }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && isDifferentFromSystem && newMode != AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM) {
+                        MaterialAlertDialogBuilder(this)
+                            .setTitle(getString(R.string.dynamic_color_warning_title))
+                            .setMessage(getString(R.string.dynamic_color_warning_message))
+                            .setPositiveButton(getString(R.string.ok)) { _, _ -> 
+                                applyAndSaveTheme(prefs, newMode) 
+                            }
+                            .setNegativeButton(getString(R.string.cancel), null)
+                            .show()
+                    } else {
+                        applyAndSaveTheme(prefs, newMode)
                     }
                     dialog.dismiss()
                 }.show()
@@ -194,9 +191,18 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
     private fun applyAndSaveTheme(prefs: SharedPreferences, mode: Int) {
         prefs.edit().putInt("theme_mode", mode).apply()
         AppCompatDelegate.setDefaultNightMode(mode)
+        updateThemeText(mode)
     }
 
-    // --- HELPER METHODS (Sticker logic, Navigation, Edge-to-Edge) ---
+    private fun updateThemeText(mode: Int) {
+        binding.txtCurrentTheme.text = when (mode) {
+            AppCompatDelegate.MODE_NIGHT_NO -> getString(R.string.theme_light)
+            AppCompatDelegate.MODE_NIGHT_YES -> getString(R.string.theme_dark)
+            else -> getString(R.string.theme_system)
+        }
+    }
+
+    // --- SYSTEM & STICKER UTILS ---
 
     private fun exportAllStickers() {
         val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
