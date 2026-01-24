@@ -15,7 +15,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import java.util.*
 import kotlin.math.atan2
-import kotlin.math.hypot
 
 class EasterEggActivity : AppCompatActivity() {
 
@@ -94,7 +93,7 @@ class EasterEggActivity : AppCompatActivity() {
             sticker.rotation = random.nextFloat() * 360f
             sticker.alpha = 0.7f
 
-            setupMultiTouch(sticker)
+            setupTransformations(sticker)
             rootLayout.addView(sticker)
             mosaicStickers.add(sticker)
         }
@@ -115,99 +114,82 @@ class EasterEggActivity : AppCompatActivity() {
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun setupMultiTouch(view: View) {
-        view.setOnTouchListener(object : View.OnTouchListener {
-            private var dX = 0f
-            private var dY = 0f
-            
-            // Interaction State
-            private var initialRotation = 0f
-            private var initialFingerAngle = 0f
-            private var initialScale = 1f
-            private var initialFingerDist = 1f
+    private fun setupTransformations(view: View) {
+        var dX = 0f
+        var dY = 0f
+        var prevAngle = 0f
 
-            override fun onTouch(v: View, event: MotionEvent): Boolean {
-                when (event.actionMasked) {
-                    MotionEvent.ACTION_DOWN -> {
-                        v.bringToFront()
-                        imgLogo.bringToFront()
-                        
-                        // Capture initial drag offset
-                        dX = v.x - event.rawX
-                        dY = v.y - event.rawY
-                        v.alpha = 1.0f
-                        return true
-                    }
-                    
-                    MotionEvent.ACTION_POINTER_DOWN -> {
-                        if (event.pointerCount == 2) {
-                            // Store the starting state for current two-finger gesture
-                            initialFingerAngle = calculateAngle(event)
-                            initialRotation = v.rotation
-                            
-                            initialFingerDist = calculateDist(event)
-                            initialScale = v.scaleX
-                        }
-                        return true
-                    }
-
-                    MotionEvent.ACTION_MOVE -> {
-                        // 1. Handle Drag (Move)
-                        // Note: Always allow movement, even during rotation
-                        v.x = event.rawX + dX
-                        v.y = event.rawY + dY
-
-                        // 2. Handle Multi-Touch (Zoom and Rotate)
-                        if (event.pointerCount == 2) {
-                            // Zoom Calculation
-                            val currentDist = calculateDist(event)
-                            if (currentDist > 10f) { // Prevent division by tiny numbers
-                                val scaleFactor = currentDist / initialFingerDist
-                                val newScale = (initialScale * scaleFactor).coerceIn(0.4f, 6.0f)
-                                v.scaleX = newScale
-                                v.scaleY = newScale
-                            }
-
-                            // Rotation Calculation
-                            val currentAngle = calculateAngle(event)
-                            val angleDiff = currentAngle - initialFingerAngle
-                            v.rotation = initialRotation + angleDiff
-                        }
-                        return true
-                    }
-
-                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                        v.alpha = 0.7f
-                        return true
-                    }
-                    
-                    MotionEvent.ACTION_POINTER_UP -> {
-                        // When one finger is lifted, re-anchor the drag for the remaining finger
-                        // to prevent the "jump" or flicker.
-                        val remainingIdx = if (event.actionIndex == 0) 1 else 0
-                        dX = v.x - event.getRawX(remainingIdx)
-                        dY = v.y - event.getRawY(remainingIdx)
-                        return true
-                    }
-                }
-                return false
-            }
-
-            private fun calculateAngle(event: MotionEvent): Float {
-                val deltaX = (event.getX(0) - event.getX(1)).toDouble()
-                val deltaY = (event.getY(0) - event.getY(1)).toDouble()
-                return Math.toDegrees(atan2(deltaY, deltaX)).toFloat()
-            }
-
-            private fun calculateDist(event: MotionEvent): Float {
-                val x = event.getX(0) - event.getX(1)
-                val y = event.getY(0) - event.getY(1)
-                return hypot(x, y)
+        // Android's built-in Scale Detector for 2-finger expand/minimize
+        val scaleDetector = ScaleGestureDetector(this, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                view.scaleX *= detector.scaleFactor
+                view.scaleY *= detector.scaleFactor
+                
+                // Keep scale in a healthy range
+                view.scaleX = view.scaleX.coerceIn(0.5f, 5.0f)
+                view.scaleY = view.scaleY.coerceIn(0.5f, 5.0f)
+                return true
             }
         })
+
+        view.setOnTouchListener { v, event ->
+            // Pass event to Scale Detector
+            scaleDetector.onTouchEvent(event)
+
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    v.bringToFront()
+                    imgLogo.bringToFront()
+                    dX = v.x - event.rawX
+                    dY = v.y - event.rawY
+                    v.alpha = 1.0f
+                }
+
+                MotionEvent.ACTION_POINTER_DOWN -> {
+                    if (event.pointerCount == 2) {
+                        prevAngle = calculateAngle(event)
+                    }
+                }
+
+                MotionEvent.ACTION_MOVE -> {
+                    // Drag logic (single or multi finger)
+                    if (!scaleDetector.isInProgress) {
+                        v.x = event.rawX + dX
+                        v.y = event.rawY + dY
+                    }
+
+                    // Large Rotation logic (circular motion)
+                    if (event.pointerCount == 2) {
+                        val currentAngle = calculateAngle(event)
+                        val deltaAngle = currentAngle - prevAngle
+                        
+                        // Increase 2.0f for even "larger" rotation sensitivity
+                        v.rotation += (deltaAngle * 2.0f) 
+                        prevAngle = currentAngle
+                    }
+                }
+
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    v.alpha = 0.7f
+                }
+                
+                MotionEvent.ACTION_POINTER_UP -> {
+                    // Smoothly transition back to 1-finger drag
+                    val remainingIdx = if (event.actionIndex == 0) 1 else 0
+                    dX = v.x - event.getRawX(remainingIdx)
+                    dY = v.y - event.getRawY(remainingIdx)
+                }
+            }
+            true
+        }
     }
 
-    // Standard Helper Methods
+    private fun calculateAngle(event: MotionEvent): Float {
+        val x = (event.getX(0) - event.getX(1)).toDouble()
+        val y = (event.getY(0) - event.getY(1)).toDouble()
+        return Math.toDegrees(atan2(y, x)).toFloat()
+    }
+
     private fun showRandomEmojiToast() {
         val sb = StringBuilder()
         repeat(random.nextInt(10) + 5) {
