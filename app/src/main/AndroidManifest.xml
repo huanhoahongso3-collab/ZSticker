@@ -37,7 +37,7 @@
         <activity
             android:name=".EasterEggActivity"
             android:exported="false"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:theme="@style/Theme.EasterEgg"
             android:screenOrientation="portrait" />
 
         <activity
