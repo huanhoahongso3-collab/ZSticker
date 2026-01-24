@@ -24,6 +24,13 @@ class EasterEggActivity : AppCompatActivity() {
     private var rotateHandle: ImageView? = null
     private var activeSticker: View? = null
     
+    private val hideHandler = Handler(Looper.getMainLooper())
+    private val hideRunnable = Runnable { 
+        rotateHandle?.animate()?.alpha(0f)?.setDuration(300)?.withEndAction { 
+            rotateHandle?.visibility = View.GONE 
+        }?.start()
+    }
+
     private val random = Random()
     private val mosaicStickers = mutableListOf<View>()
     private val stickerRes = intArrayOf(R.drawable.thl, R.drawable.tpl, R.drawable.ndv)
@@ -66,23 +73,25 @@ class EasterEggActivity : AppCompatActivity() {
                 v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                 reshuffleMosaic()
                 showRandomEmojiToast()
-                Handler(Looper.getMainLooper()).postDelayed({ isToastActive = false }, 2000)
+                hideHandler.postDelayed({ isToastActive = false }, 2000)
             }
         }
         rootLayout.addView(imgLogo)
     }
 
     private fun setupRotateHandle() {
-        val size = (40 * resources.displayMetrics.density).toInt()
+        // Smaller size: 32dp
+        val size = (32 * resources.displayMetrics.density).toInt()
         rotateHandle = ImageView(this).apply {
             layoutParams = FrameLayout.LayoutParams(size, size)
-            // Replace with a rotation icon if you have one, or use a simple colored circle
+            // Semi-transparent look
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
-                setColor(Color.WHITE)
-                setStroke(2, Color.BLACK)
+                setColor(Color.parseColor("#80FFFFFF")) // 50% white
+                setStroke(2, Color.parseColor("#80000000")) // 50% black stroke
             }
             setImageResource(android.R.drawable.ic_menu_rotate)
+            alpha = 0f
             elevation = 110f
             visibility = View.GONE
         }
@@ -134,9 +143,8 @@ class EasterEggActivity : AppCompatActivity() {
                     activeSticker = v
                     v.bringToFront()
                     imgLogo.bringToFront()
-                    updateHandlePosition(v)
-                    rotateHandle?.visibility = View.VISIBLE
-                    rotateHandle?.bringToFront()
+                    
+                    showHandle(v)
                     
                     lastTouchX = event.rawX
                     lastTouchY = event.rawY
@@ -146,14 +154,12 @@ class EasterEggActivity : AppCompatActivity() {
                     if (event.pointerCount == 2) lastFingerDist = calculateDist(event)
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    // Drag sticker
                     v.translationX += (event.rawX - lastTouchX)
                     v.translationY += (event.rawY - lastTouchY)
                     lastTouchX = event.rawX
                     lastTouchY = event.rawY
                     updateHandlePosition(v)
 
-                    // Zoom with 2 fingers
                     if (event.pointerCount == 2) {
                         val currentDist = calculateDist(event)
                         val scaleFactor = currentDist / lastFingerDist
@@ -162,31 +168,52 @@ class EasterEggActivity : AppCompatActivity() {
                         lastFingerDist = currentDist
                     }
                 }
-                MotionEvent.ACTION_UP -> v.alpha = 0.7f
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    v.alpha = 0.7f
+                    startHideTimer()
+                }
             }
             true
         }
 
-        // Logic for the Canva-style Rotate Handle
         rotateHandle?.setOnTouchListener { _, event ->
             val sticker = activeSticker ?: return@setOnTouchListener false
             when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    hideHandler.removeCallbacks(hideRunnable) // Don't hide while holding
+                }
                 MotionEvent.ACTION_MOVE -> {
-                    // Calculate angle between sticker center and touch point
                     val centerX = sticker.x + sticker.width / 2
                     val centerY = sticker.y + sticker.height / 2
                     val angle = Math.toDegrees(atan2((event.rawY - centerY).toDouble(), (event.rawX - centerX).toDouble())).toFloat()
-                    sticker.rotation = angle + 90f // Offset to make handle sit at top
+                    sticker.rotation = angle + 90f 
                     updateHandlePosition(sticker)
+                }
+                MotionEvent.ACTION_UP -> {
+                    startHideTimer()
                 }
             }
             true
         }
     }
 
+    private fun showHandle(sticker: View) {
+        hideHandler.removeCallbacks(hideRunnable)
+        updateHandlePosition(sticker)
+        rotateHandle?.visibility = View.VISIBLE
+        rotateHandle?.animate()?.alpha(1.0f)?.setDuration(150)?.start()
+        rotateHandle?.bringToFront()
+    }
+
+    private fun startHideTimer() {
+        hideHandler.removeCallbacks(hideRunnable)
+        hideHandler.postDelayed(hideRunnable, 1000)
+    }
+
     private fun updateHandlePosition(sticker: View) {
         val handle = rotateHandle ?: return
-        val radius = (sticker.height * sticker.scaleY) / 2 + 60
+        // Distance from center: (Sticker half-height * scale) + padding
+        val radius = (sticker.height * sticker.scaleY) / 2 + (40 * resources.displayMetrics.density)
         val angleRad = Math.toRadians((sticker.rotation - 90).toDouble())
         
         val centerX = sticker.x + sticker.width / 2
