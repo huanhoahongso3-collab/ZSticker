@@ -1,127 +1,349 @@
-package dhp.thl.tpl.ndv
+package dhp.thl.tpl.ndv;
 
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.view.Gravity
-import android.view.HapticFeedbackConstants
-import android.view.View
-import android.view.animation.AlphaAnimation
-import android.view.animation.ScaleAnimation
-import android.widget.FrameLayout
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import dhp.thl.tpl.ndv.databinding.ActivityEasterEggBinding
-import java.util.Random
+import android.annotation.SuppressLint;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
+import android.os.Bundle;
+import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.animation.OvershootInterpolator;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.Toast;
 
-class EasterEggActivity : AppCompatActivity() {
+import androidx.appcompat.app.AppCompatActivity;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
-    private lateinit var binding: ActivityEasterEggBinding
-    private val random = Random()
-    private val localStickers = intArrayOf(R.drawable.thl, R.drawable.tpl, R.drawable.ndv)
-    
-    private val allAndroidStickers: List<String> by lazy {
-        val list = mutableListOf<String>()
-        val ranges = listOf(0x1F600..0x1F64F, 0x1F400..0x1F4FF, 0x1F300..0x1F3FF, 0x1F680..0x1F6FF)
-        for (range in ranges) {
-            for (codePoint in range) {
-                list.add(String(Character.toChars(codePoint)))
-            }
-        }
-        list
+public class EasterEggActivity extends AppCompatActivity {
+
+    private FrameLayout rootLayout;
+    private ImageView imgLogo;
+    private final Random random = new Random();
+    private final List<View> mosaicStickers = new ArrayList<>();
+
+    // Resource IDs for your specific images
+    private final int[] stickerRes = {R.drawable.thl, R.drawable.tpl, R.drawable.ndv};
+    private List<String> emojiPool;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        // 1. Setup Transparent Root
+        rootLayout = new FrameLayout(this);
+        rootLayout.setLayoutParams(new FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT));
+        setContentView(rootLayout);
+
+        initEmojiPool();
+        setupLogo();
+
+        // 2. Spawn Mosaic after layout measurement
+        rootLayout.post(() -> {
+            spawnDenseMosaic();
+            imgLogo.bringToFront(); // Ensure logo is on top after spawning
+        });
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        binding = ActivityEasterEggBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+    private void setupLogo() {
+        imgLogo = new ImageView(this);
+        int size = (int) (126 * getResources().getDisplayMetrics().density);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(size, size);
+        params.gravity = Gravity.CENTER;
+        imgLogo.setLayoutParams(params);
 
-        // Wait for the UI to settle before generating stickers
-        Handler(Looper.getMainLooper()).postDelayed({
-            generateMosaic()
-        }, 300)
+        // Foreground Image
+        imgLogo.setImageResource(R.drawable.ic_launcher_foreground);
 
-        binding.imgLogo.setOnClickListener {
-            it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-            
-            // Pop animation for the logo
-            val pop = ScaleAnimation(1f, 1.15f, 1f, 1.15f, 
-                ScaleAnimation.RELATIVE_TO_SELF, 0.5f, 
-                ScaleAnimation.RELATIVE_TO_SELF, 0.5f).apply {
-                duration = 150
-                repeatMode = ScaleAnimation.REVERSE
-                repeatCount = 1
-            }
-            it.startAnimation(pop)
+        // Circular White Frame
+        GradientDrawable shape = new GradientDrawable();
+        shape.setShape(GradientDrawable.OVAL);
+        shape.setColor(Color.WHITE);
+        shape.setStroke(4, Color.LTGRAY);
+        imgLogo.setBackground(shape);
 
-            // Random Toast with 1-20 unique stickers
-            val count = random.nextInt(20) + 1
-            val toastMsg = StringBuilder().apply {
-                repeat(count) {
-                    append(allAndroidStickers[random.nextInt(allAndroidStickers.size)]).append(" ")
-                }
-            }.toString()
-            Toast.makeText(this, toastMsg, Toast.LENGTH_SHORT).show()
-        }
+        imgLogo.setElevation(100f);
+        imgLogo.setClickable(true);
 
-        binding.imgLogo.setOnLongClickListener {
-            finish()
-            true
+        imgLogo.setOnClickListener(v -> {
+            v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+            reshuffleMosaic();
+            showRandomEmojiToast();
+        });
+
+        rootLayout.addView(imgLogo);
+    }
+
+    private void spawnDenseMosaic() {
+        int width = rootLayout.getWidth();
+        int height = rootLayout.getHeight();
+        float density = getResources().getDisplayMetrics().density;
+
+        for (int i = 0; i < 150; i++) {
+            ImageView sticker = new ImageView(this);
+            int sizeDp = random.nextInt(60) + 70; // 70dp to 130dp
+            int sizePx = (int) (sizeDp * density);
+
+            sticker.setImageResource(stickerRes[random.nextInt(stickerRes.length)]);
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(sizePx, sizePx);
+            sticker.setLayoutParams(params);
+
+            // Random scatter
+            sticker.setTranslationX(random.nextInt(width) - (sizePx / 2f));
+            sticker.setTranslationY(random.nextInt(height) - (sizePx / 2f));
+            sticker.setRotation(random.nextFloat() * 360f);
+            sticker.setAlpha(0.7f);
+
+            setupDraggable(sticker);
+            rootLayout.addView(sticker);
+            mosaicStickers.add(sticker);
         }
     }
 
-    private fun generateMosaic() {
-        val root = binding.easterRoot
-        val screenWidth = root.width
-        val screenHeight = root.height
+    private void reshuffleMosaic() {
+        int width = rootLayout.getWidth();
+        int height = rootLayout.getHeight();
 
-        // If screen hasn't measured yet, don't proceed
-        if (screenWidth <= 0 || screenHeight <= 0) return
-
-        for (i in 0 until 100) {
-            val sizeBase = random.nextInt(80) + 60 // Size between 60-140dp
-            val sizePx = (sizeBase * resources.displayMetrics.density).toInt()
-            
-            val view: View = if (random.nextInt(4) == 0) { 
-                ImageView(this).apply {
-                    setImageResource(localStickers[random.nextInt(localStickers.size)])
-                    scaleType = ImageView.ScaleType.CENTER_INSIDE
-                }
-            } else { 
-                TextView(this).apply {
-                    text = allAndroidStickers[random.nextInt(allAndroidStickers.size)]
-                    textSize = sizeBase.toFloat() / 2.5f
-                    gravity = Gravity.CENTER
-                }
-            }
-
-            // Android 13 Style: Allow center of sticker to be anywhere on screen
-            // This ensures they bleed off the edges correctly
-            val params = FrameLayout.LayoutParams(sizePx, sizePx)
-            params.leftMargin = random.nextInt(screenWidth) - (sizePx / 2)
-            params.topMargin = random.nextInt(screenHeight) - (sizePx / 2)
-
-            view.apply {
-                layoutParams = params
-                rotation = random.nextFloat() * 360f
-                alpha = 0f
-            }
-            
-            // Add stickers at the bottom of the view stack
-            root.addView(view, 0)
-            
-            // Subtle fade-in
-            val fadeIn = AlphaAnimation(0f, 0.4f + random.nextFloat() * 0.4f).apply {
-                duration = 800
-                startOffset = random.nextInt(1000).toLong()
-                fillAfter = true
-            }
-            view.startAnimation(fadeIn)
+        for (View v : mosaicStickers) {
+            v.animate()
+            .translationX(random.nextInt(width) - (v.getWidth() / 2f))
+            .translationY(random.nextInt(height) - (v.getHeight() / 2f))
+            .rotation(random.nextFloat() * 360f)
+            .setDuration(700)
+            .setInterpolator(new OvershootInterpolator())
+            .start();
         }
-        
-        // Force the logo to stay on top just in case
-        binding.imgLogo.bringToFront()
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private void setupDraggable(View view) {
+        view.setOnTouchListener(new View.OnTouchListener() {
+            private float dX, dY;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        // "Pop up" effect
+                        v.animate().scaleX(1.4f).scaleY(1.4f).alpha(1f).setDuration(150).start();
+                        v.bringToFront();
+                        imgLogo.bringToFront(); // Force logo to stay top-most
+
+                        dX = v.getX() - event.getRawX();
+                        dY = v.getY() - event.getRawY();
+                        return true;
+
+                    case MotionEvent.ACTION_MOVE:
+                        v.setX(event.getRawX() + dX);
+                        v.setY(event.getRawY() + dY);
+                        return true;
+
+                    case MotionEvent.ACTION_UP:
+                        // Settle back down
+                        v.animate().scaleX(1.0f).scaleY(1.0f).alpha(0.7f).setDuration(150).start();
+                        return true;
+                }
+                return false;
+            }
+        });
+    }
+
+    private void showRandomEmojiToast() {
+        int count = random.nextInt(10) + 5;
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            sb.append(emojiPool.get(random.nextInt(emojiPool.size()))).append(" ");
+        }
+        Toast.makeText(this, sb.toString().trim(), Toast.LENGTH_SHORT).show();
+    }
+
+    private void initEmojiPool() {
+        emojiPool = new ArrayList<>();
+        int[][] ranges = {{0x1F600, 0x1F64F}, {0x1F400, 0x1F4FF}, {0x1F300, 0x1F3FF}, {0x1F680, 0x1F6FF}};
+        for (int[] range : ranges) {
+            for (int i = range[0]; i <= range[1]; i++) {
+                emojiPool.add(new String(Character.toChars(i)));
+            }
+        }
+    }
+}package dhp.thl.tpl.ndv;
+
+import android.annotation.SuppressLint;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
+import android.os.Bundle;
+import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.animation.OvershootInterpolator;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+public class EasterEggActivity extends AppCompatActivity {
+
+    private FrameLayout rootLayout;
+    private ImageView imgLogo;
+    private final Random random = new Random();
+    private final List<View> mosaicStickers = new ArrayList<>();
+
+    // Resource IDs for your specific images
+    private final int[] stickerRes = {R.drawable.thl, R.drawable.tpl, R.drawable.ndv};
+    private List<String> emojiPool;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        // 1. Setup Transparent Root
+        rootLayout = new FrameLayout(this);
+        rootLayout.setLayoutParams(new FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT));
+        setContentView(rootLayout);
+
+        initEmojiPool();
+        setupLogo();
+
+        // 2. Spawn Mosaic after layout measurement
+        rootLayout.post(() -> {
+            spawnDenseMosaic();
+            imgLogo.bringToFront(); // Ensure logo is on top after spawning
+        });
+    }
+
+    private void setupLogo() {
+        imgLogo = new ImageView(this);
+        int size = (int) (126 * getResources().getDisplayMetrics().density);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(size, size);
+        params.gravity = Gravity.CENTER;
+        imgLogo.setLayoutParams(params);
+
+        // Foreground Image
+        imgLogo.setImageResource(R.drawable.ic_launcher_foreground);
+
+        // Circular White Frame
+        GradientDrawable shape = new GradientDrawable();
+        shape.setShape(GradientDrawable.OVAL);
+        shape.setColor(Color.WHITE);
+        shape.setStroke(4, Color.LTGRAY);
+        imgLogo.setBackground(shape);
+
+        imgLogo.setElevation(100f);
+        imgLogo.setClickable(true);
+
+        imgLogo.setOnClickListener(v -> {
+            v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+            reshuffleMosaic();
+            showRandomEmojiToast();
+        });
+
+        rootLayout.addView(imgLogo);
+    }
+
+    private void spawnDenseMosaic() {
+        int width = rootLayout.getWidth();
+        int height = rootLayout.getHeight();
+        float density = getResources().getDisplayMetrics().density;
+
+        for (int i = 0; i < 150; i++) {
+            ImageView sticker = new ImageView(this);
+            int sizeDp = random.nextInt(60) + 70; // 70dp to 130dp
+            int sizePx = (int) (sizeDp * density);
+
+            sticker.setImageResource(stickerRes[random.nextInt(stickerRes.length)]);
+            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(sizePx, sizePx);
+            sticker.setLayoutParams(params);
+
+            // Random scatter
+            sticker.setTranslationX(random.nextInt(width) - (sizePx / 2f));
+            sticker.setTranslationY(random.nextInt(height) - (sizePx / 2f));
+            sticker.setRotation(random.nextFloat() * 360f);
+            sticker.setAlpha(0.7f);
+
+            setupDraggable(sticker);
+            rootLayout.addView(sticker);
+            mosaicStickers.add(sticker);
+        }
+    }
+
+    private void reshuffleMosaic() {
+        int width = rootLayout.getWidth();
+        int height = rootLayout.getHeight();
+
+        for (View v : mosaicStickers) {
+            v.animate()
+            .translationX(random.nextInt(width) - (v.getWidth() / 2f))
+            .translationY(random.nextInt(height) - (v.getHeight() / 2f))
+            .rotation(random.nextFloat() * 360f)
+            .setDuration(700)
+            .setInterpolator(new OvershootInterpolator())
+            .start();
+        }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private void setupDraggable(View view) {
+        view.setOnTouchListener(new View.OnTouchListener() {
+            private float dX, dY;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        // "Pop up" effect
+                        v.animate().scaleX(1.4f).scaleY(1.4f).alpha(1f).setDuration(150).start();
+                        v.bringToFront();
+                        imgLogo.bringToFront(); // Force logo to stay top-most
+
+                        dX = v.getX() - event.getRawX();
+                        dY = v.getY() - event.getRawY();
+                        return true;
+
+                    case MotionEvent.ACTION_MOVE:
+                        v.setX(event.getRawX() + dX);
+                        v.setY(event.getRawY() + dY);
+                        return true;
+
+                    case MotionEvent.ACTION_UP:
+                        // Settle back down
+                        v.animate().scaleX(1.0f).scaleY(1.0f).alpha(0.7f).setDuration(150).start();
+                        return true;
+                }
+                return false;
+            }
+        });
+    }
+
+    private void showRandomEmojiToast() {
+        int count = random.nextInt(10) + 5;
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            sb.append(emojiPool.get(random.nextInt(emojiPool.size()))).append(" ");
+        }
+        Toast.makeText(this, sb.toString().trim(), Toast.LENGTH_SHORT).show();
+    }
+
+    private void initEmojiPool() {
+        emojiPool = new ArrayList<>();
+        int[][] ranges = {{0x1F600, 0x1F64F}, {0x1F400, 0x1F4FF}, {0x1F300, 0x1F3FF}, {0x1F680, 0x1F6FF}};
+        for (int[] range : ranges) {
+            for (int i = range[0]; i <= range[1]; i++) {
+                emojiPool.add(new String(Character.toChars(i)));
+            }
+        }
     }
 }
