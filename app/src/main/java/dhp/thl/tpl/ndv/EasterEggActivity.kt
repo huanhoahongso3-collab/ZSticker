@@ -14,7 +14,6 @@ import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import java.util.*
-import kotlin.math.atan2
 import kotlin.math.hypot
 
 class EasterEggActivity : AppCompatActivity() {
@@ -51,7 +50,7 @@ class EasterEggActivity : AppCompatActivity() {
         val size = (126 * resources.displayMetrics.density).toInt()
         imgLogo.layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
         
-        // Forced Circular Outline
+        // Strict circular clipping
         imgLogo.outlineProvider = object : ViewOutlineProvider() {
             override fun getOutline(view: View, outline: Outline) {
                 outline.setOval(0, 0, view.width, view.height)
@@ -90,12 +89,13 @@ class EasterEggActivity : AppCompatActivity() {
             sticker.setImageResource(stickerRes[random.nextInt(stickerRes.size)])
             sticker.layoutParams = FrameLayout.LayoutParams(sizePx, sizePx)
             
+            // Initial random state
             sticker.translationX = random.nextInt(width).toFloat() - (sizePx / 2f)
             sticker.translationY = random.nextInt(height).toFloat() - (sizePx / 2f)
             sticker.rotation = random.nextFloat() * 360f
             sticker.alpha = 0.7f
 
-            setupGestureEngine(sticker)
+            setupDragAndZoom(sticker)
             rootLayout.addView(sticker)
             mosaicStickers.add(sticker)
         }
@@ -107,7 +107,7 @@ class EasterEggActivity : AppCompatActivity() {
                 .translationX(random.nextInt(rootLayout.width).toFloat() - (v.width / 2f))
                 .translationY(random.nextInt(rootLayout.height).toFloat() - (v.height / 2f))
                 .rotation(random.nextFloat() * 360f)
-                // We DON'T touch scaleX/Y here to keep user zoom state per session
+                // Persist scale: .scaleX/Y are NOT animated back to 1.0
                 .setDuration(700)
                 .setInterpolator(OvershootInterpolator())
                 .start()
@@ -115,15 +115,12 @@ class EasterEggActivity : AppCompatActivity() {
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun setupGestureEngine(view: View) {
+    private fun setupDragAndZoom(view: View) {
         var lastTouchX = 0f
         var lastTouchY = 0f
         var lastFingerDist = 0f
-        var lastFingerAngle = 0f
 
         view.setOnTouchListener { v, event ->
-            val pointerCount = event.pointerCount
-
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     v.bringToFront()
@@ -135,15 +132,13 @@ class EasterEggActivity : AppCompatActivity() {
                 }
 
                 MotionEvent.ACTION_POINTER_DOWN -> {
-                    if (pointerCount == 2) {
+                    if (event.pointerCount == 2) {
                         lastFingerDist = calculateDistance(event)
-                        lastFingerAngle = calculateAngle(event)
                     }
                 }
 
                 MotionEvent.ACTION_MOVE -> {
-                    // 1. Translation (Drag) 
-                    // Use the first finger for position tracking to prevent jumps
+                    // 1. DRAG LOGIC (Uses raw coordinates for stability)
                     val newX = event.rawX
                     val newY = event.rawY
                     
@@ -153,31 +148,24 @@ class EasterEggActivity : AppCompatActivity() {
                     lastTouchX = newX
                     lastTouchY = newY
 
-                    // 2. Transformations (Scale & Rotate)
-                    if (pointerCount == 2) {
-                        // Scaling
+                    // 2. ZOOM LOGIC (Pinch to scale)
+                    if (event.pointerCount == 2) {
                         val currentDist = calculateDistance(event)
                         if (lastFingerDist > 10f) {
                             val scaleFactor = currentDist / lastFingerDist
                             v.scaleX *= scaleFactor
                             v.scaleY *= scaleFactor
-                            // Safety clamps
-                            v.scaleX = v.scaleX.coerceIn(0.5f, 6.0f)
-                            v.scaleY = v.scaleY.coerceIn(0.5f, 6.0f)
+                            
+                            // Clamp scale so stickers don't disappear or cover the whole screen
+                            v.scaleX = v.scaleX.coerceIn(0.4f, 8.0f)
+                            v.scaleY = v.scaleY.coerceIn(0.4f, 8.0f)
                         }
                         lastFingerDist = currentDist
-
-                        // Rotation
-                        val currentAngle = calculateAngle(event)
-                        val deltaAngle = currentAngle - lastFingerAngle
-                        // Multiply by 2.0f for "Larger" movement as requested
-                        v.rotation += (deltaAngle * 2.0f)
-                        lastFingerAngle = currentAngle
                     }
                 }
 
                 MotionEvent.ACTION_POINTER_UP -> {
-                    // Re-anchor drag to the remaining finger to stop the "teleport" bug
+                    // Reset the drag anchor to the remaining finger to prevent "jumping"
                     val remainingIdx = if (event.actionIndex == 0) 1 else 0
                     lastTouchX = event.getRawX(remainingIdx)
                     lastTouchY = event.getRawY(remainingIdx)
@@ -195,12 +183,6 @@ class EasterEggActivity : AppCompatActivity() {
         val x = event.getX(0) - event.getX(1)
         val y = event.getY(0) - event.getY(1)
         return hypot(x, y)
-    }
-
-    private fun calculateAngle(event: MotionEvent): Float {
-        val x = (event.getX(0) - event.getX(1)).toDouble()
-        val y = (event.getY(0) - event.getY(1)).toDouble()
-        return Math.toDegrees(atan2(y, x)).toFloat()
     }
 
     private fun showRandomEmojiToast() {
