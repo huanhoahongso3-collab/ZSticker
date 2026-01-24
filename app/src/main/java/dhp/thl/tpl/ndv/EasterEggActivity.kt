@@ -106,7 +106,7 @@ class EasterEggActivity : AppCompatActivity() {
                     .translationX(random.nextInt(rootLayout.width).toFloat() - (v.width / 2f))
                     .translationY(random.nextInt(rootLayout.height).toFloat() - (v.height / 2f))
                     .rotation(random.nextFloat() * 360f)
-                    .scaleX(1.0f) // Reset zoom on shuffle
+                    .scaleX(1.0f)
                     .scaleY(1.0f)
                     .setDuration(700)
                     .setInterpolator(OvershootInterpolator())
@@ -126,27 +126,23 @@ class EasterEggActivity : AppCompatActivity() {
                     private var initialScale = 1f
                     private var initialFingerDist = 1f
 
-                    // Adjust this to make rotation "larger" or "faster"
-                    private val rotationSensitivity = 1.5f
+                    private val rotationSensitivity = 1.8f
 
                     override fun onTouch(v: View, event: MotionEvent): Boolean {
                         when (event.actionMasked) {
                             MotionEvent.ACTION_DOWN -> {
                                 v.bringToFront()
                                 imgLogo.bringToFront()
-
                                 dX = v.x - event.rawX
                                 dY = v.y - event.rawY
+                                v.alpha = 1.0f
                                 return true
                             }
 
                             MotionEvent.ACTION_POINTER_DOWN -> {
                                 if (event.pointerCount == 2) {
-                                    // Prepare Rotation
                                     initialFingerAngle = calculateAngle(event)
                                     initialRotation = v.rotation
-
-                                    // Prepare Zoom
                                     initialFingerDist = calculateDist(event)
                                     initialScale = v.scaleX
                                 }
@@ -154,19 +150,21 @@ class EasterEggActivity : AppCompatActivity() {
                             }
 
                             MotionEvent.ACTION_MOVE -> {
-                                // Translation (Drag) - Only if one finger or dragging middle
-                                v.x = event.rawX + dX
-                                v.y = event.rawY + dY
-
-                                if (event.pointerCount == 2) {
-                                    // Handle Zoom (Scale)
+                                if (event.pointerCount == 1) {
+                                    // Smooth single finger drag
+                                    v.x = event.rawX + dX
+                                    v.y = event.rawY + dY
+                                } else if (event.pointerCount == 2) {
+                                    // Smooth Zoom
                                     val currentDist = calculateDist(event)
-                                    val scaleFactor = currentDist / initialFingerDist
-                                    val newScale = (initialScale * scaleFactor).coerceIn(0.5f, 5.0f)
-                                    v.scaleX = newScale
-                                    v.scaleY = newScale
+                                    if (currentDist > 10f) { // Prevent jitter when fingers are too close
+                                        val scaleFactor = currentDist / initialFingerDist
+                                        val newScale = (initialScale * scaleFactor).coerceIn(0.5f, 5.0f)
+                                        v.scaleX = newScale
+                                        v.scaleY = newScale
+                                    }
 
-                                    // Handle Rotation (Amplify by sensitivity)
+                                    // Smooth Rotation
                                     val currentAngle = calculateAngle(event)
                                     val angleDiff = currentAngle - initialFingerAngle
                                     v.rotation = initialRotation + (angleDiff * rotationSensitivity)
@@ -175,7 +173,6 @@ class EasterEggActivity : AppCompatActivity() {
                             }
 
                             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                                // Optional: pulse effect when released
                                 v.alpha = 0.7f
                                 return true
                             }
@@ -184,9 +181,9 @@ class EasterEggActivity : AppCompatActivity() {
                     }
 
                     private fun calculateAngle(event: MotionEvent): Float {
-                        val deltaX = (event.getX(0) - event.getX(1)).toDouble()
-                        val deltaY = (event.getY(0) - event.getY(1)).toDouble()
-                        return Math.toDegrees(atan2(deltaY, deltaX)).toFloat()
+                        val x = event.getX(0) - event.getX(1)
+                        val y = event.getY(0) - event.getY(1)
+                        return Math.toDegrees(atan2(y.toDouble(), x.toDouble())).toFloat()
                     }
 
                     private fun calculateDist(event: MotionEvent): Float {
