@@ -15,6 +15,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import java.util.*
 import kotlin.math.atan2
+import kotlin.math.hypot
 
 class EasterEggActivity : AppCompatActivity() {
 
@@ -69,7 +70,7 @@ class EasterEggActivity : AppCompatActivity() {
             if (!isToastActive) {
                 isToastActive = true
                 v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                reshuffleMosaic()
+                reshuffleMosaic() // Note: Scale is NOT reset here now
                 showRandomEmojiToast()
                 Handler(Looper.getMainLooper()).postDelayed({ isToastActive = false }, 2000)
             }
@@ -105,8 +106,7 @@ class EasterEggActivity : AppCompatActivity() {
                 .translationX(random.nextInt(rootLayout.width).toFloat() - (v.width / 2f))
                 .translationY(random.nextInt(rootLayout.height).toFloat() - (v.height / 2f))
                 .rotation(random.nextFloat() * 360f)
-                .scaleX(1.0f)
-                .scaleY(1.0f)
+                // v.scale is NOT changed here, so it persists
                 .setDuration(700)
                 .setInterpolator(OvershootInterpolator())
                 .start()
@@ -117,29 +117,15 @@ class EasterEggActivity : AppCompatActivity() {
     private fun setupTransformations(view: View) {
         var dX = 0f
         var dY = 0f
-        var prevAngle = 0f
-
-        // Android's built-in Scale Detector for 2-finger expand/minimize
-        val scaleDetector = ScaleGestureDetector(this, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
-            override fun onScale(detector: ScaleGestureDetector): Boolean {
-                view.scaleX *= detector.scaleFactor
-                view.scaleY *= detector.scaleFactor
-                
-                // Keep scale in a healthy range
-                view.scaleX = view.scaleX.coerceIn(0.5f, 5.0f)
-                view.scaleY = view.scaleY.coerceIn(0.5f, 5.0f)
-                return true
-            }
-        })
+        var lastAngle = 0f
+        var lastDist = 0f
 
         view.setOnTouchListener { v, event ->
-            // Pass event to Scale Detector
-            scaleDetector.onTouchEvent(event)
-
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     v.bringToFront()
                     imgLogo.bringToFront()
+                    // Capture initial offset for dragging
                     dX = v.x - event.rawX
                     dY = v.y - event.rawY
                     v.alpha = 1.0f
@@ -147,25 +133,36 @@ class EasterEggActivity : AppCompatActivity() {
 
                 MotionEvent.ACTION_POINTER_DOWN -> {
                     if (event.pointerCount == 2) {
-                        prevAngle = calculateAngle(event)
+                        // Initialize rotation and scale trackers
+                        lastAngle = calculateAngle(event)
+                        lastDist = calculateDist(event)
                     }
                 }
 
                 MotionEvent.ACTION_MOVE -> {
-                    // Drag logic (single or multi finger)
-                    if (!scaleDetector.isInProgress) {
+                    if (event.pointerCount == 1) {
+                        // Standard Drag
                         v.x = event.rawX + dX
                         v.y = event.rawY + dY
-                    }
+                    } else if (event.pointerCount == 2) {
+                        // Handle Zoom (Scale)
+                        val currentDist = calculateDist(event)
+                        if (lastDist > 0) {
+                            val ratio = currentDist / lastDist
+                            v.scaleX *= ratio
+                            v.scaleY *= ratio
+                            // Constraints
+                            v.scaleX = v.scaleX.coerceIn(0.3f, 8.0f)
+                            v.scaleY = v.scaleY.coerceIn(0.3f, 8.0f)
+                        }
+                        lastDist = currentDist
 
-                    // Large Rotation logic (circular motion)
-                    if (event.pointerCount == 2) {
+                        // Handle Rotation
                         val currentAngle = calculateAngle(event)
-                        val deltaAngle = currentAngle - prevAngle
-                        
-                        // Increase 2.0f for even "larger" rotation sensitivity
-                        v.rotation += (deltaAngle * 2.0f) 
-                        prevAngle = currentAngle
+                        val deltaAngle = currentAngle - lastAngle
+                        // Multiply by 2.0f for that "larger" rotation feel
+                        v.rotation += (deltaAngle * 2.0f)
+                        lastAngle = currentAngle
                     }
                 }
 
@@ -174,10 +171,12 @@ class EasterEggActivity : AppCompatActivity() {
                 }
                 
                 MotionEvent.ACTION_POINTER_UP -> {
-                    // Smoothly transition back to 1-finger drag
-                    val remainingIdx = if (event.actionIndex == 0) 1 else 0
-                    dX = v.x - event.getRawX(remainingIdx)
-                    dY = v.y - event.getRawY(remainingIdx)
+                    // Reset trackers to prevent jumping when one finger leaves
+                    if (event.pointerCount > 1) {
+                        val remainingIdx = if (event.actionIndex == 0) 1 else 0
+                        dX = v.x - event.getRawX(remainingIdx)
+                        dY = v.y - event.getRawY(remainingIdx)
+                    }
                 }
             }
             true
@@ -188,6 +187,12 @@ class EasterEggActivity : AppCompatActivity() {
         val x = (event.getX(0) - event.getX(1)).toDouble()
         val y = (event.getY(0) - event.getY(1)).toDouble()
         return Math.toDegrees(atan2(y, x)).toFloat()
+    }
+
+    private fun calculateDist(event: MotionEvent): Float {
+        val x = event.getX(0) - event.getX(1)
+        val y = event.getY(0) - event.getY(1)
+        return hypot(x, y)
     }
 
     private fun showRandomEmojiToast() {
