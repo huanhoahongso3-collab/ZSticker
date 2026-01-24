@@ -26,7 +26,7 @@ class EasterEggActivity : AppCompatActivity() {
     
     private val hideHandler = Handler(Looper.getMainLooper())
     private val hideRunnable = Runnable { 
-        rotateHandle?.animate()?.alpha(0f)?.setDuration(300)?.withEndAction { 
+        rotateHandle?.animate()?.alpha(0f)?.setDuration(200)?.withEndAction { 
             rotateHandle?.visibility = View.GONE 
         }?.start()
     }
@@ -80,15 +80,13 @@ class EasterEggActivity : AppCompatActivity() {
     }
 
     private fun setupRotateHandle() {
-        // Smaller size: 32dp
         val size = (32 * resources.displayMetrics.density).toInt()
         rotateHandle = ImageView(this).apply {
             layoutParams = FrameLayout.LayoutParams(size, size)
-            // Semi-transparent look
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
-                setColor(Color.parseColor("#80FFFFFF")) // 50% white
-                setStroke(2, Color.parseColor("#80000000")) // 50% black stroke
+                setColor(Color.parseColor("#99FFFFFF")) // Slightly more visible but still glass-like
+                setStroke(2, Color.parseColor("#66000000"))
             }
             setImageResource(android.R.drawable.ic_menu_rotate)
             alpha = 0f
@@ -119,7 +117,7 @@ class EasterEggActivity : AppCompatActivity() {
     }
 
     private fun reshuffleMosaic() {
-        rotateHandle?.visibility = View.GONE
+        hideHandler.post(hideRunnable) // Hide handle during shuffle
         mosaicStickers.forEach { v ->
             v.animate()
                 .translationX(random.nextInt(rootLayout.width).toFloat() - (v.width / 2f))
@@ -180,7 +178,7 @@ class EasterEggActivity : AppCompatActivity() {
             val sticker = activeSticker ?: return@setOnTouchListener false
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    hideHandler.removeCallbacks(hideRunnable) // Don't hide while holding
+                    hideHandler.removeCallbacks(hideRunnable)
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val centerX = sticker.x + sticker.width / 2
@@ -207,13 +205,13 @@ class EasterEggActivity : AppCompatActivity() {
 
     private fun startHideTimer() {
         hideHandler.removeCallbacks(hideRunnable)
-        hideHandler.postDelayed(hideRunnable, 1000)
+        hideHandler.postDelayed(hideRunnable, 500) // 0.5s fadeout
     }
 
     private fun updateHandlePosition(sticker: View) {
         val handle = rotateHandle ?: return
-        // Distance from center: (Sticker half-height * scale) + padding
-        val radius = (sticker.height * sticker.scaleY) / 2 + (40 * resources.displayMetrics.density)
+        // Nearer radius: reduced padding from 40dp to 20dp
+        val radius = (sticker.height * sticker.scaleY) / 2 + (20 * resources.displayMetrics.density)
         val angleRad = Math.toRadians((sticker.rotation - 90).toDouble())
         
         val centerX = sticker.x + sticker.width / 2
