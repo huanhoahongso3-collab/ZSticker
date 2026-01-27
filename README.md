@@ -36,3 +36,7 @@ Working features include:
 ZSticker Copyright (c) 2026
 
 Licensed under the GNU General Public License v3.0 (GPL-3.0)
+
+Warning: GPL-3.0 only applies to the code of this project. All assets of this project (logo file, additional png and html) is copyright and must not be used for any reason without author's approval (vector xml is allowed).
+
+This warning applys to all version of this program from its very first day
