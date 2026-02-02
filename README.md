@@ -1,7 +1,7 @@
 # 📦 ZSticker — Share custom sticker to Zalo
 (Currently is a fork of Zaticker)
 
-Warning: removebg branch. Need to use third-party API to remove background. Still in beta because API longevity is not sure. 
+Warning: This branch is removebg branch. I don't have any attention to merge this with main because I don't own the removebg API
 
 Support min SDK 26 (Android 8.0). Recommend using SDK 34 (Android 14)
 
@@ -38,3 +38,7 @@ Working features include:
 ZSticker Copyright (c) 2026
 
 Licensed under the GNU General Public License v3.0 (GPL-3.0)
+
+Warning: GPL-3.0 only applies to the code of this project. All assets of this project (logo file, additional png and html) is copyright and must not be used for any reason without author's approval (vector xml is allowed).
+
+This warning applys to all versions and all branches of this program from its very first day

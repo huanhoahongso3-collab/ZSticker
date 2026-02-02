@@ -208,7 +208,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         val now = System.currentTimeMillis()
                         versionClickCount = if (now - lastClickTime < 500) versionClickCount + 1 else 1
                         lastClickTime = now
-                        if (versionClickCount >= 47) {
+                        if (versionClickCount >= 5) {
                             versionClickCount = 0
                             startActivity(Intent(this, EasterEggActivity::class.java))
                         }
