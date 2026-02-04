@@ -11,7 +11,7 @@ android {
         minSdk 26
         targetSdk 34
         versionCode 5131
-        versionName '5.1-removebg'  // ✅ updated version name
+        versionName '5.1-bgoff'  // ✅ updated version name
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
