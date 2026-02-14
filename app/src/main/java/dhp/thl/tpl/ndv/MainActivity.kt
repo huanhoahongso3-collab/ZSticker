@@ -58,6 +58,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
                     val config = Configuration(newBase.resources.configuration)
 
+                    if (langCode != "system") {
                         val locale = Locale(langCode)
                         Locale.setDefault(locale)
                         config.setLocale(locale)
