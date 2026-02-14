@@ -44,7 +44,7 @@
 
         <Button
             android:id="@+id/btn_cancel"
-            style="?attr/materialButtonStyleText"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/cancel"
@@ -52,7 +52,7 @@
 
         <Button
             android:id="@+id/btn_continue"
-            style="?attr/materialButtonStyle"
+            style="@style/Widget.MaterialComponents.Button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/continue_action"/>
