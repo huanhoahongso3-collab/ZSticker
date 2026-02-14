@@ -27,6 +27,13 @@
     <string name="remove_bg">Xóa phông nền</string>
     <string name="rb_completed">Xóa phông nền hoàn tất</string>
     <string name="rb_failed">Xóa phông nền thất bại</string>
+    <string name="rb_warning_title">Cảnh báo xóa phông nền</string>
+    <string name="rb_warning_message">Tính năng này sử dụng API của bên thứ ba (BRIA RMBG 2.0). Bằng cách tiếp tục, bạn chấp nhận rằng chúng tôi không có quyền đọc hình ảnh và mọi thứ được sử dụng và kiểm soát bởi Hugging Face và dịch vụ của bên thứ ba.\n\nLiên kết dự án: https://huggingface.co/spaces/briaai/BRIA-RMBG-2.0</string>
+    <string name="continue_action">Tiếp tục</string>
+
+    <string name="lang_en">Tiếng Anh</string>
+    <string name="lang_vi">Tiếng Việt</string>
+    <string name="lang_system">Theo hệ thống</string>
 
     <string name="dynamic_color_warning_title">Lưu ý về màu sắc hệ thống</string>
     <string name="dynamic_color_warning_message">Việc thay đổi giao diện khác với cài đặt hệ thống có thể làm mất hiệu ứng màu Material You (màu sắc động) trên một số thiết bị Android 12+.</string>

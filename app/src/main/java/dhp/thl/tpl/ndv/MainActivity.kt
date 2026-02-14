@@ -37,6 +37,12 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
 import kotlin.concurrent.thread
+import android.widget.ArrayAdapter
+import android.widget.ImageView
+import android.widget.TextView
+import android.widget.RadioButton
+import android.view.LayoutInflater
+import androidx.appcompat.app.AlertDialog
 
 class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
@@ -105,17 +111,24 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     // --- THEME SELECTOR ---
                     updateThemeText(prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM))
                     binding.itemTheme.setOnClickListener {
-                        val themes = arrayOf(getString(R.string.theme_light), getString(R.string.theme_dark), getString(R.string.theme_system))
+                        val themes = listOf(
+                            OptionItem(R.drawable.ic_theme_light, getString(R.string.theme_light)),
+                            OptionItem(R.drawable.ic_theme_dark, getString(R.string.theme_dark)),
+                            OptionItem(R.drawable.ic_settings_system, getString(R.string.theme_system))
+                        )
+                        
                         val currentMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-                        val checkedItem = when (currentMode) {
+                        val selectedIndex = when (currentMode) {
                             AppCompatDelegate.MODE_NIGHT_NO -> 0
                             AppCompatDelegate.MODE_NIGHT_YES -> 1
                             else -> 2
                         }
 
-                        MaterialAlertDialogBuilder(this)
+                        val adapter = ThemeAdapter(this, themes, selectedIndex)
+
+                        val dialog = MaterialAlertDialogBuilder(this)
                         .setTitle(getString(R.string.info_theme_title))
-                        .setSingleChoiceItems(themes, checkedItem) { dialog, which ->
+                        .setAdapter(adapter) { dialog, which ->
                             val newMode = when (which) {
                                 0 -> AppCompatDelegate.MODE_NIGHT_NO
                                 1 -> AppCompatDelegate.MODE_NIGHT_YES
@@ -123,7 +136,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                             }
                             handleThemeSelection(prefs, newMode)
                             dialog.dismiss()
-                        }.show()
+                        }.create()
+                        dialog.window?.setDimAmount(0.2f)
+                        dialog.show()
                     }
 
                     // --- LANGUAGE SELECTOR ---
@@ -135,27 +150,31 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
 
                     binding.itemLanguage.setOnClickListener {
-                        val langs = arrayOf("English", "Tiếng Việt", getString(R.string.theme_system))
+                        val langs = arrayOf(getString(R.string.lang_en), getString(R.string.lang_vi), getString(R.string.lang_system))
                         val checkedLang = when (currentLang) {
                             "en" -> 0
                             "vi" -> 1
                             else -> 2
                         }
-
-                        MaterialAlertDialogBuilder(this)
-                        .setTitle(getString(R.string.info_language_title))
-                        .setSingleChoiceItems(langs, checkedLang) { dialog, which ->
-                            val langCode = when (which) {
-                                0 -> "en"
-                                1 -> "vi"
-                                else -> "system"
+                        
+                         val dialog = MaterialAlertDialogBuilder(this)
+                            .setTitle(getString(R.string.info_language_title))
+                            .setSingleChoiceItems(langs, checkedLang) { d, which ->
+                                val langCode = when (which) {
+                                    0 -> "en"
+                                    1 -> "vi"
+                                    else -> "system"
+                                }
+                                if (currentLang != langCode) {
+                                    prefs.edit().putString("lang", langCode).apply()
+                                    recreate()
+                                }
+                                d.dismiss()
                             }
-                            if (currentLang != langCode) {
-                                prefs.edit().putString("lang", langCode).apply()
-                                recreate()
-                            }
-                            dialog.dismiss()
-                        }.show()
+                            .create()
+                        
+                        dialog.window?.setDimAmount(0.2f)
+                        dialog.show()
                     }
 
                     setupSecondaryInfo()
@@ -167,12 +186,14 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     (newMode == AppCompatDelegate.MODE_NIGHT_NO && systemNightMode != Configuration.UI_MODE_NIGHT_NO)
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && isDifferentFromSystem && newMode != AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM) {
-                        MaterialAlertDialogBuilder(this)
+                        val dialog = MaterialAlertDialogBuilder(this)
                         .setTitle(getString(R.string.dynamic_color_warning_title))
                         .setMessage(getString(R.string.dynamic_color_warning_message))
                         .setPositiveButton(getString(R.string.ok)) { _, _ -> applyAndSaveTheme(prefs, newMode) }
                         .setNegativeButton(getString(R.string.cancel), null)
-                        .show()
+                        .create()
+                        dialog.window?.setDimAmount(0.2f)
+                        dialog.show()
                     } else {
                         applyAndSaveTheme(prefs, newMode)
                     }
@@ -393,19 +414,50 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
                 }
 
-                override fun onStickerLongClick(uri: Uri) {
-                    val title = SpannableString(getString(R.string.sticker_options_title)).apply {
-                        setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
-                    }
-                    MaterialAlertDialogBuilder(this).setTitle(title)
-                    .setItems(arrayOf(getString(R.string.export), getString(R.string.delete), getString(R.string.remove_bg))) { _, which ->
-                        when (which) {
-                            0 -> exportSingleSticker(uri)
-                            1 -> deleteSticker(uri)
-                            2 -> removeBackground(uri)
-                        }
-                    }.setNegativeButton(getString(R.string.cancel), null).show()
+    override fun onStickerLongClick(uri: Uri) {
+        val title = SpannableString(getString(R.string.sticker_options_title)).apply {
+            setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
+        }
+
+        val options = listOf(
+            OptionItem(R.drawable.ic_export, getString(R.string.export)),
+            OptionItem(R.drawable.ic_delete, getString(R.string.delete)),
+            OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg))
+        )
+
+        val adapter = OptionAdapter(this, options)
+
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(title)
+            .setAdapter(adapter) { _, which ->
+                when (which) {
+                    0 -> exportSingleSticker(uri)
+                    1 -> deleteSticker(uri)
+                    2 -> showBackgroundRemovalWarning(uri)
                 }
+            }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .create()
+        
+        dialog.window?.setDimAmount(0.2f)
+        dialog.show()
+    }
+
+    private fun showBackgroundRemovalWarning(uri: Uri) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_warning, null)
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setView(dialogView)
+            .create()
+
+        dialogView.findViewById<View>(R.id.btn_cancel).setOnClickListener { dialog.dismiss() }
+        dialogView.findViewById<View>(R.id.btn_continue).setOnClickListener {
+            dialog.dismiss()
+            removeBackground(uri)
+        }
+
+        dialog.window?.setDimAmount(0.2f)
+        dialog.show()
+    }
 
                 private fun exportSingleSticker(uri: Uri) {
                     try {
@@ -436,4 +488,27 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 999)
                     }
                 }
+}
+
+data class OptionItem(val iconRes: Int, val text: String)
+
+class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<OptionItem>(context, 0, objects) {
+    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+        val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.item_icon_text, parent, false)
+        val item = getItem(position)
+        view.findViewById<ImageView>(R.id.item_icon).setImageResource(item!!.iconRes)
+        view.findViewById<TextView>(R.id.item_text).text = item.text
+        return view
+    }
+}
+
+class ThemeAdapter(context: Context, objects: List<OptionItem>, private val selectedIndex: Int) : ArrayAdapter<OptionItem>(context, 0, objects) {
+    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+        val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.item_radio_icon_text, parent, false)
+        val item = getItem(position)
+        view.findViewById<ImageView>(R.id.item_icon).setImageResource(item!!.iconRes)
+        view.findViewById<TextView>(R.id.item_text).text = item.text
+        view.findViewById<RadioButton>(R.id.item_radio).isChecked = (position == selectedIndex)
+        return view
+    }
 }
