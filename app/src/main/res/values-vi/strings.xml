@@ -21,9 +21,9 @@
     <string name="theme_light">Sáng</string>
     <string name="theme_dark">Tối</string>
     <string name="theme_system">Theo hệ thống</string>
-
+    
     <string name="info_license_note">Giấy phép Công cộng GNU v3.0</string>
-
+    
     <string name="sticker_options_title">Tùy chọn nhãn dán</string>
     <string name="export">Xuất vào bộ sưu tập</string>
     <string name="delete">Xóa nhãn dán</string>

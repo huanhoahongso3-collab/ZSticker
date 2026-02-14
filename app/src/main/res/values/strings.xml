@@ -21,9 +21,9 @@
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="theme_system">System Default</string>
-
+    
     <string name="info_license_note">GNU General Public License v3.0</string>
-
+    
     <string name="sticker_options_title">Sticker Options</string>
     <string name="export">Export to Gallery</string>
     <string name="delete">Delete Sticker</string>
@@ -40,7 +40,7 @@
     <string name="rb_warning_message">This feature uses a third-party API (BRIA RMBG 2.0). By continuing, you acknowledge that we do not have permission to read the image and everything is used and controlled by Hugging Face and the third-party service.\n\nProject Link: https://github.com/huanhoahongso3-collab/briarmbg2.0\nEndpoint Source Code: http://github.com/huanhoahongso3-collab/briarmbg2.0/</string>
     <string name="dont_show_again">Don\'t show again</string>
     <string name="continue_action">Continue</string>
-
+    
     <string name="lang_en">English</string>
     <string name="lang_vi">Vietnamese</string>
     <string name="lang_system">System Default</string>
