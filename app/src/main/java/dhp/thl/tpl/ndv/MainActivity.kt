@@ -262,6 +262,25 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.gnu.org/licenses/gpl-3.0.html")))
                     }
                     binding.itemExportAll.setOnClickListener { exportAllStickers() }
+                    binding.itemRemoveAll.setOnClickListener { confirmDeleteAll() }
+                }
+
+                private fun confirmDeleteAll() {
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle(getString(R.string.info_remove_all_confirm_title))
+                        .setMessage(getString(R.string.info_remove_all_confirm_message))
+                        .setPositiveButton(getString(R.string.delete)) { _, _ -> deleteAllStickers() }
+                        .setNegativeButton(getString(R.string.cancel), null)
+                        .show()
+                }
+
+                private fun deleteAllStickers() {
+                    val files = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
+                    var successCount = 0
+                    files?.forEach { if (it.delete()) successCount++ }
+                    
+                    adapter.refreshData(this)
+                    Toast.makeText(this, if (successCount > 0) getString(R.string.success) else getString(R.string.failed), Toast.LENGTH_SHORT).show()
                 }
 
                 // --- STICKER OPERATIONS ---

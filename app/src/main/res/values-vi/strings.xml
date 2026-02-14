@@ -13,6 +13,9 @@
     <string name="info_repo_title">Mã nguồn</string>
     <string name="info_license_title">Giấy phép</string>
     <string name="info_export_all_title">Xuất tất cả nhãn dán vào bộ sưu tập</string>
+    <string name="info_remove_all_title">Xóa tất cả nhãn dán</string>
+    <string name="info_remove_all_confirm_title">Xóa tất cả nhãn dán?</string>
+    <string name="info_remove_all_confirm_message">Hành động này sẽ xóa vĩnh viễn tất cả nhãn dán của bạn. Không thể hoàn tác.</string>
 
     <string name="theme_light">Sáng</string>
     <string name="theme_dark">Tối</string>

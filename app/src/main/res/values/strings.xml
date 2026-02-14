@@ -13,6 +13,9 @@
     <string name="info_repo_title">Source Code</string>
     <string name="info_license_title">License</string>
     <string name="info_export_all_title">Export all stickers to gallery</string>
+    <string name="info_remove_all_title">Remove all stickers</string>
+    <string name="info_remove_all_confirm_title">Delete all stickers?</string>
+    <string name="info_remove_all_confirm_message">This will permanently delete all your stickers. This action cannot be undone.</string>
 
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
