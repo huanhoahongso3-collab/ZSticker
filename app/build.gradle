@@ -10,8 +10,8 @@ android {
         applicationId 'dhp.thl.tpl.ndv'
         minSdk 26
         targetSdk 34
-        versionCode 5131
-        versionName '5.1-removebg'  // ✅ updated version name
+        versionCode 5410
+        versionName '5.4'  // ✅ updated version name
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

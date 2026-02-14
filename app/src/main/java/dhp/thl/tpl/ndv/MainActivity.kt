@@ -152,9 +152,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     // --- LANGUAGE SELECTOR ---
                     val currentLang = prefs.getString("lang", "system") ?: "system"
                     binding.txtCurrentLanguage.text = when (currentLang) {
-                        "en" -> "English"
-                        "vi" -> "Tiếng Việt"
-                        else -> getString(R.string.theme_system)
+                        "en" -> getString(R.string.lang_en)
+                        "vi" -> getString(R.string.lang_vi)
+                        else -> getString(R.string.lang_system)
                     }
 
                     binding.itemLanguage.setOnClickListener {
@@ -308,44 +308,68 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
                 }
 
-                private fun importToApp(src: Uri) {
+                /**
+                 * Imports a single URI as a sticker.
+                 * Returns: 0 for success, 1 for unsupported type (including GIF), 2 for other failures.
+                 */
+                private fun importToApp(src: Uri): Int {
                     try {
                         val mimeType = contentResolver.getType(src) ?: "application/octet-stream"
                         if (!mimeType.startsWith("image/") || mimeType == "image/gif") {
-                            Toast.makeText(this, getString(R.string.unsupported_file_type), Toast.LENGTH_SHORT).show()
-                            return
+                            return 1
                         }
 
                         contentResolver.openInputStream(src)?.use { input ->
                             val file = File(filesDir, "zsticker_${System.currentTimeMillis()}.png")
                             FileOutputStream(file).use { out ->
-                                if (input.copyTo(out) > 0) adapter.refreshData(this)
-                                    else Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
+                                if (input.copyTo(out) > 0) {
+                                    return 0
+                                } else {
+                                    return 2
+                                }
                             }
                         }
+                        return 2
                     } catch (e: Exception) {
-                        Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
+                        return 2
                     }
                 }
 
                 private fun handleIncomingShare(intent: Intent?) {
                     if (intent == null) return
-                        when (intent.action) {
-                            Intent.ACTION_SEND -> {
-                                if (intent.type?.startsWith("image/") == true) {
-                                    @Suppress("DEPRECATION")
-                                    intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.let { importToApp(it) }
-                                }
-                            }
-                            Intent.ACTION_SEND_MULTIPLE -> {
-                                if (intent.type?.startsWith("image/") == true) {
-                                    @Suppress("DEPRECATION")
-                                    intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)?.let { list ->
-                                        list.forEach { importToApp(it) }
-                                    }
-                                }
+                    val uris = mutableListOf<Uri>()
+                    when (intent.action) {
+                        Intent.ACTION_SEND -> {
+                            @Suppress("DEPRECATION")
+                            intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.let { uris.add(it) }
+                        }
+                        Intent.ACTION_SEND_MULTIPLE -> {
+                            @Suppress("DEPRECATION")
+                            intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)?.let { uris.addAll(it) }
+                        }
+                    }
+
+                    if (uris.isNotEmpty()) {
+                        var hasUnsupported = false
+                        var hasFailed = false
+                        var hasSuccess = false
+
+                        uris.forEach { uri ->
+                            when (importToApp(uri)) {
+                                0 -> hasSuccess = true
+                                1 -> hasUnsupported = true
+                                2 -> hasFailed = true
                             }
                         }
+
+                        if (hasSuccess) adapter.refreshData(this)
+                        
+                        if (hasUnsupported) {
+                            Toast.makeText(this, getString(R.string.unsupported_file_type), Toast.LENGTH_SHORT).show()
+                        } else if (hasFailed) {
+                            Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
 
                 private fun removeBackground(uri: Uri) {
@@ -537,7 +561,24 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }
 
                 private val pickImages = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
-                    if (uris.isNotEmpty()) uris.forEach { importToApp(it) }
+                    if (uris.isNotEmpty()) {
+                        var hasUnsupported = false
+                        var hasFailed = false
+                        var hasSuccess = false
+                        uris.forEach { uri ->
+                            when (importToApp(uri)) {
+                                0 -> hasSuccess = true
+                                1 -> hasUnsupported = true
+                                2 -> hasFailed = true
+                            }
+                        }
+                        if (hasSuccess) adapter.refreshData(this)
+                        if (hasUnsupported) {
+                            Toast.makeText(this, getString(R.string.unsupported_file_type), Toast.LENGTH_SHORT).show()
+                        } else if (hasFailed) {
+                            Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
 
                 private fun requestLegacyPermissions() {
