@@ -68,9 +68,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         config.setLocale(systemLocale)
                     }
 
-                    // Removed manual config.uiMode override here as it conflicts with DynamicColors
+                    // Removed manual config.uiMode override here as it conflicts with DynamicColors 
                     // initialization in onCreate. AppCompatDelegate handles the switch.
-
+                    
                     val context = newBase.createConfigurationContext(config)
                     super.attachBaseContext(context)
                 }
@@ -121,10 +121,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     binding.itemTheme.setOnClickListener {
                         val themes = listOf(
                             OptionItem(R.drawable.ic_theme_light, getString(R.string.theme_light)),
-                                            OptionItem(R.drawable.ic_theme_dark, getString(R.string.theme_dark)),
-                                            OptionItem(R.drawable.ic_settings_system, getString(R.string.theme_system))
+                            OptionItem(R.drawable.ic_theme_dark, getString(R.string.theme_dark)),
+                            OptionItem(R.drawable.ic_settings_system, getString(R.string.theme_system))
                         )
-
+                        
                         val currentMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
                         val selectedIndex = when (currentMode) {
                             AppCompatDelegate.MODE_NIGHT_NO -> 0
@@ -160,8 +160,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     binding.itemLanguage.setOnClickListener {
                         val langs = listOf(
                             OptionItem(R.drawable.ic_flag_en, getString(R.string.lang_en)),
-                                           OptionItem(R.drawable.ic_flag_vi, getString(R.string.lang_vi)),
-                                           OptionItem(R.drawable.ic_settings_system, getString(R.string.lang_system))
+                            OptionItem(R.drawable.ic_flag_vi, getString(R.string.lang_vi)),
+                            OptionItem(R.drawable.ic_settings_system, getString(R.string.lang_system))
                         )
 
                         val langSelection = prefs.getString("lang", "system") ?: "system"
@@ -170,25 +170,25 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                             "vi" -> 1
                             else -> 2
                         }
+                        
+                         val adapter = ThemeAdapter(this, langs, selectedIndex) // Reusing ThemeAdapter as it fits (OptionItem with Radio)
 
-                        val adapter = ThemeAdapter(this, langs, selectedIndex) // Reusing ThemeAdapter as it fits (OptionItem with Radio)
-
-                        val dialog = MaterialAlertDialogBuilder(this)
-                        .setTitle(getString(R.string.info_language_title))
-                        .setAdapter(adapter) { d, which ->
-                            val langCode = when (which) {
-                                0 -> "en"
-                                1 -> "vi"
-                                else -> "system"
+                         val dialog = MaterialAlertDialogBuilder(this)
+                            .setTitle(getString(R.string.info_language_title))
+                            .setAdapter(adapter) { d, which ->
+                                val langCode = when (which) {
+                                    0 -> "en"
+                                    1 -> "vi"
+                                    else -> "system"
+                                }
+                                if (currentLang != langCode) {
+                                    prefs.edit().putString("lang", langCode).apply()
+                                    recreate()
+                                }
+                                d.dismiss()
                             }
-                            if (currentLang != langCode) {
-                                prefs.edit().putString("lang", langCode).apply()
-                                recreate()
-                            }
-                            d.dismiss()
-                        }
-                        .create()
-
+                            .create()
+                        
                         dialog.window?.setDimAmount(0.35f)
                         dialog.show()
                     }
@@ -264,11 +264,11 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
                 private fun confirmDeleteAll() {
                     MaterialAlertDialogBuilder(this)
-                    .setTitle(getString(R.string.info_remove_all_confirm_title))
-                    .setMessage(getString(R.string.info_remove_all_confirm_message))
-                    .setPositiveButton(getString(R.string.delete)) { _, _ -> deleteAllStickers() }
-                    .setNegativeButton(getString(R.string.cancel), null)
-                    .show()
+                        .setTitle(getString(R.string.info_remove_all_confirm_title))
+                        .setMessage(getString(R.string.info_remove_all_confirm_message))
+                        .setPositiveButton(getString(R.string.delete)) { _, _ -> deleteAllStickers() }
+                        .setNegativeButton(getString(R.string.cancel), null)
+                        .show()
                 }
 
                 private fun deleteAllStickers() {
@@ -279,7 +279,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
                     var successCount = 0
                     files.forEach { if (it.delete()) successCount++ }
-
+                    
                     adapter.refreshData(this)
                     ToastUtils.showToast(this, if (successCount > 0) getString(R.string.success) else getString(R.string.failed))
                 }
@@ -337,39 +337,39 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
                 private fun handleIncomingShare(intent: Intent?) {
                     if (intent == null) return
-                        val uris = mutableListOf<Uri>()
-                        when (intent.action) {
-                            Intent.ACTION_SEND -> {
-                                @Suppress("DEPRECATION")
-                                intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.let { uris.add(it) }
-                            }
-                            Intent.ACTION_SEND_MULTIPLE -> {
-                                @Suppress("DEPRECATION")
-                                intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)?.let { uris.addAll(it) }
+                    val uris = mutableListOf<Uri>()
+                    when (intent.action) {
+                        Intent.ACTION_SEND -> {
+                            @Suppress("DEPRECATION")
+                            intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.let { uris.add(it) }
+                        }
+                        Intent.ACTION_SEND_MULTIPLE -> {
+                            @Suppress("DEPRECATION")
+                            intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)?.let { uris.addAll(it) }
+                        }
+                    }
+
+                    if (uris.isNotEmpty()) {
+                        var hasUnsupported = false
+                        var hasFailed = false
+                        var hasSuccess = false
+
+                        uris.forEach { uri ->
+                            when (importToApp(uri)) {
+                                0 -> hasSuccess = true
+                                1 -> hasUnsupported = true
+                                2 -> hasFailed = true
                             }
                         }
 
-                        if (uris.isNotEmpty()) {
-                            var hasUnsupported = false
-                            var hasFailed = false
-                            var hasSuccess = false
-
-                            uris.forEach { uri ->
-                                when (importToApp(uri)) {
-                                    0 -> hasSuccess = true
-                                    1 -> hasUnsupported = true
-                                    2 -> hasFailed = true
-                                }
-                            }
-
-                            if (hasSuccess) adapter.refreshData(this)
-
-                                if (hasUnsupported) {
-                                    ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
-                                } else if (hasFailed) {
-                                    ToastUtils.showToast(this, getString(R.string.failed))
-                                }
+                        if (hasSuccess) adapter.refreshData(this)
+                        
+                        if (hasUnsupported) {
+                            ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
+                        } else if (hasFailed) {
+                            ToastUtils.showToast(this, getString(R.string.failed))
                         }
+                    }
                 }
 
                 private fun removeBackground(uri: Uri) {
@@ -484,61 +484,61 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
                 }
 
-                override fun onStickerLongClick(uri: Uri) {
-                    val title = SpannableString(getString(R.string.sticker_options_title)).apply {
-                        setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
-                    }
+    override fun onStickerLongClick(uri: Uri) {
+        val title = SpannableString(getString(R.string.sticker_options_title)).apply {
+            setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
+        }
 
-                    val options = listOf(
-                        OptionItem(R.drawable.ic_export, getString(R.string.export)),
-                                         OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg)),
-                                         OptionItem(R.drawable.ic_delete, getString(R.string.delete))
-                    )
+        val options = listOf(
+            OptionItem(R.drawable.ic_export, getString(R.string.export)),
+            OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg)),
+            OptionItem(R.drawable.ic_delete, getString(R.string.delete))
+        )
 
-                    val adapter = OptionAdapter(this, options)
+        val adapter = OptionAdapter(this, options)
 
-                    val dialog = MaterialAlertDialogBuilder(this)
-                    .setTitle(title)
-                    .setAdapter(adapter) { _, which ->
-                        when (which) {
-                            0 -> exportSingleSticker(uri)
-                            1 -> checkAndShowBackgroundRemovalWarning(uri) // Swapped order
-                            2 -> deleteSticker(uri) // Swapped order
-                        }
-                    }
-                    .setNegativeButton(getString(R.string.cancel), null)
-                    .create()
-
-                    dialog.window?.setDimAmount(0.35f)
-                    dialog.show()
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(title)
+            .setAdapter(adapter) { _, which ->
+                when (which) {
+                    0 -> exportSingleSticker(uri)
+                    1 -> checkAndShowBackgroundRemovalWarning(uri) // Swapped order
+                    2 -> deleteSticker(uri) // Swapped order
                 }
+            }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .create()
+        
+        dialog.window?.setDimAmount(0.35f)
+        dialog.show()
+    }
 
-                private fun checkAndShowBackgroundRemovalWarning(uri: Uri) {
-                    val prefs = getSharedPreferences("settings", MODE_PRIVATE)
-                    if (prefs.getBoolean("dont_show_rb_warning", false)) {
-                        removeBackground(uri)
-                        return
-                    }
+    private fun checkAndShowBackgroundRemovalWarning(uri: Uri) {
+        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+        if (prefs.getBoolean("dont_show_rb_warning", false)) {
+            removeBackground(uri)
+            return
+        }
 
-                    val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_warning, null)
-                    val dialog = MaterialAlertDialogBuilder(this)
-                    .setView(dialogView)
-                    .create()
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_warning, null)
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setView(dialogView)
+            .create()
 
-                    val checkBox = dialogView.findViewById<android.widget.CheckBox>(R.id.cb_dont_show_again)
+        val checkBox = dialogView.findViewById<android.widget.CheckBox>(R.id.cb_dont_show_again)
 
-                    dialogView.findViewById<View>(R.id.btn_cancel).setOnClickListener { dialog.dismiss() }
-                    dialogView.findViewById<View>(R.id.btn_continue).setOnClickListener {
-                        if (checkBox.isChecked) {
-                            prefs.edit().putBoolean("dont_show_rb_warning", true).apply()
-                        }
-                        dialog.dismiss()
-                        removeBackground(uri)
-                    }
+        dialogView.findViewById<View>(R.id.btn_cancel).setOnClickListener { dialog.dismiss() }
+        dialogView.findViewById<View>(R.id.btn_continue).setOnClickListener {
+            if (checkBox.isChecked) {
+                prefs.edit().putBoolean("dont_show_rb_warning", true).apply()
+            }
+            dialog.dismiss()
+            removeBackground(uri)
+        }
 
-                    dialog.window?.setDimAmount(0.35f)
-                    dialog.show()
-                }
+        dialog.window?.setDimAmount(0.35f)
+        dialog.show()
+    }
 
                 private fun exportSingleSticker(uri: Uri) {
                     try {
@@ -573,11 +573,11 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                             }
                         }
                         if (hasSuccess) adapter.refreshData(this)
-                            if (hasUnsupported) {
-                                ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
-                            } else if (hasFailed) {
-                                ToastUtils.showToast(this, getString(R.string.failed))
-                            }
+                        if (hasUnsupported) {
+                            ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
+                        } else if (hasFailed) {
+                            ToastUtils.showToast(this, getString(R.string.failed))
+                        }
                     }
                 }
 

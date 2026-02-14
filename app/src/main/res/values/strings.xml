@@ -31,7 +31,6 @@
     <string name="zalo_share_failed">Zalo not found or share failed</string>
     <string name="success">Successful</string>
     <string name="failed">Failed</string>
-
     <string name="no_stickers_found">No stickers found</string>
     <string name="unsupported_file_type">Unsupported file type</string>
     <string name="remove_bg">Remove background</string>
@@ -45,4 +44,8 @@
     <string name="lang_en">English</string>
     <string name="lang_vi">Vietnamese</string>
     <string name="lang_system">System Default</string>
+
+    <string name="dynamic_color_warning_title">Dynamic Color Notice</string>
+    <string name="dynamic_color_warning_message">Changing to a theme that differs from your system settings may disable Material You dynamic colors on some Android 12+ devices.</string>
+    <string name="ok">OK</string>
 </resources>
