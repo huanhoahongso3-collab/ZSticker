@@ -122,7 +122,7 @@ class EasterEggActivity : AppCompatActivity() {
         rotateHandle?.visibility = View.GONE
         
         vibrate()
-        Toast.makeText(this, "Changed Group!", Toast.LENGTH_SHORT).show()
+        ToastUtils.showToast(this, "Changed Group!")
     }
     
     private fun vibrate() {
@@ -169,7 +169,7 @@ class EasterEggActivity : AppCompatActivity() {
                          lastTapTime = now
                          if (logoTapCount >= 20) {
                              logoTapCount = 0
-                             Toast.makeText(this, "Secret game triggered!", Toast.LENGTH_SHORT).show()
+                             ToastUtils.showToast(this, "Secret game triggered!")
                              startActivity(Intent(this, DuoibatActivity::class.java))
                          }
                     }
@@ -331,7 +331,7 @@ class EasterEggActivity : AppCompatActivity() {
     private fun showRandomEmojiToast() {
         val sb = StringBuilder()
         repeat(random.nextInt(10) + 5) { sb.append(emojiPool[random.nextInt(emojiPool.size)]).append(" ") }
-        Toast.makeText(this, sb.toString().trim(), Toast.LENGTH_SHORT).show()
+        ToastUtils.showToast(this, sb.toString().trim())
     }
 
     private fun initEmojiPool() {

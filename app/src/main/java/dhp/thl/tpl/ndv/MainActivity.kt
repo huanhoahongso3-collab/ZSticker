@@ -274,14 +274,14 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 private fun deleteAllStickers() {
                     val files = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
                     if (files.isNullOrEmpty()) {
-                        Toast.makeText(this, getString(R.string.no_stickers_found), Toast.LENGTH_SHORT).show()
+                        ToastUtils.showToast(this, getString(R.string.no_stickers_found))
                         return
                     }
                     var successCount = 0
                     files.forEach { if (it.delete()) successCount++ }
                     
                     adapter.refreshData(this)
-                    Toast.makeText(this, if (successCount > 0) getString(R.string.success) else getString(R.string.failed), Toast.LENGTH_SHORT).show()
+                    ToastUtils.showToast(this, if (successCount > 0) getString(R.string.success) else getString(R.string.failed))
                 }
 
                 // --- STICKER OPERATIONS ---
@@ -289,7 +289,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 private fun exportAllStickers() {
                     val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
                     if (stickerFiles.isNullOrEmpty()) {
-                        Toast.makeText(this, getString(R.string.no_stickers_found), Toast.LENGTH_SHORT).show()
+                        ToastUtils.showToast(this, getString(R.string.no_stickers_found))
                         return
                     }
                     try {
@@ -365,9 +365,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         if (hasSuccess) adapter.refreshData(this)
                         
                         if (hasUnsupported) {
-                            Toast.makeText(this, getString(R.string.unsupported_file_type), Toast.LENGTH_SHORT).show()
+                            ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
                         } else if (hasFailed) {
-                            Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
+                            ToastUtils.showToast(this, getString(R.string.failed))
                         }
                     }
                 }
@@ -407,9 +407,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                             if (isSuccess && resultUri != null) {
                                 adapter.refreshData(this@MainActivity)
                                 binding.recycler.scrollToPosition(0)
-                                Toast.makeText(this, getString(R.string.rb_completed), Toast.LENGTH_SHORT).show()
+                                ToastUtils.showToast(this, getString(R.string.rb_completed))
                             } else {
-                                Toast.makeText(this, getString(R.string.rb_failed), Toast.LENGTH_LONG).show()
+                                ToastUtils.showToast(this, getString(R.string.rb_failed))
                             }
                         }
                     }
@@ -480,7 +480,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         }
                         startActivity(intent)
                     } catch (e: Exception) {
-                        Toast.makeText(this, getString(R.string.zalo_share_failed), Toast.LENGTH_SHORT).show()
+                        ToastUtils.showToast(this, getString(R.string.zalo_share_failed))
                     }
                 }
 
@@ -546,9 +546,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
                         if (!outDir.exists()) outDir.mkdirs()
                             File(outDir, file.name).outputStream().use { out -> file.inputStream().use { it.copyTo(out) } }
-                            Toast.makeText(this, getString(R.string.success), Toast.LENGTH_SHORT).show()
+                            ToastUtils.showToast(this, getString(R.string.success))
                     } catch (e: Exception) {
-                        Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
+                        ToastUtils.showToast(this, getString(R.string.failed))
                     }
                 }
 
@@ -556,7 +556,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     val file = File(filesDir, uri.lastPathSegment ?: "")
                     if (file.exists() && file.delete()) {
                         adapter.refreshData(this)
-                        Toast.makeText(this, getString(R.string.success), Toast.LENGTH_SHORT).show()
+                        ToastUtils.showToast(this, getString(R.string.success))
                     }
                 }
 
@@ -574,9 +574,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         }
                         if (hasSuccess) adapter.refreshData(this)
                         if (hasUnsupported) {
-                            Toast.makeText(this, getString(R.string.unsupported_file_type), Toast.LENGTH_SHORT).show()
+                            ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
                         } else if (hasFailed) {
-                            Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
+                            ToastUtils.showToast(this, getString(R.string.failed))
                         }
                     }
                 }
