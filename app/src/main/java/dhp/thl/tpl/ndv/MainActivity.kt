@@ -79,12 +79,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     val prefs = getSharedPreferences("settings", MODE_PRIVATE)
                     val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
 
-                    // 1. Set mode BEFORE DynamicColors and super.onCreate
-                    if (AppCompatDelegate.getDefaultNightMode() != savedTheme) {
-                        AppCompatDelegate.setDefaultNightMode(savedTheme)
-                    }
-                    
-                    // 2. Apply Dynamic Colors
+                    // Ensure theme is set BEFORE DynamicColors and super.onCreate
+                    // Re-applying even if it seems the same to force AppCompat internal reset
+                    AppCompatDelegate.setDefaultNightMode(savedTheme)
                     DynamicColors.applyToActivityIfAvailable(this)
 
                     super.onCreate(savedInstanceState)
@@ -402,7 +399,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 private fun updateLayoutVisibility(itemId: Int) {
                     when (itemId) {
                         R.id.nav_home -> {
-                            binding.toolbar.title = getString(R.string.app_name)
+                            binding.toolbar.title = getString(R.string.nav_home)
                             binding.recycler.visibility = View.VISIBLE
                             binding.infoLayout.visibility = View.GONE
                             binding.addButton.show()

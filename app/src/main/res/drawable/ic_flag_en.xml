@@ -5,36 +5,30 @@
     android:viewportHeight="24">
     <!-- Outer Border -->
     <path
-        android:pathData="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2z"
+        android:pathData="M12,2A10,10 0 1,0 12,22A10,10 0 0,0 12,2Z"
         android:fillColor="#000000" />
     
-    <!-- White Background -->
-    <path
-        android:pathData="M12,3c-4.97,0 -9,4.03 -9,9s4.03,9 9,9 9,-4.03 9,-9 -4.03,-9 -9,-9z"
-        android:fillColor="#FFFFFF" />
+    <!-- Clipping Background to 9dp radius circle -->
+    <group>
+        <clip-path
+            android:pathData="M12,3A9,9 0 1,1 12,21A9,9 0 1,1 12,3Z" />
+        
+        <!-- White base -->
+        <path
+            android:pathData="M0,0h24v24H0z"
+            android:fillColor="#FFFFFF" />
 
-    <!-- Stripes Red -->
-    <!-- Top right red -->
-    <path
-        android:pathData="M12,3.1C15.6,3.3 18.7,5.4 20.4,8.5L12,8.5V3.1z"
-        android:fillColor="#BB133E" />
-    <!-- Middle right red -->
-    <path
-        android:pathData="M12,10.5h8.9c0.1,0.5 0.1,1 0.1,1.5s0,1 -0.1,1.5H12V10.5z"
-        android:fillColor="#BB133E" />
-    <!-- Bottom stripes -->
-    <path
-        android:pathData="M3.6,14.5c0.5,1.8 1.6,3.4 3.1,4.5l5.3,-0.1V14.5H3.6z"
-        android:fillColor="#BB133E" />
-    <path
-        android:pathData="M12.1,14.5v4.4l5.3,0.1c1.5,-1.1 2.6,-2.7 3.1,-4.5H12.1z"
-        android:fillColor="#BB133E" />
-    <path
-        android:pathData="M8.2,20.3c1.1,0.5 2.4,0.7 3.8,0.7s2.7,-0.2 3.8,-0.7H8.2z"
-        android:fillColor="#BB133E" />
+        <!-- Blue Field -->
+        <path
+            android:pathData="M3,3h9v9H3z"
+            android:fillColor="#002164" />
 
-    <!-- Blue Field (Canton) -->
-    <path
-        android:pathData="M3.1,12h8.9V3.1C7.6,3.6 4.7,6.5 3.6,10.2L3.1,12z"
-        android:fillColor="#002164" />
+        <!-- Red Stripes -->
+        <path
+            android:pathData="M12,3.3h9V5h-9zM12,6.5h9V8.2h-9zM12,9.7h9V11.4h-9z"
+            android:fillColor="#BB133E" />
+        <path
+            android:pathData="M3,13h18v1.7H3zM3,16.2h18v1.7H3zM3,19.4h18v1.7H3z"
+            android:fillColor="#BB133E" />
+    </group>
 </vector>
