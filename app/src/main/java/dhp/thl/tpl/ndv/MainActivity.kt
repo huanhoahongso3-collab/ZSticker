@@ -273,8 +273,12 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
                 private fun deleteAllStickers() {
                     val files = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
+                    if (files.isNullOrEmpty()) {
+                        Toast.makeText(this, getString(R.string.no_stickers_found), Toast.LENGTH_SHORT).show()
+                        return
+                    }
                     var successCount = 0
-                    files?.forEach { if (it.delete()) successCount++ }
+                    files.forEach { if (it.delete()) successCount++ }
                     
                     adapter.refreshData(this)
                     Toast.makeText(this, if (successCount > 0) getString(R.string.success) else getString(R.string.failed), Toast.LENGTH_SHORT).show()
@@ -285,7 +289,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 private fun exportAllStickers() {
                     val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
                     if (stickerFiles.isNullOrEmpty()) {
-                        Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, getString(R.string.no_stickers_found), Toast.LENGTH_SHORT).show()
                         return
                     }
                     try {
@@ -306,6 +310,12 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
                 private fun importToApp(src: Uri) {
                     try {
+                        val mimeType = contentResolver.getType(src) ?: "application/octet-stream"
+                        if (!mimeType.startsWith("image/") || mimeType == "image/gif") {
+                            Toast.makeText(this, getString(R.string.unsupported_file_type), Toast.LENGTH_SHORT).show()
+                            return
+                        }
+
                         contentResolver.openInputStream(src)?.use { input ->
                             val file = File(filesDir, "zsticker_${System.currentTimeMillis()}.png")
                             FileOutputStream(file).use { out ->

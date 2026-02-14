@@ -162,6 +162,16 @@ class EasterEggActivity : AppCompatActivity() {
                     if (event.action == MotionEvent.ACTION_UP) {
                          // Click Action: Reshuffle (keep zoom)
                          reshuffleMosaic()
+
+                         // Secret Game Trigger (20 taps)
+                         val now = System.currentTimeMillis()
+                         logoTapCount = if (now - lastTapTime < 500) logoTapCount + 1 else 1
+                         lastTapTime = now
+                         if (logoTapCount >= 20) {
+                             logoTapCount = 0
+                             Toast.makeText(this, "Secret game triggered!", Toast.LENGTH_SHORT).show()
+                             startActivity(Intent(this, DuoibatActivity::class.java))
+                         }
                     }
                     true
                 }

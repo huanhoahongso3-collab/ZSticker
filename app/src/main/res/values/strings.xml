@@ -12,7 +12,7 @@
     <string name="info_version_title">Version</string>
     <string name="info_repo_title">Source Code</string>
     <string name="info_license_title">License</string>
-    <string name="info_export_all_title">Export all stickers to gallery</string>
+    <string name="info_export_all_title">Export all stickers</string>
     <string name="info_remove_all_title">Remove all stickers</string>
     <string name="info_remove_all_confirm_title">Delete all stickers?</string>
     <string name="info_remove_all_confirm_message">This will permanently delete all your stickers. This action cannot be undone.</string>
@@ -30,6 +30,8 @@
     <string name="zalo_share_failed">Zalo not found or share failed</string>
     <string name="success">Successful</string>
     <string name="failed">Failed</string>
+    <string name="no_stickers_found">No stickers found</string>
+    <string name="unsupported_file_type">Unsupported file type</string>
     <string name="remove_bg">Remove background</string>
     <string name="rb_completed">Remove background completed!</string>
     <string name="rb_failed">Failed to remove background</string>
