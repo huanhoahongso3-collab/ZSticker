@@ -58,7 +58,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
                     val config = Configuration(newBase.resources.configuration)
 
-                    if (langCode != "system") {
                         val locale = Locale(langCode)
                         Locale.setDefault(locale)
                         config.setLocale(locale)
@@ -66,6 +65,16 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         // Revert to device system locale
                         val systemLocale = Configuration(newBase.resources.configuration).locales[0]
                         config.setLocale(systemLocale)
+                    }
+
+                    // Force uiMode to ensure correct theme/colors on startup across all Android versions
+                    val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+                    if (savedTheme != AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM) {
+                        val mode = if (savedTheme == AppCompatDelegate.MODE_NIGHT_YES) 
+                            Configuration.UI_MODE_NIGHT_YES 
+                        else 
+                            Configuration.UI_MODE_NIGHT_NO
+                        config.uiMode = mode or (config.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv())
                     }
 
                     // IMPORTANT: We do NOT manually set config.uiMode here anymore.
@@ -103,6 +112,12 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     binding.addButton.setOnClickListener {
                         pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                     }
+                }
+
+                override fun onNewIntent(intent: Intent?) {
+                    super.onNewIntent(intent)
+                    setIntent(intent) // Update the intent for future access
+                    handleIncomingShare(intent)
                 }
 
                 private fun setupInfoSection() {
@@ -376,8 +391,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                             binding.infoLayout.visibility = View.GONE
                             binding.addButton.show()
                         }
-                        R.id.nav_info -> {
-                            binding.toolbar.title = getString(R.string.nav_info)
+                        R.id.nav_options -> {
+                            binding.toolbar.title = getString(R.string.nav_options)
                             binding.recycler.visibility = View.GONE
                             binding.infoLayout.visibility = View.VISIBLE
                             binding.addButton.hide()
@@ -440,7 +455,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             .setAdapter(adapter) { _, which ->
                 when (which) {
                     0 -> exportSingleSticker(uri)
-                    1 -> showBackgroundRemovalWarning(uri) // Swapped order
+                    1 -> checkAndShowBackgroundRemovalWarning(uri) // Swapped order
                     2 -> deleteSticker(uri) // Swapped order
                 }
             }
@@ -451,14 +466,25 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         dialog.show()
     }
 
-    private fun showBackgroundRemovalWarning(uri: Uri) {
+    private fun checkAndShowBackgroundRemovalWarning(uri: Uri) {
+        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+        if (prefs.getBoolean("dont_show_rb_warning", false)) {
+            removeBackground(uri)
+            return
+        }
+
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_warning, null)
         val dialog = MaterialAlertDialogBuilder(this)
             .setView(dialogView)
             .create()
 
+        val checkBox = dialogView.findViewById<android.widget.CheckBox>(R.id.cb_dont_show_again)
+
         dialogView.findViewById<View>(R.id.btn_cancel).setOnClickListener { dialog.dismiss() }
         dialogView.findViewById<View>(R.id.btn_continue).setOnClickListener {
+            if (checkBox.isChecked) {
+                prefs.edit().putBoolean("dont_show_rb_warning", true).apply()
+            }
             dialog.dismiss()
             removeBackground(uri)
         }

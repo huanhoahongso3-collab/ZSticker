@@ -34,6 +34,14 @@
         android:autoLink="web"
         android:linksClickable="true"
         android:gravity="center"
+        android:layout_marginBottom="16dp"/>
+
+    <CheckBox
+        android:id="@+id/cb_dont_show_again"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/dont_show_again"
+        android:layout_gravity="center_horizontal"
         android:layout_marginBottom="24dp"/>
 
     <LinearLayout

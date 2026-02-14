@@ -54,6 +54,18 @@
                         android:orientation="vertical"
                         android:padding="8dp">
 
+                        <!-- Settings Section -->
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/section_settings"
+                            android:textColor="?attr/colorPrimary"
+                            android:textStyle="bold"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:paddingTop="8dp"
+                            android:paddingBottom="8dp"/>
+
                         <LinearLayout
                             android:id="@+id/itemTheme"
                             android:layout_width="match_parent"
@@ -62,7 +74,7 @@
                             android:padding="16dp"
                             android:background="?attr/selectableItemBackground"
                             android:gravity="center_vertical">
-                            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_palette" app:tint="?attr/colorPrimary"/>
+                            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_palette" app:tint="?attr/colorControlNormal"/>
                             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
                                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_theme_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                                 <TextView android:id="@+id/txtCurrentTheme" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/theme_light" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
@@ -77,12 +89,44 @@
                             android:padding="16dp"
                             android:background="?attr/selectableItemBackground"
                             android:gravity="center_vertical">
-                            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_language" app:tint="?attr/colorPrimary"/>
+                            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_language" app:tint="?attr/colorControlNormal"/>
                             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
                                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_language_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                                 <TextView android:id="@+id/txtCurrentLanguage" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="English" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
                             </LinearLayout>
                         </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/itemExportAll"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:background="?attr/selectableItemBackground"
+                            android:gravity="center_vertical">
+                            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_export" app:tint="?attr/colorControlNormal"/>
+                            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
+                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_export_all_title" style="@style/TextAppearance.Material3.TitleMedium"/>
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="?attr/colorOutlineVariant"
+                            android:layout_marginVertical="8dp"/>
+
+                        <!-- General Section -->
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/section_general"
+                            android:textColor="?attr/colorPrimary"
+                            android:textStyle="bold"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:paddingTop="8dp"
+                            android:paddingBottom="8dp"/>
 
                         <LinearLayout
                             android:id="@+id/itemVersion"
@@ -94,7 +138,7 @@
                             android:gravity="center_vertical"
                             android:clickable="true"
                             android:focusable="true">
-                            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_info" app:tint="?attr/colorPrimary"/>
+                            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_info" app:tint="?attr/colorControlNormal"/>
                             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
                                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_version_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                                 <TextView android:id="@+id/txtVersion" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1.0.0" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
@@ -109,7 +153,7 @@
                             android:padding="16dp"
                             android:background="?attr/selectableItemBackground"
                             android:gravity="center_vertical">
-                            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_code" app:tint="?attr/colorPrimary"/>
+                            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_code" app:tint="?attr/colorControlNormal"/>
                             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
                                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_repo_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                             </LinearLayout>
@@ -123,24 +167,10 @@
                             android:padding="16dp"
                             android:background="?attr/selectableItemBackground"
                             android:gravity="center_vertical">
-                            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_description" app:tint="?attr/colorPrimary"/>
+                            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_description" app:tint="?attr/colorControlNormal"/>
                             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
                                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_license_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_license_note" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
-                            </LinearLayout>
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:id="@+id/itemExportAll"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:padding="16dp"
-                            android:background="?attr/selectableItemBackground"
-                            android:gravity="center_vertical">
-                            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_export" app:tint="?attr/colorPrimary"/>
-                            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
-                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_export_all_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                             </LinearLayout>
                         </LinearLayout>
 
