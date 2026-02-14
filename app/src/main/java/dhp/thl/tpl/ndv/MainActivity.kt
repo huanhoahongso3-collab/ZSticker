@@ -137,7 +137,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                             handleThemeSelection(prefs, newMode)
                             dialog.dismiss()
                         }.create()
-                        dialog.window?.setDimAmount(0.2f)
+                        dialog.window?.setDimAmount(0.35f)
                         dialog.show()
                     }
 
@@ -150,16 +150,24 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
 
                     binding.itemLanguage.setOnClickListener {
-                        val langs = arrayOf(getString(R.string.lang_en), getString(R.string.lang_vi), getString(R.string.lang_system))
-                        val checkedLang = when (currentLang) {
+                        val langs = listOf(
+                            OptionItem(R.drawable.ic_flag_en, getString(R.string.lang_en)),
+                            OptionItem(R.drawable.ic_flag_vi, getString(R.string.lang_vi)),
+                            OptionItem(R.drawable.ic_settings_system, getString(R.string.lang_system))
+                        )
+
+                        val currentLang = prefs.getString("lang", "system") ?: "system"
+                        val selectedIndex = when (currentLang) {
                             "en" -> 0
                             "vi" -> 1
                             else -> 2
                         }
                         
+                         val adapter = ThemeAdapter(this, langs, selectedIndex) // Reusing ThemeAdapter as it fits (OptionItem with Radio)
+
                          val dialog = MaterialAlertDialogBuilder(this)
                             .setTitle(getString(R.string.info_language_title))
-                            .setSingleChoiceItems(langs, checkedLang) { d, which ->
+                            .setAdapter(adapter) { d, which ->
                                 val langCode = when (which) {
                                     0 -> "en"
                                     1 -> "vi"
@@ -173,7 +181,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                             }
                             .create()
                         
-                        dialog.window?.setDimAmount(0.2f)
+                        dialog.window?.setDimAmount(0.35f)
                         dialog.show()
                     }
 
@@ -192,7 +200,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         .setPositiveButton(getString(R.string.ok)) { _, _ -> applyAndSaveTheme(prefs, newMode) }
                         .setNegativeButton(getString(R.string.cancel), null)
                         .create()
-                        dialog.window?.setDimAmount(0.2f)
+                        dialog.window?.setDimAmount(0.35f)
                         dialog.show()
                     } else {
                         applyAndSaveTheme(prefs, newMode)
@@ -421,8 +429,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
         val options = listOf(
             OptionItem(R.drawable.ic_export, getString(R.string.export)),
-            OptionItem(R.drawable.ic_delete, getString(R.string.delete)),
-            OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg))
+            OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg)),
+            OptionItem(R.drawable.ic_delete, getString(R.string.delete))
         )
 
         val adapter = OptionAdapter(this, options)
@@ -432,14 +440,14 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             .setAdapter(adapter) { _, which ->
                 when (which) {
                     0 -> exportSingleSticker(uri)
-                    1 -> deleteSticker(uri)
-                    2 -> showBackgroundRemovalWarning(uri)
+                    1 -> showBackgroundRemovalWarning(uri) // Swapped order
+                    2 -> deleteSticker(uri) // Swapped order
                 }
             }
             .setNegativeButton(getString(R.string.cancel), null)
             .create()
         
-        dialog.window?.setDimAmount(0.2f)
+        dialog.window?.setDimAmount(0.35f)
         dialog.show()
     }
 
@@ -455,7 +463,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             removeBackground(uri)
         }
 
-        dialog.window?.setDimAmount(0.2f)
+        dialog.window?.setDimAmount(0.35f)
         dialog.show()
     }
 
