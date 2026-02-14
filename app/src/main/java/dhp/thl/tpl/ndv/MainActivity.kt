@@ -172,8 +172,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                             OptionItem(R.drawable.ic_settings_system, getString(R.string.lang_system))
                         )
 
-                        val currentLang = prefs.getString("lang", "system") ?: "system"
-                        val selectedIndex = when (currentLang) {
+                        val langSelection = prefs.getString("lang", "system") ?: "system"
+                        val selectedIndex = when (langSelection) {
                             "en" -> 0
                             "vi" -> 1
                             else -> 2

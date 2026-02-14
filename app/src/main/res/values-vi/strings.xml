@@ -2,17 +2,20 @@
     <string name="app_name">ZSticker</string>
 
     <string name="nav_home">Trang chủ</string>
-    <string name="nav_info">Thông tin</string>
+    <string name="nav_options">Tùy chọn</string>
+
+    <string name="section_settings">Cài đặt</string>
+    <string name="section_general">Chung</string>
 
     <string name="info_theme_title">Giao diện</string>
     <string name="info_language_title">Ngôn ngữ</string>
     <string name="info_version_title">Phiên bản</string>
     <string name="info_repo_title">Mã nguồn</string>
     <string name="info_license_title">Giấy phép</string>
-    <string name="info_export_all_title">Xuất tất cả nhãn dán</string>
+    <string name="info_export_all_title">Xuất tất cả nhãn dán vào bộ sưu tập</string>
 
-    <string name="theme_light">Chế độ sáng</string>
-    <string name="theme_dark">Chế độ tối</string>
+    <string name="theme_light">Sáng</string>
+    <string name="theme_dark">Tối</string>
     <string name="theme_system">Theo hệ thống</string>
     
     <string name="info_license_note">Giấy phép Công cộng GNU v3.0</string>
@@ -29,6 +32,7 @@
     <string name="rb_failed">Xóa phông nền thất bại</string>
     <string name="rb_warning_title">Cảnh báo xóa phông nền</string>
     <string name="rb_warning_message">Tính năng này sử dụng API của bên thứ ba (BRIA RMBG 2.0). Bằng cách tiếp tục, bạn chấp nhận rằng chúng tôi không có quyền đọc hình ảnh và mọi thứ được sử dụng và kiểm soát bởi Hugging Face và dịch vụ của bên thứ ba.\n\nLiên kết dự án: https://github.com/huanhoahongso3-collab/briarmbg2.0</string>
+    <string name="dont_show_again">Không hiện lại</string>
     <string name="continue_action">Tiếp tục</string>
 
     <string name="lang_en">Tiếng Anh</string>
