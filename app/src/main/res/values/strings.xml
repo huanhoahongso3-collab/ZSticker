@@ -11,6 +11,7 @@
     <string name="info_language_title">Language</string>
     <string name="info_version_title">Version</string>
     <string name="info_repo_title">Source Code</string>
+    <string name="info_repo_note">https://github.com/huanhoahongso3-collab/ZSticker</string>
     <string name="info_license_title">License</string>
     <string name="info_export_all_title">Export all stickers</string>
     <string name="info_remove_all_title">Remove all stickers</string>
