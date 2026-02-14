@@ -68,18 +68,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         config.setLocale(systemLocale)
                     }
 
-                    // Force uiMode to ensure correct theme/colors on startup across all Android versions
-                    val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-                    if (savedTheme != AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM) {
-                        val mode = if (savedTheme == AppCompatDelegate.MODE_NIGHT_YES) 
-                            Configuration.UI_MODE_NIGHT_YES 
-                        else 
-                            Configuration.UI_MODE_NIGHT_NO
-                        config.uiMode = mode or (config.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv())
-                    }
-
-                    // IMPORTANT: We do NOT manually set config.uiMode here anymore.
-                    // This allows AppCompatDelegate to handle "Follow System" correctly.
+                    // Removed manual config.uiMode override here as it conflicts with DynamicColors 
+                    // initialization in onCreate. AppCompatDelegate handles the switch.
+                    
                     val context = newBase.createConfigurationContext(config)
                     super.attachBaseContext(context)
                 }
@@ -88,8 +79,12 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     val prefs = getSharedPreferences("settings", MODE_PRIVATE)
                     val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
 
-                    // Initialize Theme and Dynamic Colors before super.onCreate
-                    AppCompatDelegate.setDefaultNightMode(savedTheme)
+                    // 1. Set mode BEFORE DynamicColors and super.onCreate
+                    if (AppCompatDelegate.getDefaultNightMode() != savedTheme) {
+                        AppCompatDelegate.setDefaultNightMode(savedTheme)
+                    }
+                    
+                    // 2. Apply Dynamic Colors
                     DynamicColors.applyToActivityIfAvailable(this)
 
                     super.onCreate(savedInstanceState)
@@ -227,6 +222,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     prefs.edit().putInt("theme_mode", mode).apply()
                     AppCompatDelegate.setDefaultNightMode(mode)
                     updateThemeText(mode)
+                    recreate() // Force recreation to ensure DynamicColors picks up the correct uiMode palette
                 }
 
                 private fun updateThemeText(mode: Int) {
@@ -253,7 +249,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         val now = System.currentTimeMillis()
                         versionClickCount = if (now - lastClickTime < 500) versionClickCount + 1 else 1
                         lastClickTime = now
-                        if (versionClickCount >= 5) {
+                        if (versionClickCount >= 10) {
                             versionClickCount = 0
                             startActivity(Intent(this, EasterEggActivity::class.java))
                         }
