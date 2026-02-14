@@ -2,21 +2,28 @@
     <string name="app_name">ZSticker</string>
 
     <string name="nav_home">Trang chủ</string>
-    <string name="nav_info">Thông tin</string>
+    <string name="nav_options">Tùy chọn</string>
+
+    <string name="section_settings">Cài đặt</string>
+    <string name="section_general">Giới thiệu</string>
 
     <string name="info_theme_title">Giao diện</string>
     <string name="info_language_title">Ngôn ngữ</string>
     <string name="info_version_title">Phiên bản</string>
     <string name="info_repo_title">Mã nguồn</string>
+    <string name="info_repo_note">https://github.com/huanhoahongso3-collab/ZSticker</string>
     <string name="info_license_title">Giấy phép</string>
     <string name="info_export_all_title">Xuất tất cả nhãn dán</string>
+    <string name="info_remove_all_title">Xóa tất cả nhãn dán</string>
+    <string name="info_remove_all_confirm_title">Xóa tất cả nhãn dán?</string>
+    <string name="info_remove_all_confirm_message">Hành động này sẽ xóa vĩnh viễn tất cả nhãn dán của bạn. Không thể hoàn tác.</string>
 
-    <string name="theme_light">Chế độ sáng</string>
-    <string name="theme_dark">Chế độ tối</string>
+    <string name="theme_light">Sáng</string>
+    <string name="theme_dark">Tối</string>
     <string name="theme_system">Theo hệ thống</string>
-    
+
     <string name="info_license_note">Giấy phép Công cộng GNU v3.0</string>
-    
+
     <string name="sticker_options_title">Tùy chọn nhãn dán</string>
     <string name="export">Xuất vào bộ sưu tập</string>
     <string name="delete">Xóa nhãn dán</string>
@@ -24,6 +31,19 @@
     <string name="zalo_share_failed">Không tìm thấy Zalo hoặc chia sẻ thất bại</string>
     <string name="success">Thành công</string>
     <string name="failed">Thất bại</string>
+    <string name="no_stickers_found">Không tìm thấy nhãn dán</string>
+    <string name="unsupported_file_type">Định dạng tệp không được hỗ trợ</string>
+    <string name="remove_bg">Xóa phông nền</string>
+    <string name="rb_completed">Xóa phông nền hoàn tất</string>
+    <string name="rb_failed">Xóa phông nền thất bại</string>
+    <string name="rb_warning_title">Cảnh báo xóa phông nền</string>
+    <string name="rb_warning_message">Tính năng này sử dụng API của bên thứ ba (BRIA RMBG 2.0). Bằng cách tiếp tục, bạn chấp nhận rằng chúng tôi không có quyền đọc hình ảnh và mọi thứ được sử dụng và kiểm soát bởi Hugging Face và dịch vụ của bên thứ ba.\n\nLiên kết dự án: https://github.com/huanhoahongso3-collab/briarmbg2.0\nMã nguồn Endpoint: http://github.com/huanhoahongso3-collab/briarmbg2.0/</string>
+    <string name="dont_show_again">Không hiện lại</string>
+    <string name="continue_action">Tiếp tục</string>
+
+    <string name="lang_en">Tiếng Anh</string>
+    <string name="lang_vi">Tiếng Việt</string>
+    <string name="lang_system">Theo hệ thống</string>
 
     <string name="dynamic_color_warning_title">Lưu ý về màu sắc hệ thống</string>
     <string name="dynamic_color_warning_message">Việc thay đổi giao diện khác với cài đặt hệ thống có thể làm mất hiệu ứng màu Material You (màu sắc động) trên một số thiết bị Android 12+.</string>

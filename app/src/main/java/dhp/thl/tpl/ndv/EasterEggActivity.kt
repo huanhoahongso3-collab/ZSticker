@@ -29,6 +29,19 @@ class EasterEggActivity : AppCompatActivity() {
                     private var logoTapCount = 0
                     private var lastTapTime: Long = 0
 
+                        // Groups Logic
+                        // 0: THL, 1: TPL, 2: NDV, 3: THL+TPL, 4: ALL
+                        private val standardGroups = listOf(
+                            listOf(R.drawable.thl),
+                                                            listOf(R.drawable.tpl),
+                                                            listOf(R.drawable.ndv),
+                                                            listOf(R.drawable.thl, R.drawable.tpl),
+                                                            listOf(R.drawable.thl, R.drawable.tpl, R.drawable.ndv)
+                        )
+
+                        private val cycle = mutableListOf<Int>()
+                        private var currentCycleIndex = 0
+
                         // UI Feedback & Timers
                         private val hideHandler = Handler(Looper.getMainLooper())
                         private val hideRunnable = Runnable {
@@ -39,9 +52,16 @@ class EasterEggActivity : AppCompatActivity() {
 
                         private val random = Random()
                         private val mosaicStickers = mutableListOf<View>()
-                        private val stickerRes = intArrayOf(R.drawable.thl, R.drawable.tpl, R.drawable.ndv)
                         private val emojiPool = mutableListOf<String>()
                         private var isToastActive = false
+
+                        // Long Press Logic
+                        private val doubleTapDelay = 1000L // 1 second hold for group switch
+                        private val longPressHandler = Handler(Looper.getMainLooper())
+                        private val longPressRunnable = Runnable {
+                            logoTapCount = 0 // Reset tap count if held
+                            switchGroup()
+                        }
 
                         override fun onCreate(savedInstanceState: Bundle?) {
                             super.onCreate(savedInstanceState)
@@ -57,10 +77,56 @@ class EasterEggActivity : AppCompatActivity() {
                             setupLogo()
                             setupRotateHandle()
 
+                            // Initial Shuffle
+                            generateNextCycle()
+
                             rootLayout.post {
-                                spawnDenseMosaic()
+                                spawnDenseMosaic(cycle[0])
                                 imgLogo.bringToFront()
                             }
+                        }
+
+                        private fun generateNextCycle() {
+                            val lastGroup = if (cycle.isNotEmpty()) cycle.last() else -1
+                            cycle.clear()
+
+                            // Generate a random permutation of 0..4
+                            val temp = mutableListOf(0, 1, 2, 3, 4)
+                            temp.shuffle(random)
+
+                            // Ensure no back-to-back repeats between cycles
+                            if (temp[0] == lastGroup) {
+                                // Swap first with last if repeat occurs
+                                Collections.swap(temp, 0, temp.lastIndex)
+                            }
+
+                            cycle.addAll(temp)
+                            currentCycleIndex = 0
+                        }
+
+                        private fun switchGroup() {
+                            currentCycleIndex++
+                            if (currentCycleIndex >= cycle.size) {
+                                generateNextCycle()
+                            }
+
+                            val groupIndex = cycle[currentCycleIndex]
+
+                            // Clear previous stickers
+                            mosaicStickers.forEach { rootLayout.removeView(it) }
+                            mosaicStickers.clear()
+
+                            spawnDenseMosaic(groupIndex)
+                            imgLogo.bringToFront()
+                            activeSticker = null
+                            rotateHandle?.visibility = View.GONE
+
+                            vibrate()
+                            ToastUtils.showToast(this, "Changed Group!")
+                        }
+
+                        private fun vibrate() {
+                            window.decorView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                         }
 
                         private fun setupLogo() {
@@ -82,28 +148,37 @@ class EasterEggActivity : AppCompatActivity() {
                             }
                             imgLogo.elevation = 100f
 
-                            imgLogo.setOnClickListener { v ->
-                                val currentTime = System.currentTimeMillis()
-
-                                // Spam Logic: Must tap 10 times with less than 500ms between taps
-                                if (currentTime - lastTapTime > 500) logoTapCount = 0
-                                    logoTapCount++
-                                    lastTapTime = currentTime
-
-                                    if (logoTapCount >= 10) {
-                                        logoTapCount = 0
-                                        startActivity(Intent(this, DuoibatActivity::class.java))
-                                    } else {
-                                        // Normal Shuffle Behavior
-                                        if (!isToastActive) {
-                                            isToastActive = true
-                                            v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                                            reshuffleMosaic()
-                                            showRandomEmojiToast()
-                                            hideHandler.postDelayed({ isToastActive = false }, 2000)
-                                        }
+                            imgLogo.isClickable = true
+                            imgLogo.setOnTouchListener { v, event ->
+                                when (event.action) {
+                                    MotionEvent.ACTION_DOWN -> {
+                                        longPressHandler.postDelayed(longPressRunnable, doubleTapDelay)
+                                        v.animate().scaleX(0.9f).scaleY(0.9f).setDuration(100).start()
+                                        true
                                     }
+                                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                                        longPressHandler.removeCallbacks(longPressRunnable)
+                                        v.animate().scaleX(1f).scaleY(1f).setDuration(100).start()
+                                        if (event.action == MotionEvent.ACTION_UP) {
+                                            // Click Action: Reshuffle (keep zoom)
+                                            reshuffleMosaic()
+
+                                            // Secret Game Trigger (20 taps)
+                                            val now = System.currentTimeMillis()
+                                            logoTapCount = if (now - lastTapTime < 500) logoTapCount + 1 else 1
+                                            lastTapTime = now
+                                            if (logoTapCount >= 20) {
+                                                logoTapCount = 0
+                                                ToastUtils.showToast(this, "Secret game triggered!")
+                                                startActivity(Intent(this, DuoibatActivity::class.java))
+                                            }
+                                        }
+                                        true
+                                    }
+                                    else -> false
+                                }
                             }
+
                             rootLayout.addView(imgLogo)
                         }
 
@@ -124,14 +199,17 @@ class EasterEggActivity : AppCompatActivity() {
                             rootLayout.addView(rotateHandle)
                         }
 
-                        private fun spawnDenseMosaic() {
+                        private fun spawnDenseMosaic(groupIndex: Int) {
                             val width = rootLayout.width
                             val height = rootLayout.height
                             val density = resources.displayMetrics.density
+
+                            val currentDrawables = standardGroups[groupIndex]
+
                             repeat(150) {
                                 val sticker = ImageView(this)
                                 val sizePx = ((random.nextInt(60) + 70) * density).toInt()
-                                sticker.setImageResource(stickerRes[random.nextInt(stickerRes.size)])
+                                sticker.setImageResource(currentDrawables[random.nextInt(currentDrawables.size)])
                                 sticker.layoutParams = FrameLayout.LayoutParams(sizePx, sizePx)
 
                                 sticker.translationX = random.nextInt(width).toFloat() - (sizePx / 2f)
@@ -147,11 +225,18 @@ class EasterEggActivity : AppCompatActivity() {
 
                         private fun reshuffleMosaic() {
                             hideHandler.post(hideRunnable)
+                            if (!isToastActive) {
+                                isToastActive = true
+                                showRandomEmojiToast()
+                                hideHandler.postDelayed({ isToastActive = false }, 2000)
+                            }
+
                             mosaicStickers.forEach { v ->
                                 v.animate()
                                 .translationX(random.nextInt(rootLayout.width).toFloat() - (v.width / 2f))
                                 .translationY(random.nextInt(rootLayout.height).toFloat() - (v.height / 2f))
                                 .rotation(random.nextFloat() * 360f)
+                                // Scale is NOT animated here, preserving user zoom if any (or default)
                                 .setDuration(700)
                                 .setInterpolator(OvershootInterpolator())
                                 .start()
@@ -246,7 +331,7 @@ class EasterEggActivity : AppCompatActivity() {
                             private fun showRandomEmojiToast() {
                                 val sb = StringBuilder()
                                 repeat(random.nextInt(10) + 5) { sb.append(emojiPool[random.nextInt(emojiPool.size)]).append(" ") }
-                                Toast.makeText(this, sb.toString().trim(), Toast.LENGTH_SHORT).show()
+                                ToastUtils.showToast(this, sb.toString().trim())
                             }
 
                             private fun initEmojiPool() {
