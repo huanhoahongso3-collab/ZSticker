@@ -2,9 +2,9 @@ name: Android ZSticker
 
 on:
   push:
-    branches: [ testantigravity ]
+    branches: [ main ]
   pull_request:
-    branches: [ testantigravity ]
+    branches: [ main ]
 
 jobs:
   build:
