@@ -17,6 +17,7 @@ import java.util.*
 class StickerAdapter(
     private var items: MutableList<Any>,
     private val listener: StickerListener,
+    private val isRecentPane: Boolean = false,
     private val showHeaders: Boolean = true
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -57,7 +58,7 @@ class StickerAdapter(
             
             holder.itemView.setOnLongClickListener {
                 val uri = Uri.fromFile(item)
-                listener.onStickerLongClick(uri, showHeaders, holder.adapterPosition)
+                listener.onStickerLongClick(uri, isRecentPane, position)
                 true
             }
         }
@@ -69,7 +70,7 @@ class StickerAdapter(
 
     fun refreshData(context: Context) {
         this.items.clear()
-        this.items.addAll(if (showHeaders) loadOrdered(context) else loadRecents(context))
+        this.items.addAll(if (showHeaders) loadOrdered(context, true) else loadRecents(context))
         notifyDataSetChanged()
     }
 
@@ -82,31 +83,49 @@ class StickerAdapter(
     }
 
     companion object {
-        fun loadOrdered(context: Context): MutableList<Any> {
+        fun loadOrdered(context: Context, showDates: Boolean): MutableList<Any> {
+            val list = mutableListOf<Any>()
             val folder = context.filesDir
-            return folder.listFiles { file ->
+            
+            val files = folder.listFiles { file ->
                 file.name.startsWith("zsticker_") && file.name.endsWith(".png")
-            }?.sortedByDescending { it.lastModified() }?.toMutableList<Any>() ?: mutableListOf()
+            }?.sortedByDescending { it.lastModified() } ?: emptyList()
+
+            var lastDate = ""
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+
+            files.forEach { file ->
+                if (showDates) {
+                    val date = sdf.format(Date(file.lastModified()))
+                    if (date != lastDate) {
+                        list.add(date)
+                        lastDate = date
+                    }
+                }
+                list.add(file)
+            }
+            return list
         }
 
         fun loadRecents(context: Context): MutableList<Any> {
             val prefs = context.getSharedPreferences("recents", Context.MODE_PRIVATE)
+            // Format in prefs will remain comma separated list of filenames, 
+            // but we allow duplicates now. Each entry represents a usage.
             val recentEntries = prefs.getString("list", "")?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
             val list = mutableListOf<Any>()
             
-            var lastDate = ""
             val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            var lastDate = ""
 
             recentEntries.forEach { entry ->
-                // entry format: filename|timestamp
+                // Entry format: filename|timestamp
                 val parts = entry.split("|")
-                val fileName = parts[0]
-                val timestamp = parts.getOrNull(1)?.toLongOrNull() ?: 0L
-
-                val file = File(context.filesDir, fileName)
+                val name = parts[0]
+                val timestamp = if (parts.size > 1) parts[1].toLongOrNull() ?: 0L else 0L
+                
+                val file = File(context.filesDir, name)
                 if (file.exists()) {
-                    val finalTimestamp = if (timestamp > 0) timestamp else file.lastModified()
-                    val date = sdf.format(Date(finalTimestamp))
+                    val date = sdf.format(Date(timestamp))
                     if (date != lastDate) {
                         list.add(date)
                         lastDate = date
