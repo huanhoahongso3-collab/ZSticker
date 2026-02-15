@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Custom Orange Theme Colors -->
-    <color name="orange_primary">#F09E4D</color>
-    <color name="orange_primary_dark">#D88A3A</color>
-    <color name="orange_primary_light">#F5B574</color>
+    <color name="orange_primary">#FF9800</color>
+    <color name="orange_primary_dark">#F57C00</color>
+    <color name="orange_primary_light">#FFB74D</color>
     <color name="orange_container">#FFF3E0</color>
     <color name="orange_on_container">#5D3A1A</color>
     

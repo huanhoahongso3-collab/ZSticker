@@ -87,9 +87,15 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     
                     val prefs = getSharedPreferences("settings", MODE_PRIVATE)
                     val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+                    val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
 
                     // Ensure theme is set BEFORE super.onCreate
                     AppCompatDelegate.setDefaultNightMode(savedTheme)
+                    
+                    // Apply Material Dynamic Colors if enabled
+                    if (materialColorEnabled) {
+                        DynamicColors.applyToActivityIfAvailable(this)
+                    }
 
                     super.onCreate(savedInstanceState)
                     
@@ -251,33 +257,45 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         dialog.show()
                     }
 
+                    // --- MATERIAL COLOR TOGGLE ---
+                    binding.switchMaterialColor.isChecked = prefs.getBoolean("material_color_enabled", false)
+                    binding.switchMaterialColor.setOnCheckedChangeListener { _, isChecked ->
+                        prefs.edit().putBoolean("material_color_enabled", isChecked).apply()
+                        recreate()
+                    }
+
                     setupSecondaryInfo()
                 }
 
                 private fun handleThemeSelection(prefs: SharedPreferences, newMode: Int) {
-                    val systemNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-                    val isDifferentFromSystem = (newMode == AppCompatDelegate.MODE_NIGHT_YES && systemNightMode != Configuration.UI_MODE_NIGHT_YES) ||
-                    (newMode == AppCompatDelegate.MODE_NIGHT_NO && systemNightMode != Configuration.UI_MODE_NIGHT_NO)
+                    val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
+                    
+                    // Show warning only if Material Color is enabled and theme differs from system
+                    if (materialColorEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        val systemNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+                        val isDifferentFromSystem = (newMode == AppCompatDelegate.MODE_NIGHT_YES && systemNightMode != Configuration.UI_MODE_NIGHT_YES) ||
+                        (newMode == AppCompatDelegate.MODE_NIGHT_NO && systemNightMode != Configuration.UI_MODE_NIGHT_NO)
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && isDifferentFromSystem && newMode != AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM) {
-                        val dialog = MaterialAlertDialogBuilder(this)
-                        .setTitle(getString(R.string.dynamic_color_warning_title))
-                        .setMessage(getString(R.string.dynamic_color_warning_message))
-                        .setPositiveButton(getString(R.string.ok)) { _, _ -> applyAndSaveTheme(prefs, newMode) }
-                        .setNegativeButton(getString(R.string.cancel), null)
-                        .create()
-                        dialog.window?.setDimAmount(0.35f)
-                        dialog.show()
-                    } else {
-                        applyAndSaveTheme(prefs, newMode)
+                        if (isDifferentFromSystem && newMode != AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM) {
+                            val dialog = MaterialAlertDialogBuilder(this)
+                            .setTitle(getString(R.string.dynamic_color_warning_title))
+                            .setMessage(getString(R.string.dynamic_color_warning_message))
+                            .setPositiveButton(getString(R.string.ok)) { _, _ -> applyAndSaveTheme(prefs, newMode) }
+                            .setNegativeButton(getString(R.string.cancel), null)
+                            .create()
+                            dialog.window?.setDimAmount(0.35f)
+                            dialog.show()
+                            return
+                        }
                     }
+                    applyAndSaveTheme(prefs, newMode)
                 }
 
                 private fun applyAndSaveTheme(prefs: SharedPreferences, mode: Int) {
                     prefs.edit().putInt("theme_mode", mode).apply()
                     AppCompatDelegate.setDefaultNightMode(mode)
                     updateThemeText(mode)
-                    recreate() // Force recreation to ensure DynamicColors picks up the correct uiMode palette
+                    recreate() // Force recreation to apply the new theme
                 }
 
                 private fun updateThemeText(mode: Int) {
@@ -540,14 +558,18 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 private fun updateLayoutVisibility(itemId: Int) {
                     when (itemId) {
                         R.id.nav_home -> {
-                            binding.toolbar.title = getString(R.string.nav_home)
+                            binding.toolbar.title = SpannableString(getString(R.string.nav_home)).apply {
+                                setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
+                            }
                             binding.recycler.visibility = View.VISIBLE
                             binding.recyclerRecents.visibility = View.GONE
                             binding.infoLayout.visibility = View.GONE
                             binding.addButton.show()
                         }
                         R.id.nav_recents -> {
-                            binding.toolbar.title = getString(R.string.nav_recents)
+                            binding.toolbar.title = SpannableString(getString(R.string.nav_recents)).apply {
+                                setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
+                            }
                             binding.recycler.visibility = View.GONE
                             binding.recyclerRecents.visibility = View.VISIBLE
                             binding.infoLayout.visibility = View.GONE
@@ -555,7 +577,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                             adapterRecents.refreshData(this)
                         }
                         R.id.nav_options -> {
-                            binding.toolbar.title = getString(R.string.nav_options)
+                            binding.toolbar.title = SpannableString(getString(R.string.nav_options)).apply {
+                                setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
+                            }
                             binding.recycler.visibility = View.GONE
                             binding.recyclerRecents.visibility = View.GONE
                             binding.infoLayout.visibility = View.VISIBLE

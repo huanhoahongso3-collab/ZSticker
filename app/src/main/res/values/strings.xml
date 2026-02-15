@@ -26,6 +26,9 @@
     <string name="theme_dark">Dark</string>
     <string name="theme_system">System Default</string>
     
+    <string name="info_material_color_title">Material Color</string>
+    <string name="info_material_color_subtitle">Use system colors (Android 12+)</string>
+    
     <string name="info_license_note">GNU General Public License v3.0</string>
     
     <string name="sticker_options_title">Sticker Options</string>
