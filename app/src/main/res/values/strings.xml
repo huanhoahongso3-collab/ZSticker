@@ -50,13 +50,4 @@
     <string name="dynamic_color_warning_title">Dynamic Color Notice</string>
     <string name="dynamic_color_warning_message">Changing to a theme that differs from your system settings may disable Material You dynamic colors on some Android 12+ devices.</string>
     <string name="ok">OK</string>
-
-    <string name="delete_from_recents">Delete from recents</string>
-    <string name="remove_all_recents_confirm_title">Delete all recent stickers?</string>
-    <string name="remove_all_recents_confirm_message">This will remove all your recently used stickers history. Your imported stickers will not be deleted.</string>
-    <string name="delete_sticker_confirm_title">Delete Sticker?</string>
-    <string name="delete_sticker_confirm_message">Are you sure you want to delete this sticker? This action cannot be undone.</string>
-    <string name="delete_recent_confirm_title">Remove from Recents?</string>
-    <string name="delete_recent_confirm_message">Are you sure you want to remove this sticker from your recents list?</string>
-    <string name="no_internet">No internet access</string>
 </resources>

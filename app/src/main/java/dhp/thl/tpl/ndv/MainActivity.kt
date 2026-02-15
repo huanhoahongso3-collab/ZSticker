@@ -43,10 +43,6 @@ import android.widget.TextView
 import android.widget.RadioButton
 import android.view.LayoutInflater
 import androidx.appcompat.app.AlertDialog
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import android.animation.ObjectAnimator
-import android.view.animation.AnticipateInterpolator
-import androidx.core.animation.doOnEnd
 
 class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
@@ -81,47 +77,15 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }
 
                 override fun onCreate(savedInstanceState: Bundle?) {
-                    val splashScreen = installSplashScreen()
-                    
                     val prefs = getSharedPreferences("settings", MODE_PRIVATE)
                     val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
 
                     // Ensure theme is set BEFORE DynamicColors and super.onCreate
+                    // Re-applying even if it seems the same to force AppCompat internal reset
                     AppCompatDelegate.setDefaultNightMode(savedTheme)
                     DynamicColors.applyToActivityIfAvailable(this)
 
                     super.onCreate(savedInstanceState)
-                    
-                    // Exit animation for Splash Screen (Zoom out effect)
-                    splashScreen.setOnExitAnimationListener { splashScreenView ->
-                        val zoomX = ObjectAnimator.ofFloat(
-                            splashScreenView.iconView,
-                            View.SCALE_X,
-                            1f, 0f
-                        )
-                        val zoomY = ObjectAnimator.ofFloat(
-                            splashScreenView.iconView,
-                            View.SCALE_Y,
-                            1f, 0f
-                        )
-                        val fadeOut = ObjectAnimator.ofFloat(
-                            splashScreenView.view,
-                            View.ALPHA,
-                            1f, 0f
-                        )
-
-                        zoomX.interpolator = AnticipateInterpolator()
-                        zoomY.interpolator = AnticipateInterpolator()
-                        zoomX.duration = 500L
-                        zoomY.duration = 500L
-                        fadeOut.duration = 500L
-
-                        zoomX.doOnEnd { splashScreenView.remove() }
-                        zoomX.start()
-                        zoomY.start()
-                        fadeOut.start()
-                    }
-
                     binding = ActivityMainBinding.inflate(layoutInflater)
                     setContentView(binding.root)
 
@@ -302,8 +266,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
                 private fun confirmRemoveRecent() {
                     MaterialAlertDialogBuilder(this)
-                        .setTitle(getString(R.string.remove_all_recents_confirm_title))
-                        .setMessage(getString(R.string.remove_all_recents_confirm_message))
+                        .setTitle(getString(R.string.info_remove_recent_title))
+                        .setMessage(getString(R.string.info_remove_all_confirm_message)) // Reusing message for now
                         .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
                         .setNegativeButton(getString(R.string.cancel), null)
                         .show()
@@ -341,10 +305,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 private fun syncRecentsAfterDeletion() {
                     val prefs = getSharedPreferences("recents", MODE_PRIVATE)
                     val list = prefs.getString("list", "")?.split(",")?.toMutableList() ?: mutableListOf()
-                    val filtered = list.filter { entry ->
-                        val parts = entry.split("|")
-                        parts.size == 2 && File(filesDir, parts[1]).exists()
-                    }.joinToString(",")
+                    val filtered = list.filter { name -> File(filesDir, name).exists() }.joinToString(",")
                     prefs.edit().putString("list", filtered).apply()
                     adapterRecents.refreshData(this)
                 }
@@ -437,23 +398,11 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
                 }
 
-                private fun isNetworkAvailable(): Boolean {
-                    val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
-                    val activeNetwork = connectivityManager.activeNetwork ?: return false
-                    val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
-                    return capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                }
-
                 private fun removeBackground(uri: Uri) {
-                    if (!isNetworkAvailable()) {
-                        ToastUtils.showToast(this, getString(R.string.no_internet))
-                        return
-                    }
                     binding.progressBar.visibility = View.VISIBLE
                     thread {
                         var isSuccess = false
                         var resultUri: Uri? = null
-                        var errorType = 0 // 0: general, 1: no internet
                         try {
                             val inputStream = contentResolver.openInputStream(uri) ?: throw Exception()
                             val url = URL("https://briarmbg20.vercel.app/api/rmbg")
@@ -521,7 +470,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                             binding.recycler.visibility = View.GONE
                             binding.recyclerRecents.visibility = View.VISIBLE
                             binding.infoLayout.visibility = View.GONE
-                            binding.addButton.hide()
+                            binding.addButton.show()
                             adapterRecents.refreshData(this)
                         }
                         R.id.nav_options -> {
@@ -537,18 +486,18 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 private fun setupStickerList() {
                     // Home adapter
                     val items = StickerAdapter.loadOrdered(this)
-                    adapter = StickerAdapter(items, this, showHeaders = false)
-                    binding.recycler.layoutManager = GridLayoutManager(this, 3)
+                    adapter = StickerAdapter(items, this)
+                    val layoutManager = GridLayoutManager(this, 3)
+                    layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+                        override fun getSpanSize(pos: Int): Int = if (adapter.getItemViewType(pos) == 0) 3 else 1
+                    }
+                    binding.recycler.layoutManager = layoutManager
                     binding.recycler.adapter = adapter
 
                     // Recents adapter
                     val recentItems = StickerAdapter.loadRecents(this)
-                    adapterRecents = StickerAdapter(recentItems, this, showHeaders = true)
-                    val recentsLayoutManager = GridLayoutManager(this, 3)
-                    recentsLayoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-                        override fun getSpanSize(pos: Int): Int = if (adapterRecents.getItemViewType(pos) == 0) 3 else 1
-                    }
-                    binding.recyclerRecents.layoutManager = recentsLayoutManager
+                    adapterRecents = StickerAdapter(recentItems, this, showHeaders = false)
+                    binding.recyclerRecents.layoutManager = GridLayoutManager(this, 3)
                     binding.recyclerRecents.adapter = adapterRecents
                 }
 
@@ -584,15 +533,13 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 private fun addToRecents(fileName: String) {
                     val prefs = getSharedPreferences("recents", MODE_PRIVATE)
                     val list = prefs.getString("list", "")?.split(",")?.toMutableList() ?: mutableListOf()
-                    
-                    val entry = "${System.currentTimeMillis()}|$fileName"
-                    list.add(0, entry)
-                    
-                    if (list.size > 100) list.removeAt(100) // Slightly larger limit for history
+                    list.remove(fileName)
+                    list.add(0, fileName)
+                    if (list.size > 50) list.removeAt(50) // Keep reasonable limit
                     prefs.edit().putString("list", list.filter { it.isNotEmpty() }.joinToString(",")).apply()
                 }
 
-    override fun onStickerLongClick(uri: Uri, isRecent: Boolean, entryId: String) {
+    override fun onStickerLongClick(uri: Uri, isRecent: Boolean) {
         val title = SpannableString(getString(R.string.sticker_options_title)).apply {
             setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
         }
@@ -603,9 +550,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         if (!isRecent) {
             options.add(OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg)))
         }
-        
-        val deleteText = if (isRecent) getString(R.string.delete_from_recents) else getString(R.string.delete)
-        options.add(OptionItem(R.drawable.ic_delete, deleteText, isDelete = true))
+        options.add(OptionItem(R.drawable.ic_delete, getString(R.string.delete)))
 
         val adapter = OptionAdapter(this, options)
 
@@ -613,14 +558,14 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             .setTitle(title)
             .setAdapter(adapter) { _, which ->
                 val selectedOption = options[which].text
-                when {
-                    selectedOption == getString(R.string.export) -> exportSingleSticker(uri)
-                    selectedOption == getString(R.string.remove_bg) -> checkAndShowBackgroundRemovalWarning(uri)
-                    selectedOption == deleteText -> {
+                when (selectedOption) {
+                    getString(R.string.export) -> exportSingleSticker(uri)
+                    getString(R.string.remove_bg) -> checkAndShowBackgroundRemovalWarning(uri)
+                    getString(R.string.delete) -> {
                         if (isRecent) {
-                            confirmRemoveFromRecents(entryId)
+                            removeFromRecents(uri.lastPathSegment ?: "")
                         } else {
-                            confirmDeleteSticker(uri)
+                            deleteSticker(uri)
                         }
                     }
                 }
@@ -671,15 +616,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
                 }
 
-                private fun confirmDeleteSticker(uri: Uri) {
-                    MaterialAlertDialogBuilder(this)
-                        .setTitle(getString(R.string.delete_sticker_confirm_title))
-                        .setMessage(getString(R.string.delete_sticker_confirm_message))
-                        .setPositiveButton(getString(R.string.delete)) { _, _ -> deleteSticker(uri) }
-                        .setNegativeButton(getString(R.string.cancel), null)
-                        .show()
-                }
-
                 private fun deleteSticker(uri: Uri) {
                     val file = File(filesDir, uri.lastPathSegment ?: "")
                     if (file.exists() && file.delete()) {
@@ -689,19 +625,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
                 }
 
-                private fun confirmRemoveFromRecents(entryId: String) {
-                    MaterialAlertDialogBuilder(this)
-                        .setTitle(getString(R.string.delete_recent_confirm_title))
-                        .setMessage(getString(R.string.delete_recent_confirm_message))
-                        .setPositiveButton(getString(R.string.delete)) { _, _ -> removeFromRecents(entryId) }
-                        .setNegativeButton(getString(R.string.cancel), null)
-                        .show()
-                }
-
-                private fun removeFromRecents(entryId: String) {
+                private fun removeFromRecents(fileName: String) {
                     val prefs = getSharedPreferences("recents", MODE_PRIVATE)
                     val list = prefs.getString("list", "")?.split(",")?.toMutableList() ?: mutableListOf()
-                    if (list.remove(entryId)) {
+                    if (list.remove(fileName)) {
                         prefs.edit().putString("list", list.joinToString(",")).apply()
                         adapterRecents.refreshData(this)
                         ToastUtils.showToast(this, getString(R.string.success))
@@ -736,23 +663,14 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }
 }
 
-data class OptionItem(val iconRes: Int, val text: String, val isDelete: Boolean = false)
+data class OptionItem(val iconRes: Int, val text: String)
 
 class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<OptionItem>(context, 0, objects) {
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.item_icon_text, parent, false)
         val item = getItem(position)
-        val textView = view.findViewById<TextView>(R.id.item_text)
         view.findViewById<ImageView>(R.id.item_icon).setImageResource(item!!.iconRes)
-        textView.text = item.text
-        if (item.isDelete) {
-            textView.setTextColor(android.graphics.Color.RED)
-        } else {
-            // Reset color for recycled views (using default text color is safer)
-            val typedValue = android.util.TypedValue()
-            context.theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, typedValue, true)
-            textView.setTextColor(typedValue.data)
-        }
+        view.findViewById<TextView>(R.id.item_text).text = item.text
         return view
     }
 }

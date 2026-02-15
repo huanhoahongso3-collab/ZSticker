@@ -22,7 +22,7 @@ class StickerAdapter(
 
     interface StickerListener {
         fun onStickerClick(uri: Uri)
-        fun onStickerLongClick(uri: Uri, isRecent: Boolean, entryId: String)
+        fun onStickerLongClick(uri: Uri, isRecent: Boolean)
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -43,31 +43,21 @@ class StickerAdapter(
         val item = items[position]
         if (holder is HeaderViewHolder && item is String) {
             holder.text.text = item
-        } else if (holder is StickerViewHolder) {
-            val file = when (item) {
-                is File -> item
-                is RecentSticker -> item.file
-                else -> return
-            }
-            
-            Glide.with(holder.image).load(file).into(holder.image)
+        } else if (holder is StickerViewHolder && item is File) {
+            Glide.with(holder.image).load(item).into(holder.image)
             
             holder.itemView.setOnClickListener {
                 val uri = FileProvider.getUriForFile(
                     holder.itemView.context,
                     "${holder.itemView.context.packageName}.provider",
-                    file
+                    item
                 )
                 listener.onStickerClick(uri)
             }
             
             holder.itemView.setOnLongClickListener {
-                val uri = Uri.fromFile(file)
-                if (item is RecentSticker) {
-                    listener.onStickerLongClick(uri, true, "${item.timestamp}|${item.file.name}")
-                } else {
-                    listener.onStickerLongClick(uri, false, file.name)
-                }
+                val uri = Uri.fromFile(item)
+                listener.onStickerLongClick(uri, !showHeaders)
                 true
             }
         }
@@ -91,41 +81,39 @@ class StickerAdapter(
 
     companion object {
         fun loadOrdered(context: Context): MutableList<Any> {
+            val list = mutableListOf<Any>()
             val folder = context.filesDir
+            
             val files = folder.listFiles { file ->
                 file.name.startsWith("zsticker_") && file.name.endsWith(".png")
             }?.sortedByDescending { it.lastModified() } ?: emptyList()
 
-            return files.toMutableList<Any>()
+            var lastDate = ""
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+
+            files.forEach { file ->
+                val date = sdf.format(Date(file.lastModified()))
+                if (date != lastDate) {
+                    list.add(date)
+                    lastDate = date
+                }
+                list.add(file)
+            }
+            return list
         }
 
         fun loadRecents(context: Context): MutableList<Any> {
             val prefs = context.getSharedPreferences("recents", Context.MODE_PRIVATE)
-            val recentEntries = prefs.getString("list", "")?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
+            val recentNames = prefs.getString("list", "")?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
             val list = mutableListOf<Any>()
             
-            var lastDate = ""
-            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-
-            recentEntries.forEach { entry ->
-                val parts = entry.split("|")
-                if (parts.size == 2) {
-                    val timestamp = parts[0].toLongOrNull() ?: 0L
-                    val name = parts[1]
-                    val file = File(context.filesDir, name)
-                    if (file.exists()) {
-                        val date = sdf.format(Date(timestamp))
-                        if (date != lastDate) {
-                            list.add(date)
-                            lastDate = date
-                        }
-                        list.add(RecentSticker(timestamp, file))
-                    }
+            recentNames.forEach { name ->
+                val file = File(context.filesDir, name)
+                if (file.exists()) {
+                    list.add(file)
                 }
             }
             return list
         }
     }
 }
-
-data class RecentSticker(val timestamp: Long, val file: File)
