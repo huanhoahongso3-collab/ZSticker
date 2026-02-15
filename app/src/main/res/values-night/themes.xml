@@ -1,5 +1,20 @@
 <resources>
     <style name="Theme.ZSticker" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Custom Orange Colors for Dark Theme -->
+        <item name="colorPrimary">@color/orange_primary_light</item>
+        <item name="colorPrimaryContainer">@color/dark_orange_container</item>
+        <item name="colorOnPrimaryContainer">@color/dark_orange_on_container</item>
+        <item name="colorSecondary">@color/orange_primary</item>
+        <item name="colorSecondaryContainer">@color/dark_orange_container</item>
+        <item name="colorOnSecondaryContainer">@color/dark_orange_on_container</item>
+        
+        <!-- Surface Colors -->
+        <item name="colorSurface">@color/dark_surface</item>
+        <item name="colorSurfaceContainer">@color/dark_surface_container</item>
+        <item name="colorOnSurface">@color/dark_on_surface</item>
+        <item name="android:colorBackground">@color/dark_background</item>
+        
+        <!-- System Bars -->
         <item name="android:statusBarColor">?android:attr/colorBackground</item>
         <item name="android:navigationBarColor">?attr/colorSurfaceContainer</item>
     </style>

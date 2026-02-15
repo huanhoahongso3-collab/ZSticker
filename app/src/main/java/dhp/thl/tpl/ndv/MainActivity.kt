@@ -88,10 +88,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     val prefs = getSharedPreferences("settings", MODE_PRIVATE)
                     val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
 
-                    // Ensure theme is set BEFORE DynamicColors and super.onCreate
-                    // Re-applying even if it seems the same to force AppCompat internal reset
+                    // Ensure theme is set BEFORE super.onCreate
                     AppCompatDelegate.setDefaultNightMode(savedTheme)
-                    DynamicColors.applyToActivityIfAvailable(this)
 
                     super.onCreate(savedInstanceState)
                     
@@ -132,22 +130,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     binding = ActivityMainBinding.inflate(layoutInflater)
                     setContentView(binding.root)
 
-                    // Force recreation ONCE on cold start (launcher) to fix dynamic colors
-                    // Skip if: 1) savedInstanceState exists (rotation/config change)
-                    //          2) Already recreated this session
-                    //          3) Started from share intent
-                    val isLauncherStart = intent?.action == Intent.ACTION_MAIN && 
-                                         intent?.categories?.contains(Intent.CATEGORY_LAUNCHER) == true
-                    val hasRecreated = prefs.getBoolean("has_recreated_session", false)
-                    
-                    if (savedInstanceState == null && isLauncherStart && !hasRecreated) {
-                        // Mark as recreated for this session
-                        prefs.edit().putBoolean("has_recreated_session", true).apply()
-                        // Recreate to ensure dynamic colors are properly applied
-                        recreate()
-                        return
-                    }
-
                     val lastTab = prefs.getInt("last_tab", R.id.nav_home)
                     binding.bottomNavigation.selectedItemId = lastTab
                     updateLayoutVisibility(lastTab)
@@ -167,18 +149,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
                     binding.addButton.setOnClickListener {
                         pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                    }
-                }
-
-                override fun onDestroy() {
-                    super.onDestroy()
-                    // Clear the recreation flag when activity is destroyed
-                    // This ensures next cold start will recreate again
-                    if (isFinishing) {
-                        getSharedPreferences("settings", MODE_PRIVATE)
-                            .edit()
-                            .putBoolean("has_recreated_session", false)
-                            .apply()
                     }
                 }
 

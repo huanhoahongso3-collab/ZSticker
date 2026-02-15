@@ -1,11 +1,26 @@
 <resources>
     <style name="Theme.ZSticker" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Custom Orange Colors -->
+        <item name="colorPrimary">@color/orange_primary</item>
+        <item name="colorPrimaryContainer">@color/orange_container</item>
+        <item name="colorOnPrimaryContainer">@color/orange_on_container</item>
+        <item name="colorSecondary">@color/orange_primary_dark</item>
+        <item name="colorSecondaryContainer">@color/orange_container</item>
+        <item name="colorOnSecondaryContainer">@color/orange_on_container</item>
+        
+        <!-- Surface Colors -->
+        <item name="colorSurface">@color/light_surface</item>
+        <item name="colorSurfaceContainer">@color/light_surface_container</item>
+        <item name="colorOnSurface">@color/light_on_surface</item>
+        <item name="android:colorBackground">@color/light_background</item>
+        
+        <!-- System Bars -->
         <item name="android:statusBarColor">?android:attr/colorBackground</item>
         <item name="android:navigationBarColor">?attr/colorSurfaceContainer</item>
     </style>
 
     <style name="Theme.ZSticker.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_round</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_transparent</item>
         <item name="postSplashScreenTheme">@style/Theme.ZSticker</item>
     </style>
 
