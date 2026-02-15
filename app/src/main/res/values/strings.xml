@@ -50,4 +50,5 @@
     <string name="dynamic_color_warning_title">Dynamic Color Notice</string>
     <string name="dynamic_color_warning_message">Changing to a theme that differs from your system settings may disable Material You dynamic colors on some Android 12+ devices.</string>
     <string name="ok">OK</string>
+    <string name="no_internet_access">No internet access</string>
 </resources>

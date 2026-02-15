@@ -88,28 +88,30 @@ class StickerAdapter(
                 file.name.startsWith("zsticker_") && file.name.endsWith(".png")
             }?.sortedByDescending { it.lastModified() } ?: emptyList()
 
-            var lastDate = ""
-            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-
-            files.forEach { file ->
-                val date = sdf.format(Date(file.lastModified()))
-                if (date != lastDate) {
-                    list.add(date)
-                    lastDate = date
-                }
-                list.add(file)
-            }
+            list.addAll(files)
             return list
         }
 
         fun loadRecents(context: Context): MutableList<Any> {
             val prefs = context.getSharedPreferences("recents", Context.MODE_PRIVATE)
-            val recentNames = prefs.getString("list", "")?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
+            val recentEntries = prefs.getString("list", "")?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
             val list = mutableListOf<Any>()
             
-            recentNames.forEach { name ->
-                val file = File(context.filesDir, name)
+            var lastDate = ""
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+
+            recentEntries.forEach { entry ->
+                val fileName = entry.substringBefore(":")
+                val timestampStr = entry.substringAfter(":", "")
+                val timestamp = timestampStr.toLongOrNull() ?: File(context.filesDir, fileName).lastModified()
+                
+                val file = File(context.filesDir, fileName)
                 if (file.exists()) {
+                    val date = sdf.format(Date(timestamp))
+                    if (date != lastDate) {
+                        list.add(date)
+                        lastDate = date
+                    }
                     list.add(file)
                 }
             }
