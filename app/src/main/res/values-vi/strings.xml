@@ -16,9 +16,11 @@
     <string name="info_license_title">Giấy phép</string>
     <string name="info_export_all_title">Xuất tất cả nhãn dán</string>
     <string name="info_remove_recent_title">Xóa tất cả nhãn dán gần đây</string>
+    <string name="info_remove_recent_confirm_title">Xóa tất cả lịch sử?</string>
     <string name="info_remove_all_title">Xóa tất cả nhãn dán</string>
     <string name="info_remove_all_confirm_title">Xóa tất cả nhãn dán?</string>
     <string name="info_remove_all_confirm_message">Hành động này sẽ xóa vĩnh viễn tất cả nhãn dán của bạn. Không thể hoàn tác.</string>
+    <string name="info_remove_recent_confirm_message">Hành động này sẽ xóa vĩnh viễn tất cả lịch sử nhãn dán của bạn. Không thể hoàn tác.</string>
 
     <string name="theme_light">Sáng</string>
     <string name="theme_dark">Tối</string>
@@ -29,6 +31,8 @@
     <string name="sticker_options_title">Tùy chọn nhãn dán</string>
     <string name="export">Xuất vào bộ sưu tập</string>
     <string name="delete">Xóa nhãn dán</string>
+    <string name="delete_history">Xóa lịch sử</string>
+    <string name="recent_options_title">Tùy chọn gần đây</string>
     <string name="cancel">Hủy bỏ</string>
     <string name="zalo_share_failed">Không tìm thấy Zalo hoặc chia sẻ thất bại</string>
     <string name="success">Thành công</string>

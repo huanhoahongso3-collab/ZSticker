@@ -16,9 +16,11 @@
     <string name="info_license_title">License</string>
     <string name="info_export_all_title">Export all stickers</string>
     <string name="info_remove_recent_title">Remove all recent stickers</string>
+    <string name="info_remove_recent_confirm_title">Delete all history?</string>
     <string name="info_remove_all_title">Remove all stickers</string>
     <string name="info_remove_all_confirm_title">Delete all stickers?</string>
     <string name="info_remove_all_confirm_message">This will permanently delete all your stickers. This action cannot be undone.</string>
+    <string name="info_remove_recent_confirm_message">This will permanently delete all of the history of your stickers. This action cannot be undone.</string>
 
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
@@ -29,6 +31,8 @@
     <string name="sticker_options_title">Sticker Options</string>
     <string name="export">Export to Gallery</string>
     <string name="delete">Delete Sticker</string>
+    <string name="delete_history">Delete History</string>
+    <string name="recent_options_title">Recent Options</string>
     <string name="cancel">Cancel</string>
     <string name="zalo_share_failed">Zalo not found or share failed</string>
     <string name="success">Successful</string>

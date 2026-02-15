@@ -20,9 +20,11 @@ class StickerAdapter(
     private val showHeaders: Boolean = true
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
+    data class RecentSticker(val file: File, val timestamp: Long)
+
     interface StickerListener {
         fun onStickerClick(uri: Uri)
-        fun onStickerLongClick(uri: Uri, isRecent: Boolean)
+        fun onStickerLongClick(uri: Uri, isRecent: Boolean, entry: String? = null)
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -43,21 +45,27 @@ class StickerAdapter(
         val item = items[position]
         if (holder is HeaderViewHolder && item is String) {
             holder.text.text = item
-        } else if (holder is StickerViewHolder && item is File) {
-            Glide.with(holder.image).load(item).into(holder.image)
+        } else if (holder is StickerViewHolder && (item is File || item is RecentSticker)) {
+            val file = if (item is RecentSticker) item.file else item as File
+            Glide.with(holder.image).load(file).into(holder.image)
             
             holder.itemView.setOnClickListener {
                 val uri = FileProvider.getUriForFile(
                     holder.itemView.context,
                     "${holder.itemView.context.packageName}.provider",
-                    item
+                    file
                 )
                 listener.onStickerClick(uri)
             }
             
             holder.itemView.setOnLongClickListener {
-                val uri = Uri.fromFile(item)
-                listener.onStickerLongClick(uri, !showHeaders)
+                if (item is RecentSticker) {
+                    val uri = Uri.fromFile(item.file)
+                    listener.onStickerLongClick(uri, true, "${item.file.name}:${item.timestamp}")
+                } else {
+                    val uri = Uri.fromFile(item as File)
+                    listener.onStickerLongClick(uri, false)
+                }
                 true
             }
         }
@@ -112,7 +120,7 @@ class StickerAdapter(
                         list.add(date)
                         lastDate = date
                     }
-                    list.add(file)
+                    list.add(RecentSticker(file, timestamp))
                 }
             }
             return list

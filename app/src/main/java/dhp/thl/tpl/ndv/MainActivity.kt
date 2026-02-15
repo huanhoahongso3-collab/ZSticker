@@ -308,8 +308,96 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
                 private fun confirmRemoveRecent() {
                     MaterialAlertDialogBuilder(this)
-                        .setTitle(getString(R.string.info_remove_recent_title))
-                        .setMessage(getString(R.string.info_remove_all_confirm_message)) // Reusing message for now
+                        .setTitle(getString(R.string.info_remove_recent_confirm_title))
+                        .setMessage(getString(R.string.info_remove_recent_confirm_message))
+                        .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
+                        .setNegativeButton(getString(R.string.cancel), null)
+                        .show()
+                }
+ Riverside:                 private fun confirmRemoveRecent() {
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle(getString(R.string.info_remove_recent_confirm_title))
+                        .setMessage(getString(R.string.info_remove_recent_confirm_message))
+                        .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
+                        .setNegativeButton(getString(R.string.cancel), null)
+                        .show()
+                }
+ Riverside:                 private fun confirmRemoveRecent() {
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle(getString(R.string.info_remove_recent_confirm_title))
+                        .setMessage(getString(R.string.info_remove_recent_confirm_message))
+                        .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
+                        .setNegativeButton(getString(R.string.cancel), null)
+                        .show()
+                }
+ Riverside:                 private fun confirmRemoveRecent() {
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle(getString(R.string.info_remove_recent_confirm_title))
+                        .setMessage(getString(R.string.info_remove_recent_confirm_message))
+                        .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
+                        .setNegativeButton(getString(R.string.cancel), null)
+                        .show()
+                }
+ Riverside:                 private fun confirmRemoveRecent() {
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle(getString(R.string.info_remove_recent_confirm_title))
+                        .setMessage(getString(R.string.info_remove_recent_confirm_message))
+                        .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
+                        .setNegativeButton(getString(R.string.cancel), null)
+                        .show()
+                }
+ Riverside:                 private fun confirmRemoveRecent() {
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle(getString(R.string.info_remove_recent_confirm_title))
+                        .setMessage(getString(R.string.info_remove_recent_confirm_message))
+                        .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
+                        .setNegativeButton(getString(R.string.cancel), null)
+                        .show()
+                }
+ Riverside:                 private fun confirmRemoveRecent() {
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle(getString(R.string.info_remove_recent_confirm_title))
+                        .setMessage(getString(R.string.info_remove_recent_confirm_message))
+                        .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
+                        .setNegativeButton(getString(R.string.cancel), null)
+                        .show()
+                }
+ Riverside:                 private fun confirmRemoveRecent() {
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle(getString(R.string.info_remove_recent_confirm_title))
+                        .setMessage(getString(R.string.info_remove_recent_confirm_message))
+                        .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
+                        .setNegativeButton(getString(R.string.cancel), null)
+                        .show()
+                }
+ Riverside:                 private fun confirmRemoveRecent() {
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle(getString(R.string.info_remove_recent_confirm_title))
+                        .setMessage(getString(R.string.info_remove_recent_confirm_message))
+                        .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
+                        .setNegativeButton(getString(R.string.cancel), null)
+                        .show()
+                }
+ Riverside:                 private fun confirmRemoveRecent() {
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle(getString(R.string.info_remove_recent_confirm_title))
+                        .setMessage(getString(R.string.info_remove_recent_confirm_message))
+                        .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
+                        .setNegativeButton(getString(R.string.cancel), null)
+                        .show()
+                }
+ Riverside:                 private fun confirmRemoveRecent() {
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle(getString(R.string.info_remove_recent_confirm_title))
+                        .setMessage(getString(R.string.info_remove_recent_confirm_message))
+                        .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
+                        .setNegativeButton(getString(R.string.cancel), null)
+                        .show()
+                }
+ Riverside:                 private fun confirmRemoveRecent() {
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle(getString(R.string.info_remove_recent_confirm_title))
+                        .setMessage(getString(R.string.info_remove_recent_confirm_message))
                         .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
                         .setNegativeButton(getString(R.string.cancel), null)
                         .show()
@@ -599,18 +687,21 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     prefs.edit().putString("list", list.filter { it.isNotEmpty() }.joinToString(",")).apply()
                 }
 
-    override fun onStickerLongClick(uri: Uri, isRecent: Boolean) {
-        val title = SpannableString(getString(R.string.sticker_options_title)).apply {
+    override fun onStickerLongClick(uri: Uri, isRecent: Boolean, entry: String?) {
+        val titleRes = if (isRecent) R.string.recent_options_title else R.string.sticker_options_title
+        val title = SpannableString(getString(titleRes)).apply {
             setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
         }
 
-        val options = mutableListOf(
-            OptionItem(R.drawable.ic_export, getString(R.string.export))
-        )
+        val options = mutableListOf<OptionItem>()
+        options.add(OptionItem(R.drawable.ic_export, getString(R.string.export)))
+        
         if (!isRecent) {
             options.add(OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg)))
+            options.add(OptionItem(R.drawable.ic_delete, getString(R.string.delete)))
+        } else {
+            options.add(OptionItem(R.drawable.ic_delete, getString(R.string.delete_history)))
         }
-        options.add(OptionItem(R.drawable.ic_delete, getString(R.string.delete)))
 
         val adapter = OptionAdapter(this, options)
 
@@ -618,16 +709,11 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             .setTitle(title)
             .setAdapter(adapter) { _, which ->
                 val selectedOption = options[which].text
-                when (selectedOption) {
-                    getString(R.string.export) -> exportSingleSticker(uri)
-                    getString(R.string.remove_bg) -> checkAndShowBackgroundRemovalWarning(uri)
-                    getString(R.string.delete) -> {
-                        if (isRecent) {
-                            removeFromRecents(uri.lastPathSegment ?: "")
-                        } else {
-                            deleteSticker(uri)
-                        }
-                    }
+                when {
+                    selectedOption == getString(R.string.export) -> exportSingleSticker(uri)
+                    selectedOption == getString(R.string.remove_bg) -> checkAndShowBackgroundRemovalWarning(uri)
+                    selectedOption == getString(R.string.delete) -> deleteSticker(uri)
+                    selectedOption == getString(R.string.delete_history) -> entry?.let { removeFromRecents(it) }
                 }
             }
             .setNegativeButton(getString(R.string.cancel), null)
@@ -685,12 +771,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
                 }
 
-                private fun removeFromRecents(fileName: String) {
+                private fun removeFromRecents(entry: String) {
                     val prefs = getSharedPreferences("recents", MODE_PRIVATE)
                     val list = prefs.getString("list", "")?.split(",")?.toMutableList() ?: mutableListOf()
-                    val index = list.indexOfFirst { it.substringBefore(":") == fileName }
-                    if (index != -1) {
-                        list.removeAt(index)
+                    if (list.remove(entry)) {
                         prefs.edit().putString("list", list.joinToString(",")).apply()
                         adapterRecents.refreshData(this)
                         ToastUtils.showToast(this, getString(R.string.success))
@@ -737,7 +821,7 @@ class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<
         textView.text = item!!.text
         iconView.setImageResource(item.iconRes)
         
-        if (item.text == context.getString(R.string.delete)) {
+        if (item.text == context.getString(R.string.delete) || item.text == context.getString(R.string.delete_history)) {
             textView.setTextColor(android.graphics.Color.parseColor("#FF3b30"))
             iconView.setColorFilter(android.graphics.Color.parseColor("#FF3b30"))
         } else {
