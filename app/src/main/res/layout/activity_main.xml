@@ -40,6 +40,16 @@
                     android:paddingBottom="100dp"
                     android:scrollbarStyle="outsideOverlay" />
 
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recyclerRecents"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="4dp"
+                    android:clipToPadding="false"
+                    android:paddingBottom="100dp"
+                    android:scrollbarStyle="outsideOverlay"
+                    android:visibility="gone" />
+
                 <ScrollView
                     android:id="@+id/info_layout"
                     android:layout_width="match_parent"
@@ -107,6 +117,20 @@
                             <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_export" app:tint="?attr/colorControlNormal"/>
                             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
                                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_export_all_title" style="@style/TextAppearance.Material3.TitleMedium"/>
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/itemRemoveRecent"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:background="?attr/selectableItemBackground"
+                            android:gravity="center_vertical">
+                            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_history" app:tint="#FF3b30"/>
+                            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
+                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_remove_recent_title" style="@style/TextAppearance.Material3.TitleMedium" android:textColor="#FF3b30" />
                             </LinearLayout>
                         </LinearLayout>
 

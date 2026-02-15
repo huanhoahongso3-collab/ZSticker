@@ -2,6 +2,7 @@
     <string name="app_name">ZSticker</string>
 
     <string name="nav_home">Trang chủ</string>
+    <string name="nav_recents">Gần đây</string>
     <string name="nav_options">Tùy chọn</string>
 
     <string name="section_settings">Cài đặt</string>
@@ -14,6 +15,7 @@
     <string name="info_repo_note">https://github.com/huanhoahongso3-collab/ZSticker</string>
     <string name="info_license_title">Giấy phép</string>
     <string name="info_export_all_title">Xuất tất cả nhãn dán</string>
+    <string name="info_remove_recent_title">Xóa tất cả nhãn dán gần đây</string>
     <string name="info_remove_all_title">Xóa tất cả nhãn dán</string>
     <string name="info_remove_all_confirm_title">Xóa tất cả nhãn dán?</string>
     <string name="info_remove_all_confirm_message">Hành động này sẽ xóa vĩnh viễn tất cả nhãn dán của bạn. Không thể hoàn tác.</string>
@@ -37,7 +39,7 @@
     <string name="rb_completed">Xóa phông nền hoàn tất</string>
     <string name="rb_failed">Xóa phông nền thất bại</string>
     <string name="rb_warning_title">Cảnh báo xóa phông nền</string>
-    <string name="rb_warning_message">Tính năng này sử dụng API của bên thứ ba (BRIA RMBG 2.0). Bằng cách tiếp tục, bạn chấp nhận rằng chúng tôi không có quyền đọc hình ảnh và mọi thứ được sử dụng và kiểm soát bởi Hugging Face và dịch vụ của bên thứ ba.\n\nLiên kết dự án: https://github.com/huanhoahongso3-collab/briarmbg2.0\nMã nguồn Endpoint: http://github.com/huanhoahongso3-collab/briarmbg2.0/</string>
+    <string name="rb_warning_message">Tính năng này sử dụng API của bên thứ ba (BRIA RMBG 2.0). Bằng cách tiếp tục, bạn chấp nhận rằng chúng tôi không có quyền đọc hình ảnh và mọi thứ được sử dụng và kiểm soát bởi Hugging Face và dịch vụ của bên thứ ba.\n\nLiên kết dự án: https://huggingface.co/spaces/briaai/BRIA-RMBG-2.0\nMã nguồn Endpoint: http://github.com/huanhoahongso3-collab/briarmbg2.0/</string>
     <string name="dont_show_again">Không hiện lại</string>
     <string name="continue_action">Tiếp tục</string>
 

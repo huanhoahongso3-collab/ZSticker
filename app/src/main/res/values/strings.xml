@@ -2,6 +2,7 @@
     <string name="app_name">ZSticker</string>
 
     <string name="nav_home">Home</string>
+    <string name="nav_recents">Recents</string>
     <string name="nav_options">Options</string>
 
     <string name="section_settings">Settings</string>
@@ -14,6 +15,7 @@
     <string name="info_repo_note">https://github.com/huanhoahongso3-collab/ZSticker</string>
     <string name="info_license_title">License</string>
     <string name="info_export_all_title">Export all stickers</string>
+    <string name="info_remove_recent_title">Remove all recent stickers</string>
     <string name="info_remove_all_title">Remove all stickers</string>
     <string name="info_remove_all_confirm_title">Delete all stickers?</string>
     <string name="info_remove_all_confirm_message">This will permanently delete all your stickers. This action cannot be undone.</string>
@@ -37,7 +39,7 @@
     <string name="rb_completed">Remove background completed!</string>
     <string name="rb_failed">Failed to remove background</string>
     <string name="rb_warning_title">Background Removal Warning</string>
-    <string name="rb_warning_message">This feature uses a third-party API (BRIA RMBG 2.0). By continuing, you acknowledge that we do not have permission to read the image and everything is used and controlled by Hugging Face and the third-party service.\n\nProject Link: https://github.com/huanhoahongso3-collab/briarmbg2.0\nEndpoint Source Code: http://github.com/huanhoahongso3-collab/briarmbg2.0/</string>
+    <string name="rb_warning_message">This feature uses a third-party API (BRIA RMBG 2.0). By continuing, you acknowledge that we do not have permission to read the image and everything is used and controlled by Hugging Face and the third-party service.\n\nProject Link: https://huggingface.co/spaces/briaai/BRIA-RMBG-2.0\nEndpoint Source Code: http://github.com/huanhoahongso3-collab/briarmbg2.0/</string>
     <string name="dont_show_again">Don\'t show again</string>
     <string name="continue_action">Continue</string>
     

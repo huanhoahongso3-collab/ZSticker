@@ -47,7 +47,8 @@ import androidx.appcompat.app.AlertDialog
 class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
     private lateinit var binding: ActivityMainBinding
-        private lateinit var adapter: StickerAdapter
+    private lateinit var adapter: StickerAdapter
+    private lateinit var adapterRecents: StickerAdapter
 
             private var versionClickCount = 0
             private var lastClickTime: Long = 0
@@ -259,7 +260,23 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.gnu.org/licenses/gpl-3.0.html")))
                     }
                     binding.itemExportAll.setOnClickListener { exportAllStickers() }
+                    binding.itemRemoveRecent.setOnClickListener { confirmRemoveRecent() }
                     binding.itemRemoveAll.setOnClickListener { confirmDeleteAll() }
+                }
+
+                private fun confirmRemoveRecent() {
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle(getString(R.string.info_remove_recent_title))
+                        .setMessage(getString(R.string.info_remove_all_confirm_message)) // Reusing message for now
+                        .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
+                        .setNegativeButton(getString(R.string.cancel), null)
+                        .show()
+                }
+
+                private fun removeRecentUsage() {
+                    getSharedPreferences("recents", MODE_PRIVATE).edit().remove("list").apply()
+                    adapterRecents.refreshData(this)
+                    ToastUtils.showToast(this, getString(R.string.success))
                 }
 
                 private fun confirmDeleteAll() {
@@ -281,7 +298,16 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     files.forEach { if (it.delete()) successCount++ }
                     
                     adapter.refreshData(this)
+                    syncRecentsAfterDeletion()
                     ToastUtils.showToast(this, if (successCount > 0) getString(R.string.success) else getString(R.string.failed))
+                }
+
+                private fun syncRecentsAfterDeletion() {
+                    val prefs = getSharedPreferences("recents", MODE_PRIVATE)
+                    val list = prefs.getString("list", "")?.split(",")?.toMutableList() ?: mutableListOf()
+                    val filtered = list.filter { name -> File(filesDir, name).exists() }.joinToString(",")
+                    prefs.edit().putString("list", filtered).apply()
+                    adapterRecents.refreshData(this)
                 }
 
                 // --- STICKER OPERATIONS ---
@@ -435,12 +461,22 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         R.id.nav_home -> {
                             binding.toolbar.title = getString(R.string.nav_home)
                             binding.recycler.visibility = View.VISIBLE
+                            binding.recyclerRecents.visibility = View.GONE
                             binding.infoLayout.visibility = View.GONE
                             binding.addButton.show()
+                        }
+                        R.id.nav_recents -> {
+                            binding.toolbar.title = getString(R.string.nav_recents)
+                            binding.recycler.visibility = View.GONE
+                            binding.recyclerRecents.visibility = View.VISIBLE
+                            binding.infoLayout.visibility = View.GONE
+                            binding.addButton.show()
+                            adapterRecents.refreshData(this)
                         }
                         R.id.nav_options -> {
                             binding.toolbar.title = getString(R.string.nav_options)
                             binding.recycler.visibility = View.GONE
+                            binding.recyclerRecents.visibility = View.GONE
                             binding.infoLayout.visibility = View.VISIBLE
                             binding.addButton.hide()
                         }
@@ -448,6 +484,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }
 
                 private fun setupStickerList() {
+                    // Home adapter
                     val items = StickerAdapter.loadOrdered(this)
                     adapter = StickerAdapter(items, this)
                     val layoutManager = GridLayoutManager(this, 3)
@@ -456,6 +493,12 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
                     binding.recycler.layoutManager = layoutManager
                     binding.recycler.adapter = adapter
+
+                    // Recents adapter
+                    val recentItems = StickerAdapter.loadRecents(this)
+                    adapterRecents = StickerAdapter(recentItems, this, showHeaders = false)
+                    binding.recyclerRecents.layoutManager = GridLayoutManager(this, 3)
+                    binding.recyclerRecents.adapter = adapterRecents
                 }
 
                 private fun setupNavigation() {
@@ -469,6 +512,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 override fun onStickerClick(uri: Uri) {
                     try {
                         val file = File(filesDir, uri.lastPathSegment ?: "")
+                        if (file.exists()) {
+                            addToRecents(file.name)
+                        }
                         val contentUri = FileProvider.getUriForFile(this, "$packageName.provider", file)
                         val intent = Intent(Intent.ACTION_SEND).apply {
                             type = "image/png"
@@ -484,26 +530,44 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
                 }
 
-    override fun onStickerLongClick(uri: Uri) {
+                private fun addToRecents(fileName: String) {
+                    val prefs = getSharedPreferences("recents", MODE_PRIVATE)
+                    val list = prefs.getString("list", "")?.split(",")?.toMutableList() ?: mutableListOf()
+                    list.remove(fileName)
+                    list.add(0, fileName)
+                    if (list.size > 50) list.removeAt(50) // Keep reasonable limit
+                    prefs.edit().putString("list", list.filter { it.isNotEmpty() }.joinToString(",")).apply()
+                }
+
+    override fun onStickerLongClick(uri: Uri, isRecent: Boolean) {
         val title = SpannableString(getString(R.string.sticker_options_title)).apply {
             setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
         }
 
-        val options = listOf(
-            OptionItem(R.drawable.ic_export, getString(R.string.export)),
-            OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg)),
-            OptionItem(R.drawable.ic_delete, getString(R.string.delete))
+        val options = mutableListOf(
+            OptionItem(R.drawable.ic_export, getString(R.string.export))
         )
+        if (!isRecent) {
+            options.add(OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg)))
+        }
+        options.add(OptionItem(R.drawable.ic_delete, getString(R.string.delete)))
 
         val adapter = OptionAdapter(this, options)
 
         val dialog = MaterialAlertDialogBuilder(this)
             .setTitle(title)
             .setAdapter(adapter) { _, which ->
-                when (which) {
-                    0 -> exportSingleSticker(uri)
-                    1 -> checkAndShowBackgroundRemovalWarning(uri) // Swapped order
-                    2 -> deleteSticker(uri) // Swapped order
+                val selectedOption = options[which].text
+                when (selectedOption) {
+                    getString(R.string.export) -> exportSingleSticker(uri)
+                    getString(R.string.remove_bg) -> checkAndShowBackgroundRemovalWarning(uri)
+                    getString(R.string.delete) -> {
+                        if (isRecent) {
+                            removeFromRecents(uri.lastPathSegment ?: "")
+                        } else {
+                            deleteSticker(uri)
+                        }
+                    }
                 }
             }
             .setNegativeButton(getString(R.string.cancel), null)
@@ -556,6 +620,17 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     val file = File(filesDir, uri.lastPathSegment ?: "")
                     if (file.exists() && file.delete()) {
                         adapter.refreshData(this)
+                        syncRecentsAfterDeletion()
+                        ToastUtils.showToast(this, getString(R.string.success))
+                    }
+                }
+
+                private fun removeFromRecents(fileName: String) {
+                    val prefs = getSharedPreferences("recents", MODE_PRIVATE)
+                    val list = prefs.getString("list", "")?.split(",")?.toMutableList() ?: mutableListOf()
+                    if (list.remove(fileName)) {
+                        prefs.edit().putString("list", list.joinToString(",")).apply()
+                        adapterRecents.refreshData(this)
                         ToastUtils.showToast(this, getString(R.string.success))
                     }
                 }

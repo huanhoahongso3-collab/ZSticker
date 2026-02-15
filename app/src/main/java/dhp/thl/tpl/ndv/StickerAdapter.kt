@@ -16,12 +16,13 @@ import java.util.*
 
 class StickerAdapter(
     private var items: MutableList<Any>,
-    private val listener: StickerListener
+    private val listener: StickerListener,
+    private val showHeaders: Boolean = true
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     interface StickerListener {
         fun onStickerClick(uri: Uri)
-        fun onStickerLongClick(uri: Uri)
+        fun onStickerLongClick(uri: Uri, isRecent: Boolean)
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -56,7 +57,7 @@ class StickerAdapter(
             
             holder.itemView.setOnLongClickListener {
                 val uri = Uri.fromFile(item)
-                listener.onStickerLongClick(uri)
+                listener.onStickerLongClick(uri, !showHeaders)
                 true
             }
         }
@@ -66,7 +67,7 @@ class StickerAdapter(
 
     fun refreshData(context: Context) {
         this.items.clear()
-        this.items.addAll(loadOrdered(context))
+        this.items.addAll(if (showHeaders) loadOrdered(context) else loadRecents(context))
         notifyDataSetChanged()
     }
 
@@ -83,7 +84,6 @@ class StickerAdapter(
             val list = mutableListOf<Any>()
             val folder = context.filesDir
             
-            // FIX: Updated to zsticker_
             val files = folder.listFiles { file ->
                 file.name.startsWith("zsticker_") && file.name.endsWith(".png")
             }?.sortedByDescending { it.lastModified() } ?: emptyList()
@@ -98,6 +98,20 @@ class StickerAdapter(
                     lastDate = date
                 }
                 list.add(file)
+            }
+            return list
+        }
+
+        fun loadRecents(context: Context): MutableList<Any> {
+            val prefs = context.getSharedPreferences("recents", Context.MODE_PRIVATE)
+            val recentNames = prefs.getString("list", "")?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
+            val list = mutableListOf<Any>()
+            
+            recentNames.forEach { name ->
+                val file = File(context.filesDir, name)
+                if (file.exists()) {
+                    list.add(file)
+                }
             }
             return list
         }
