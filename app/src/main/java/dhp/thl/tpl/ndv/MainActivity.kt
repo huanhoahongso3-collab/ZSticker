@@ -460,8 +460,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     } catch (e: Exception) {
                         false
                     }
-                }
- Riverside: 
+
 
                 private fun removeBackground(uri: Uri) {
                     if (!isNetworkAvailable()) {
@@ -509,7 +508,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         }
                     }
                 }
- Riverside: 
+
                 private fun handleEdgeToEdge() {
                     ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigation) { view, insets ->
                         val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
