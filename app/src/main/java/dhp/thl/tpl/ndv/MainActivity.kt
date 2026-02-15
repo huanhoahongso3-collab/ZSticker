@@ -361,6 +361,13 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         contentResolver.openInputStream(src)?.use { input ->
                             val file = File(filesDir, "zsticker_${System.currentTimeMillis()}.png")
                             FileOutputStream(file).use { out ->
+                                if (input.copyTo(out) > 0) {
+                                    return 0
+                                } else {
+                                    return 2
+                                }
+                            }
+                        }
                         return 2
                     } catch (e: Exception) {
                         return 2
