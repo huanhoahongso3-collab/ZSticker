@@ -26,6 +26,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.color.DynamicColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -56,6 +57,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 override fun attachBaseContext(newBase: Context) {
                     val prefs = newBase.getSharedPreferences("settings", MODE_PRIVATE)
                     val langCode = prefs.getString("lang", "system") ?: "system"
+                    val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
 
                     val config = Configuration(newBase.resources.configuration)
 
@@ -69,14 +71,22 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         config.setLocale(systemLocale)
                     }
 
-                    // Removed manual config.uiMode override here as it conflicts with DynamicColors 
-                    // initialization in onCreate. AppCompatDelegate handles the switch.
+                    // Force uiMode for Dynamic Colors and theme attribute resolution
+                    when (savedTheme) {
+                        AppCompatDelegate.MODE_NIGHT_YES -> {
+                            config.uiMode = (config.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or Configuration.UI_MODE_NIGHT_YES
+                        }
+                        AppCompatDelegate.MODE_NIGHT_NO -> {
+                            config.uiMode = (config.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or Configuration.UI_MODE_NIGHT_NO
+                        }
+                    }
                     
                     val context = newBase.createConfigurationContext(config)
                     super.attachBaseContext(context)
                 }
 
                 override fun onCreate(savedInstanceState: Bundle?) {
+                    installSplashScreen()
                     val prefs = getSharedPreferences("settings", MODE_PRIVATE)
                     val savedTheme = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
 
@@ -267,7 +277,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 private fun confirmRemoveRecent() {
                     MaterialAlertDialogBuilder(this)
                         .setTitle(getString(R.string.info_remove_recent_title))
-                        .setMessage(getString(R.string.info_remove_all_confirm_message)) // Reusing message for now
+                        .setMessage(getString(R.string.info_remove_recent_confirm_message))
                         .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
                         .setNegativeButton(getString(R.string.cancel), null)
                         .show()
@@ -305,7 +315,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 private fun syncRecentsAfterDeletion() {
                     val prefs = getSharedPreferences("recents", MODE_PRIVATE)
                     val list = prefs.getString("list", "")?.split(",")?.toMutableList() ?: mutableListOf()
-                    val filtered = list.filter { name -> File(filesDir, name).exists() }.joinToString(",")
+                    val filtered = list.filter { entry ->
+                        val fileName = entry.split(":")[0]
+                        File(filesDir, fileName).exists()
+                    }.joinToString(",")
                     prefs.edit().putString("list", filtered).apply()
                     adapterRecents.refreshData(this)
                 }
@@ -348,16 +361,65 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         contentResolver.openInputStream(src)?.use { input ->
                             val file = File(filesDir, "zsticker_${System.currentTimeMillis()}.png")
                             FileOutputStream(file).use { out ->
-                                if (input.copyTo(out) > 0) {
-                                    return 0
-                                } else {
-                                    return 2
-                                }
-                            }
-                        }
                         return 2
                     } catch (e: Exception) {
                         return 2
+                    }
+                }
+
+                private fun isNetworkAvailable(): Boolean {
+                    val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                    val network = connectivityManager.activeNetwork ?: return false
+                    val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+                    return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                }
+
+                private fun removeBackground(uri: Uri) {
+                    if (!isNetworkAvailable()) {
+                        ToastUtils.showToast(this, getString(R.string.no_internet))
+                        return
+                    }
+                    binding.progressBar.visibility = View.VISIBLE
+                    thread {
+                        var isSuccess = false
+                        var resultUri: Uri? = null
+                        var errorType = 0 // 0: general, 1: no internet
+
+                        try {
+                            val inputStream = contentResolver.openInputStream(uri) ?: throw Exception()
+                            val url = URL("https://briarmbg20.vercel.app/api/rmbg")
+                            val connection = (url.openConnection() as HttpURLConnection).apply {
+                                requestMethod = "POST"
+                                doOutput = true
+                                setRequestProperty("Content-Type", "application/octet-stream")
+                                connectTimeout = 30000
+                                readTimeout = 30000
+                            }
+
+                            connection.outputStream.use { out -> inputStream.copyTo(out) }
+
+                            if (connection.responseCode == 200) {
+                                val file = File(filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
+                                connection.inputStream.use { input ->
+                                    FileOutputStream(file).use { out -> input.copyTo(out) }
+                                }
+                                resultUri = Uri.fromFile(file)
+                                isSuccess = true
+                            }
+                        } catch (e: Exception) {
+                            isSuccess = false
+                        }
+
+                        runOnUiThread {
+                            binding.progressBar.visibility = View.GONE
+                            if (isSuccess && resultUri != null) {
+                                adapter.refreshData(this@MainActivity)
+                                binding.recycler.scrollToPosition(0)
+                                ToastUtils.showToast(this, getString(R.string.rb_completed))
+                            } else {
+                                ToastUtils.showToast(this, getString(R.string.rb_failed))
+                            }
+                        }
                     }
                 }
 
@@ -398,48 +460,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
                 }
 
-                private fun removeBackground(uri: Uri) {
-                    binding.progressBar.visibility = View.VISIBLE
-                    thread {
-                        var isSuccess = false
-                        var resultUri: Uri? = null
-                        try {
-                            val inputStream = contentResolver.openInputStream(uri) ?: throw Exception()
-                            val url = URL("https://briarmbg20.vercel.app/api/rmbg")
-                            val connection = (url.openConnection() as HttpURLConnection).apply {
-                                requestMethod = "POST"
-                                doOutput = true
-                                setRequestProperty("Content-Type", "application/octet-stream")
-                                connectTimeout = 30000
-                                readTimeout = 30000
-                            }
-
-                            connection.outputStream.use { out -> inputStream.copyTo(out) }
-
-                            if (connection.responseCode == 200) {
-                                val file = File(filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
-                                connection.inputStream.use { input ->
-                                    FileOutputStream(file).use { out -> input.copyTo(out) }
-                                }
-                                resultUri = Uri.fromFile(file)
-                                isSuccess = true
-                            }
-                        } catch (e: Exception) {
-                            isSuccess = false
-                        }
-
-                        runOnUiThread {
-                            binding.progressBar.visibility = View.GONE
-                            if (isSuccess && resultUri != null) {
-                                adapter.refreshData(this@MainActivity)
-                                binding.recycler.scrollToPosition(0)
-                                ToastUtils.showToast(this, getString(R.string.rb_completed))
-                            } else {
-                                ToastUtils.showToast(this, getString(R.string.rb_failed))
-                            }
-                        }
-                    }
-                }
 
                 private fun handleEdgeToEdge() {
                     ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigation) { view, insets ->
@@ -514,6 +534,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         val file = File(filesDir, uri.lastPathSegment ?: "")
                         if (file.exists()) {
                             addToRecents(file.name)
+                            adapterRecents.refreshData(this)
                         }
                         val contentUri = FileProvider.getUriForFile(this, "$packageName.provider", file)
                         val intent = Intent(Intent.ACTION_SEND).apply {
@@ -533,9 +554,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 private fun addToRecents(fileName: String) {
                     val prefs = getSharedPreferences("recents", MODE_PRIVATE)
                     val list = prefs.getString("list", "")?.split(",")?.toMutableList() ?: mutableListOf()
-                    list.remove(fileName)
-                    list.add(0, fileName)
-                    if (list.size > 50) list.removeAt(50) // Keep reasonable limit
+                    val entry = "$fileName:${System.currentTimeMillis()}"
+                    list.add(0, entry)
+                    if (list.size > 200) list.removeAt(200) // Keep reasonable limit
                     prefs.edit().putString("list", list.filter { it.isNotEmpty() }.joinToString(",")).apply()
                 }
 
@@ -549,8 +570,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         )
         if (!isRecent) {
             options.add(OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg)))
+            options.add(OptionItem(R.drawable.ic_delete, getString(R.string.delete)))
+        } else {
+            options.add(OptionItem(R.drawable.ic_delete, getString(R.string.delete_from_recents)))
         }
-        options.add(OptionItem(R.drawable.ic_delete, getString(R.string.delete)))
 
         val adapter = OptionAdapter(this, options)
 
@@ -561,12 +584,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 when (selectedOption) {
                     getString(R.string.export) -> exportSingleSticker(uri)
                     getString(R.string.remove_bg) -> checkAndShowBackgroundRemovalWarning(uri)
-                    getString(R.string.delete) -> {
-                        if (isRecent) {
-                            removeFromRecents(uri.lastPathSegment ?: "")
-                        } else {
-                            deleteSticker(uri)
-                        }
+                    getString(R.string.delete), getString(R.string.delete_from_recents) -> {
+                        confirmSingleDeletion(uri, isRecent)
                     }
                 }
             }
@@ -625,10 +644,37 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
                 }
 
-                private fun removeFromRecents(fileName: String) {
+                private fun confirmSingleDeletion(uri: Uri, isRecent: Boolean) {
+                    val title = if (isRecent) R.string.delete_from_recents else R.string.delete
+                    val message = if (isRecent) R.string.confirm_remove_from_recents else R.string.confirm_delete_sticker
+                    
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle(getString(title))
+                        .setMessage(getString(message))
+                        .setPositiveButton(getString(R.string.delete)) { _, _ ->
+                            if (isRecent) {
+                                // For recents, we need to find the specific entry if there are duplicates?
+                                // Actually, the user wants us to show duplicates.
+                                // If they long press a specific one, they probably want to remove THAT specific one.
+                                // However, uri.lastPathSegment is just the filename.
+                                // To be safe, we'll remove the most recent one with that filename.
+                                removeFromRecentsByFilename(uri.lastPathSegment ?: "")
+                            } else {
+                                deleteSticker(uri)
+                            }
+                        }
+                        .setNegativeButton(getString(R.string.cancel), null)
+                        .show()
+                }
+
+                private fun removeFromRecentsByFilename(fileName: String) {
                     val prefs = getSharedPreferences("recents", MODE_PRIVATE)
                     val list = prefs.getString("list", "")?.split(",")?.toMutableList() ?: mutableListOf()
-                    if (list.remove(fileName)) {
+                    
+                    // Find the first occurrence (most recent) and remove it
+                    val index = list.indexOfFirst { it.split(":")[0] == fileName }
+                    if (index != -1) {
+                        list.removeAt(index)
                         prefs.edit().putString("list", list.joinToString(",")).apply()
                         adapterRecents.refreshData(this)
                         ToastUtils.showToast(this, getString(R.string.success))
@@ -669,8 +715,21 @@ class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.item_icon_text, parent, false)
         val item = getItem(position)
-        view.findViewById<ImageView>(R.id.item_icon).setImageResource(item!!.iconRes)
-        view.findViewById<TextView>(R.id.item_text).text = item.text
+        val icon = view.findViewById<ImageView>(R.id.item_icon)
+        val text = view.findViewById<TextView>(R.id.item_text)
+        
+        icon.setImageResource(item!!.iconRes)
+        text.text = item.text
+        
+        if (item.text == context.getString(R.string.delete) || item.text == context.getString(R.string.delete_from_recents)) {
+            text.setTextColor(android.graphics.Color.RED)
+            icon.setColorFilter(android.graphics.Color.RED)
+        } else {
+            text.setTextColor(com.google.android.material.R.attr.colorOnSurface) // Basic fallback
+            // Better yet, use the default text color of the theme
+            text.setTextColor(text.textColors.withAlpha(255)) 
+            icon.clearColorFilter()
+        }
         return view
     }
 }

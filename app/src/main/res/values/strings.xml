@@ -19,6 +19,11 @@
     <string name="info_remove_all_title">Remove all stickers</string>
     <string name="info_remove_all_confirm_title">Delete all stickers?</string>
     <string name="info_remove_all_confirm_message">This will permanently delete all your stickers. This action cannot be undone.</string>
+    <string name="info_remove_recent_confirm_message">This will clear your sticker usage history.</string>
+    <string name="confirm_delete_sticker">Are you sure you want to delete this sticker?</string>
+    <string name="confirm_remove_from_recents">Remove this sticker from recents?</string>
+    <string name="delete_from_recents">Delete from Recents</string>
+    <string name="no_internet">No internet access</string>
 
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>

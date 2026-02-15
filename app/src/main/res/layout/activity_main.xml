@@ -148,12 +148,6 @@
                             </LinearLayout>
                         </LinearLayout>
 
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="1dp"
-                            android:background="?attr/colorOutlineVariant"
-                            android:layout_marginVertical="8dp"/>
-
                         <!-- General Section -->
                         <TextView
                             android:layout_width="match_parent"
@@ -163,7 +157,7 @@
                             android:textStyle="bold"
                             android:paddingStart="16dp"
                             android:paddingEnd="16dp"
-                            android:paddingTop="8dp"
+                            android:paddingTop="24dp"
                             android:paddingBottom="8dp"/>
 
                         <LinearLayout
