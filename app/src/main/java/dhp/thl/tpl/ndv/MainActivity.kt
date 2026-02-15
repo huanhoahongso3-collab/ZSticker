@@ -132,6 +132,20 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     binding = ActivityMainBinding.inflate(layoutInflater)
                     setContentView(binding.root)
 
+                    // Secret fix: Force configuration reload on launcher starts to ensure Dynamic Colors apply correctly
+                    // This only happens when launched from launcher (with splash), not from share intents
+                    if (savedInstanceState == null && intent?.action != Intent.ACTION_SEND && intent?.action != Intent.ACTION_SEND_MULTIPLE) {
+                        val isFirstLaunch = prefs.getBoolean("is_first_launch_${System.currentTimeMillis() / 10000}", true)
+                        if (isFirstLaunch) {
+                            prefs.edit().putBoolean("is_first_launch_${System.currentTimeMillis() / 10000}", false).apply()
+                            val currentLang = prefs.getString("lang", "system") ?: "system"
+                            // Reapply the same language to force configuration reload
+                            prefs.edit().putString("lang", currentLang).apply()
+                            recreate()
+                            return
+                        }
+                    }
+
                     val lastTab = prefs.getInt("last_tab", R.id.nav_home)
                     binding.bottomNavigation.selectedItemId = lastTab
                     updateLayoutVisibility(lastTab)
