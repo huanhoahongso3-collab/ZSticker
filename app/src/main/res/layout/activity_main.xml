@@ -17,7 +17,8 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:title="@string/app_name"
-            app:titleCentered="false" />
+            app:titleCentered="false"
+            app:titleTextAppearance="@style/TextAppearance.Material3.HeadlineSmall" />
         </com.google.android.material.appbar.AppBarLayout>
 
         <LinearLayout
