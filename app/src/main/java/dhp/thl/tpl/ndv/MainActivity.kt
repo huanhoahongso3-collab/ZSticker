@@ -332,13 +332,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     ToastUtils.showToast(this, if (successCount > 0) getString(R.string.success) else getString(R.string.failed))
                 }
 
-                private fun syncRecentsAfterDeletion() {
-                    val prefs = getSharedPreferences("recents", MODE_PRIVATE)
-                    val list = prefs.getString("list", "")?.split(",")?.toMutableList() ?: mutableListOf()
-                    val filtered = list.filter { name -> File(filesDir, name).exists() }.joinToString(",")
-                    prefs.edit().putString("list", filtered).apply()
-                    adapterRecents.refreshData(this)
-                }
 
                 // --- STICKER OPERATIONS ---
 
