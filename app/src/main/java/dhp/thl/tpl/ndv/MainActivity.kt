@@ -61,21 +61,31 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 override fun attachBaseContext(newBase: Context) {
                     val prefs = newBase.getSharedPreferences("settings", MODE_PRIVATE)
                     val langCode = prefs.getString("lang", "system") ?: "system"
+                    val themeMode = prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
 
                     val config = Configuration(newBase.resources.configuration)
 
+                    // Apply Locale
                     if (langCode != "system") {
                         val locale = Locale(langCode)
                         Locale.setDefault(locale)
                         config.setLocale(locale)
                     } else {
-                        // Revert to device system locale
                         val systemLocale = Configuration(newBase.resources.configuration).locales[0]
                         config.setLocale(systemLocale)
                     }
 
-                    // Removed manual config.uiMode override here as it conflicts with DynamicColors 
-                    // initialization in onCreate. AppCompatDelegate handles the switch.
+                    // Apply Theme Mode to Configuration
+                    // This is critical for M3 Dynamic Colors to fetch the correct palette 
+                    // and for resources to be resolved from the correct -night folders.
+                    when (themeMode) {
+                        AppCompatDelegate.MODE_NIGHT_YES -> {
+                            config.uiMode = (config.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or Configuration.UI_MODE_NIGHT_YES
+                        }
+                        AppCompatDelegate.MODE_NIGHT_NO -> {
+                            config.uiMode = (config.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or Configuration.UI_MODE_NIGHT_NO
+                        }
+                    }
                     
                     val context = newBase.createConfigurationContext(config)
                     super.attachBaseContext(context)
@@ -460,7 +470,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     } catch (e: Exception) {
                         false
                     }
-
+                }
 
                 private fun removeBackground(uri: Uri) {
                     if (!isNetworkAvailable()) {
@@ -510,18 +520,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }
 
                 private fun handleEdgeToEdge() {
-                    ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigation) { view, insets ->
-                        val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-                        view.updatePadding(bottom = navInsets.bottom)
-                        insets
-                    }
-                    ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
-                        val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-                        view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                            bottomMargin = (96 * resources.displayMetrics.density).toInt() + navInsets.bottom
-                        }
-                        insets
-                    }
+                    // Material 3 BottomNavigationView and CoordinatorLayout with fitsSystemWindows="true"
+                    // already handle system bar insets. Manual over-correction causes misalignment.
                 }
 
                 private fun updateLayoutVisibility(itemId: Int) {
