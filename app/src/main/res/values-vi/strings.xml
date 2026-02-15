@@ -55,4 +55,7 @@
     <string name="dynamic_color_warning_message">Việc thay đổi giao diện khác với cài đặt hệ thống có thể làm mất hiệu ứng màu Material You (màu sắc động) trên một số thiết bị Android 12+.</string>
     <string name="ok">Đã hiểu</string>
     <string name="no_internet_access">Không có kết nối internet</string>
+    <string name="no_history_found">Không tìm thấy lịch sử</string>
+    <string name="changed_group">Đã thay đổi nhóm!</string>
+    <string name="secret_game_triggered">Trò chơi bí mật đã được kích hoạt!</string>
 </resources>

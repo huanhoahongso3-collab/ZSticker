@@ -122,7 +122,7 @@ class EasterEggActivity : AppCompatActivity() {
         rotateHandle?.visibility = View.GONE
         
         vibrate()
-        ToastUtils.showToast(this, "Changed Group!")
+        ToastUtils.showToast(this, getString(R.string.changed_group))
     }
     
     private fun vibrate() {
@@ -169,7 +169,7 @@ class EasterEggActivity : AppCompatActivity() {
                          lastTapTime = now
                          if (logoTapCount >= 20) {
                              logoTapCount = 0
-                             ToastUtils.showToast(this, "Secret game triggered!")
+                             ToastUtils.showToast(this, getString(R.string.secret_game_triggered))
                              startActivity(Intent(this, DuoibatActivity::class.java))
                          }
                     }

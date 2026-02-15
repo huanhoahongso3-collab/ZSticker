@@ -55,4 +55,7 @@
     <string name="dynamic_color_warning_message">Changing to a theme that differs from your system settings may disable Material You dynamic colors on some Android 12+ devices.</string>
     <string name="ok">OK</string>
     <string name="no_internet_access">No internet access</string>
+    <string name="no_history_found">No history found</string>
+    <string name="changed_group">Changed Group!</string>
+    <string name="secret_game_triggered">Secret game triggered!</string>
 </resources>

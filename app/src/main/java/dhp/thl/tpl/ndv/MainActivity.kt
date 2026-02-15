@@ -138,7 +138,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     setupNavigation()
                     setupStickerList()
                     setupInfoSection()
-                    handleIncomingShare(intent)
+                    if (savedInstanceState == null) {
+                        handleIncomingShare(intent)
+                    }
                     handleEdgeToEdge()
 
                     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
@@ -316,7 +318,13 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }
 
                 private fun removeRecentUsage() {
-                    getSharedPreferences("recents", MODE_PRIVATE).edit().remove("list").apply()
+                    val prefs = getSharedPreferences("recents", MODE_PRIVATE)
+                    val history = prefs.getString("list", "")
+                    if (history.isNullOrEmpty()) {
+                        ToastUtils.showToast(this, getString(R.string.no_history_found))
+                        return
+                    }
+                    prefs.edit().remove("list").apply()
                     adapterRecents.refreshData(this)
                     ToastUtils.showToast(this, getString(R.string.success))
                 }
@@ -444,15 +452,20 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }
 
                 private fun isNetworkAvailable(): Boolean {
-                    val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
-                    val activeNetwork = connectivityManager.activeNetwork ?: return false
-                    val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
-                    return capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    return try {
+                        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+                        val activeNetwork = connectivityManager.activeNetwork ?: return false
+                        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
+                        capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    } catch (e: Exception) {
+                        false
+                    }
                 }
+ Riverside: 
 
                 private fun removeBackground(uri: Uri) {
                     if (!isNetworkAvailable()) {
-                        ToastUtils.showToast(this, getString(R.string.no_internet_access))
+                        ToastUtils.showToast(this@MainActivity, getString(R.string.no_internet_access))
                         return
                     }
                     binding.progressBar.visibility = View.VISIBLE
@@ -489,14 +502,14 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                             if (isSuccess && resultUri != null) {
                                 adapter.refreshData(this@MainActivity)
                                 binding.recycler.scrollToPosition(0)
-                                ToastUtils.showToast(this, getString(R.string.rb_completed))
+                                ToastUtils.showToast(this@MainActivity, getString(R.string.rb_completed))
                             } else {
-                                ToastUtils.showToast(this, getString(R.string.rb_failed))
+                                ToastUtils.showToast(this@MainActivity, getString(R.string.rb_failed))
                             }
                         }
                     }
                 }
-
+ Riverside: 
                 private fun handleEdgeToEdge() {
                     ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigation) { view, insets ->
                         val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
@@ -592,15 +605,12 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
                 private fun addToRecents(fileName: String) {
                     val prefs = getSharedPreferences("recents", MODE_PRIVATE)
-                    val list = prefs.getString("list", "")?.split(",")?.toMutableList() ?: mutableListOf()
+                    val list = prefs.getString("list", "")?.split(",")?.filter { it.isNotEmpty() }?.toMutableList() ?: mutableListOf()
                     val timestamp = System.currentTimeMillis()
                     
-                    // Ensure uniqueness by removing existing entries for this file
-                    list.removeAll { it.startsWith("$fileName:") }
-                    
                     list.add(0, "$fileName:$timestamp")
-                    if (list.size > 50) list.removeAt(50) // Keep reasonable limit
-                    prefs.edit().putString("list", list.filter { it.isNotEmpty() }.joinToString(",")).apply()
+                    if (list.size > 100) list.removeAt(100) // History limit
+                    prefs.edit().putString("list", list.joinToString(",")).apply()
                     
                     // Refresh recents adapter if it's currently showing
                     if (binding.bottomNavigation.selectedItemId == R.id.nav_recents) {
