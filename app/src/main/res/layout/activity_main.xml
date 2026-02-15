@@ -141,13 +141,18 @@
                             android:orientation="horizontal"
                             android:padding="16dp"
                             android:background="?attr/selectableItemBackground"
-                            android:gravity="center_vertical"
-                            android:layout_marginBottom="16dp">
+                            android:gravity="center_vertical">
                             <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_delete" app:tint="#FF3b30"/>
                             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
                                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_remove_all_title" style="@style/TextAppearance.Material3.TitleMedium" android:textColor="#FF3b30" />
                             </LinearLayout>
                         </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="?attr/colorOutlineVariant"
+                            android:layout_marginVertical="8dp"/>
 
                         <!-- General Section -->
                         <TextView

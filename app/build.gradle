@@ -10,8 +10,8 @@ android {
         applicationId 'dhp.thl.tpl.ndv'
         minSdk 26
         targetSdk 34
-        versionCode 5611
-        versionName '5.6.1'  // ✅ updated version name
+        versionCode 5612
+        versionName '5.6.2'  // ✅ updated version name
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -54,7 +54,4 @@ dependencies {
     // ✅ Glide for image loading
     implementation 'com.github.bumptech.glide:glide:4.16.0'
     kapt 'com.github.bumptech.glide:compiler:4.16.0'
-
-    // ✅ Splash Screen API
-    implementation 'androidx.core:core-splashscreen:1.0.1'
 }

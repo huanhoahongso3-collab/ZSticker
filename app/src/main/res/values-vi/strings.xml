@@ -19,11 +19,6 @@
     <string name="info_remove_all_title">Xóa tất cả nhãn dán</string>
     <string name="info_remove_all_confirm_title">Xóa tất cả nhãn dán?</string>
     <string name="info_remove_all_confirm_message">Hành động này sẽ xóa vĩnh viễn tất cả nhãn dán của bạn. Không thể hoàn tác.</string>
-    <string name="info_remove_recent_confirm_message">Hành động này sẽ xóa danh sách nhãn dán gần đây của bạn. Không thể hoàn tác.</string>
-
-    <string name="confirm_delete_title">Xác nhận xóa</string>
-    <string name="confirm_delete_home_message">Bạn có chắc chắn muốn xóa vĩnh viễn nhãn dán này không?</string>
-    <string name="confirm_delete_recent_message">Bạn có chắc chắn muốn xóa nhãn dán này khỏi danh sách gần đây không?</string>
 
     <string name="theme_light">Sáng</string>
     <string name="theme_dark">Tối</string>
@@ -34,7 +29,6 @@
     <string name="sticker_options_title">Tùy chọn nhãn dán</string>
     <string name="export">Xuất vào bộ sưu tập</string>
     <string name="delete">Xóa nhãn dán</string>
-    <string name="delete_from_recent">Xóa khỏi gần đây</string>
     <string name="cancel">Hủy bỏ</string>
     <string name="zalo_share_failed">Không tìm thấy Zalo hoặc chia sẻ thất bại</string>
     <string name="success">Thành công</string>
@@ -48,7 +42,6 @@
     <string name="rb_warning_message">Tính năng này sử dụng API của bên thứ ba (BRIA RMBG 2.0). Bằng cách tiếp tục, bạn chấp nhận rằng chúng tôi không có quyền đọc hình ảnh và mọi thứ được sử dụng và kiểm soát bởi Hugging Face và dịch vụ của bên thứ ba.\n\nLiên kết dự án: https://huggingface.co/spaces/briaai/BRIA-RMBG-2.0\nMã nguồn Endpoint: http://github.com/huanhoahongso3-collab/briarmbg2.0/</string>
     <string name="dont_show_again">Không hiện lại</string>
     <string name="continue_action">Tiếp tục</string>
-    <string name="no_internet">Không có kết nối internet</string>
 
     <string name="lang_en">Tiếng Anh</string>
     <string name="lang_vi">Tiếng Việt</string>

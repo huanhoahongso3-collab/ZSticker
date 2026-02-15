@@ -24,6 +24,4 @@
         <item name="android:layout_marginEnd">16dp</item>
         <item name="tint">?attr/colorPrimary</item> 
     </style>
-
-    <style name="Theme.App.Starting" parent="Theme.ZSticker" />
 </resources>
