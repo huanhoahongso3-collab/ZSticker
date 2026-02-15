@@ -17,7 +17,7 @@ import java.util.*
 class StickerAdapter(
     private var items: MutableList<Any>,
     private val listener: StickerListener,
-    private val showHeaders: Boolean = true
+    private val isRecents: Boolean = false
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     data class RecentSticker(val file: File, val timestamp: Long)
@@ -75,7 +75,7 @@ class StickerAdapter(
 
     fun refreshData(context: Context) {
         this.items.clear()
-        this.items.addAll(if (showHeaders) loadOrdered(context) else loadRecents(context))
+        this.items.addAll(if (isRecents) loadRecents(context) else loadOrdered(context))
         notifyDataSetChanged()
     }
 
