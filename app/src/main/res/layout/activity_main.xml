@@ -148,7 +148,6 @@
                             </LinearLayout>
                         </LinearLayout>
 
-
                         <!-- General Section -->
                         <TextView
                             android:layout_width="match_parent"
@@ -158,7 +157,7 @@
                             android:textStyle="bold"
                             android:paddingStart="16dp"
                             android:paddingEnd="16dp"
-                            android:paddingTop="8dp"
+                            android:paddingTop="24dp"
                             android:paddingBottom="8dp"/>
 
                         <LinearLayout

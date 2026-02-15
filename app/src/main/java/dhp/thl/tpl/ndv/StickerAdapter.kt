@@ -17,13 +17,12 @@ import java.util.*
 class StickerAdapter(
     private var items: MutableList<Any>,
     private val listener: StickerListener,
-    private val isRecentPane: Boolean = false,
     private val showHeaders: Boolean = true
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     interface StickerListener {
         fun onStickerClick(uri: Uri)
-        fun onStickerLongClick(uri: Uri, isRecent: Boolean, position: Int)
+        fun onStickerLongClick(uri: Uri, isRecent: Boolean, entryId: String)
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -44,21 +43,31 @@ class StickerAdapter(
         val item = items[position]
         if (holder is HeaderViewHolder && item is String) {
             holder.text.text = item
-        } else if (holder is StickerViewHolder && item is File) {
-            Glide.with(holder.image).load(item).into(holder.image)
+        } else if (holder is StickerViewHolder) {
+            val file = when (item) {
+                is File -> item
+                is RecentSticker -> item.file
+                else -> return
+            }
+            
+            Glide.with(holder.image).load(file).into(holder.image)
             
             holder.itemView.setOnClickListener {
                 val uri = FileProvider.getUriForFile(
                     holder.itemView.context,
                     "${holder.itemView.context.packageName}.provider",
-                    item
+                    file
                 )
                 listener.onStickerClick(uri)
             }
             
             holder.itemView.setOnLongClickListener {
-                val uri = Uri.fromFile(item)
-                listener.onStickerLongClick(uri, isRecentPane, position)
+                val uri = Uri.fromFile(file)
+                if (item is RecentSticker) {
+                    listener.onStickerLongClick(uri, true, "${item.timestamp}|${item.file.name}")
+                } else {
+                    listener.onStickerLongClick(uri, false, file.name)
+                }
                 true
             }
         }
@@ -66,11 +75,9 @@ class StickerAdapter(
 
     override fun getItemCount(): Int = items.size
 
-    fun getItems(): List<Any> = items
-
     fun refreshData(context: Context) {
         this.items.clear()
-        this.items.addAll(if (showHeaders) loadOrdered(context, true) else loadRecents(context))
+        this.items.addAll(if (showHeaders) loadOrdered(context) else loadRecents(context))
         notifyDataSetChanged()
     }
 
@@ -83,57 +90,42 @@ class StickerAdapter(
     }
 
     companion object {
-        fun loadOrdered(context: Context, showDates: Boolean): MutableList<Any> {
-            val list = mutableListOf<Any>()
+        fun loadOrdered(context: Context): MutableList<Any> {
             val folder = context.filesDir
-            
             val files = folder.listFiles { file ->
                 file.name.startsWith("zsticker_") && file.name.endsWith(".png")
             }?.sortedByDescending { it.lastModified() } ?: emptyList()
 
-            var lastDate = ""
-            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-
-            files.forEach { file ->
-                if (showDates) {
-                    val date = sdf.format(Date(file.lastModified()))
-                    if (date != lastDate) {
-                        list.add(date)
-                        lastDate = date
-                    }
-                }
-                list.add(file)
-            }
-            return list
+            return files.toMutableList<Any>()
         }
 
         fun loadRecents(context: Context): MutableList<Any> {
             val prefs = context.getSharedPreferences("recents", Context.MODE_PRIVATE)
-            // Format in prefs will remain comma separated list of filenames, 
-            // but we allow duplicates now. Each entry represents a usage.
             val recentEntries = prefs.getString("list", "")?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
             val list = mutableListOf<Any>()
             
-            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
             var lastDate = ""
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
             recentEntries.forEach { entry ->
-                // Entry format: filename|timestamp
                 val parts = entry.split("|")
-                val name = parts[0]
-                val timestamp = if (parts.size > 1) parts[1].toLongOrNull() ?: 0L else 0L
-                
-                val file = File(context.filesDir, name)
-                if (file.exists()) {
-                    val date = sdf.format(Date(timestamp))
-                    if (date != lastDate) {
-                        list.add(date)
-                        lastDate = date
+                if (parts.size == 2) {
+                    val timestamp = parts[0].toLongOrNull() ?: 0L
+                    val name = parts[1]
+                    val file = File(context.filesDir, name)
+                    if (file.exists()) {
+                        val date = sdf.format(Date(timestamp))
+                        if (date != lastDate) {
+                            list.add(date)
+                            lastDate = date
+                        }
+                        list.add(RecentSticker(timestamp, file))
                     }
-                    list.add(file)
                 }
             }
             return list
         }
     }
 }
+
+data class RecentSticker(val timestamp: Long, val file: File)
