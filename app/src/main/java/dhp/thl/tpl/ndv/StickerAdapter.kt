@@ -22,7 +22,7 @@ class StickerAdapter(
 
     interface StickerListener {
         fun onStickerClick(uri: Uri)
-        fun onStickerLongClick(uri: Uri, isRecent: Boolean)
+        fun onStickerLongClick(uri: Uri, isRecent: Boolean, position: Int)
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -57,13 +57,15 @@ class StickerAdapter(
             
             holder.itemView.setOnLongClickListener {
                 val uri = Uri.fromFile(item)
-                listener.onStickerLongClick(uri, !showHeaders)
+                listener.onStickerLongClick(uri, showHeaders, holder.adapterPosition)
                 true
             }
         }
     }
 
     override fun getItemCount(): Int = items.size
+
+    fun getItems(): List<Any> = items
 
     fun refreshData(context: Context) {
         this.items.clear()
@@ -81,17 +83,10 @@ class StickerAdapter(
 
     companion object {
         fun loadOrdered(context: Context): MutableList<Any> {
-            val list = mutableListOf<Any>()
             val folder = context.filesDir
-            
-            val files = folder.listFiles { file ->
+            return folder.listFiles { file ->
                 file.name.startsWith("zsticker_") && file.name.endsWith(".png")
-            }?.sortedByDescending { it.lastModified() } ?: emptyList()
-
-            files.forEach { file ->
-                list.add(file)
-            }
-            return list
+            }?.sortedByDescending { it.lastModified() }?.toMutableList<Any>() ?: mutableListOf()
         }
 
         fun loadRecents(context: Context): MutableList<Any> {
@@ -103,13 +98,15 @@ class StickerAdapter(
             val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
             recentEntries.forEach { entry ->
-                val parts = entry.split(":")
-                val name = parts[0]
-                val timestamp = if (parts.size > 1) parts[1].toLongOrNull() ?: 0L else 0L
-                
-                val file = File(context.filesDir, name)
+                // entry format: filename|timestamp
+                val parts = entry.split("|")
+                val fileName = parts[0]
+                val timestamp = parts.getOrNull(1)?.toLongOrNull() ?: 0L
+
+                val file = File(context.filesDir, fileName)
                 if (file.exists()) {
-                    val date = sdf.format(Date(if (timestamp > 0) timestamp else file.lastModified()))
+                    val finalTimestamp = if (timestamp > 0) timestamp else file.lastModified()
+                    val date = sdf.format(Date(finalTimestamp))
                     if (date != lastDate) {
                         list.add(date)
                         lastDate = date
