@@ -81,35 +81,31 @@ class StickerAdapter(
 
     companion object {
         fun loadOrdered(context: Context): MutableList<Any> {
-            val list = mutableListOf<Any>()
             val folder = context.filesDir
-            
-            val files = folder.listFiles { file ->
+            return folder.listFiles { file ->
                 file.name.startsWith("zsticker_") && file.name.endsWith(".png")
-            }?.sortedByDescending { it.lastModified() } ?: emptyList()
-
-            var lastDate = ""
-            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-
-            files.forEach { file ->
-                val date = sdf.format(Date(file.lastModified()))
-                if (date != lastDate) {
-                    list.add(date)
-                    lastDate = date
-                }
-                list.add(file)
-            }
-            return list
+            }?.sortedByDescending { it.lastModified() }?.map { it as Any }?.toMutableList() ?: mutableListOf()
         }
 
         fun loadRecents(context: Context): MutableList<Any> {
             val prefs = context.getSharedPreferences("recents", Context.MODE_PRIVATE)
-            val recentNames = prefs.getString("list", "")?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
+            val recentEntries = prefs.getString("list", "")?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
             val list = mutableListOf<Any>()
             
-            recentNames.forEach { name ->
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            var lastDate = ""
+
+            recentEntries.forEach { entry ->
+                val parts = entry.split(":")
+                val name = parts[0]
+                val timestamp = parts.getOrNull(1)?.toLongOrNull() ?: 0L
                 val file = File(context.filesDir, name)
                 if (file.exists()) {
+                    val date = sdf.format(Date(if (timestamp > 0) timestamp else file.lastModified()))
+                    if (date != lastDate) {
+                        list.add(date)
+                        lastDate = date
+                    }
                     list.add(file)
                 }
             }
