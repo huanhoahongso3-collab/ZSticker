@@ -132,18 +132,20 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     binding = ActivityMainBinding.inflate(layoutInflater)
                     setContentView(binding.root)
 
-                    // Secret fix: Force configuration reload on launcher starts to ensure Dynamic Colors apply correctly
-                    // This only happens when launched from launcher (with splash), not from share intents
-                    if (savedInstanceState == null && intent?.action != Intent.ACTION_SEND && intent?.action != Intent.ACTION_SEND_MULTIPLE) {
-                        val isFirstLaunch = prefs.getBoolean("is_first_launch_${System.currentTimeMillis() / 10000}", true)
-                        if (isFirstLaunch) {
-                            prefs.edit().putBoolean("is_first_launch_${System.currentTimeMillis() / 10000}", false).apply()
-                            val currentLang = prefs.getString("lang", "system") ?: "system"
-                            // Reapply the same language to force configuration reload
-                            prefs.edit().putString("lang", currentLang).apply()
-                            recreate()
-                            return
-                        }
+                    // Force recreation ONCE on cold start (launcher) to fix dynamic colors
+                    // Skip if: 1) savedInstanceState exists (rotation/config change)
+                    //          2) Already recreated this session
+                    //          3) Started from share intent
+                    val isLauncherStart = intent?.action == Intent.ACTION_MAIN && 
+                                         intent?.categories?.contains(Intent.CATEGORY_LAUNCHER) == true
+                    val hasRecreated = prefs.getBoolean("has_recreated_session", false)
+                    
+                    if (savedInstanceState == null && isLauncherStart && !hasRecreated) {
+                        // Mark as recreated for this session
+                        prefs.edit().putBoolean("has_recreated_session", true).apply()
+                        // Recreate to ensure dynamic colors are properly applied
+                        recreate()
+                        return
                     }
 
                     val lastTab = prefs.getInt("last_tab", R.id.nav_home)
@@ -157,6 +159,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         handleIncomingShare(intent)
                     }
                     handleEdgeToEdge()
+                    updateStatusBar()
 
                     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
                         requestLegacyPermissions()
@@ -164,6 +167,31 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
                     binding.addButton.setOnClickListener {
                         pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    }
+                }
+
+                override fun onDestroy() {
+                    super.onDestroy()
+                    // Clear the recreation flag when activity is destroyed
+                    // This ensures next cold start will recreate again
+                    if (isFinishing) {
+                        getSharedPreferences("settings", MODE_PRIVATE)
+                            .edit()
+                            .putBoolean("has_recreated_session", false)
+                            .apply()
+                    }
+                }
+
+                private fun updateStatusBar() {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        val nightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+                        val isLightMode = nightMode == Configuration.UI_MODE_NIGHT_NO
+                        
+                        window.decorView.systemUiVisibility = if (isLightMode) {
+                            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                        } else {
+                            0
+                        }
                     }
                 }
 
