@@ -271,14 +271,12 @@
                 android:focusable="true"
                 android:translationZ="10dp">
 
-                <ProgressBar
+                <com.google.android.material.loadingindicator.LoadingIndicator
                     android:id="@+id/loadingIndicator"
-                    style="?android:attr/progressBarStyleLarge"
-                    android:layout_width="72dp"
-                    android:layout_height="72dp"
+                    android:layout_width="96dp"
+                    android:layout_height="96dp"
                     android:layout_gravity="center"
-                    android:indeterminateDrawable="@drawable/anim_loader"
-                    android:indeterminateTint="?attr/colorPrimary" />
+                    app:indicatorColor="?attr/colorPrimary" />
 
                 </FrameLayout>
 

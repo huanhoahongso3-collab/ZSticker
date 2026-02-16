@@ -278,15 +278,15 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                                 val messageView = dialogView.findViewById<TextView>(R.id.dialog_message)
                                 val iconView = dialogView.findViewById<ImageView>(R.id.icon_warning)
                                 val checkBox = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cb_dont_show_again)
+                                
                                 val btnCancel = dialogView.findViewById<View>(R.id.btn_cancel)
                                 val btnContinue = dialogView.findViewById<View>(R.id.btn_continue)
 
                                 titleView.text = getString(R.string.dynamic_color_warning_title)
                                 messageView.text = getString(R.string.dynamic_color_warning_message)
                                 
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                    iconView.setColorFilter(getColor(android.R.color.system_accent1_600))
-                                }
+                                // Always use orange_primary for the warning icon as it represents the current app state
+                                iconView.setColorFilter(getColor(R.color.orange_primary))
 
                                 btnCancel.setOnClickListener {
                                     binding.switchMaterialColor.isChecked = false
@@ -579,8 +579,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
                         val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
                         view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                            // On Android 14+ (SDK 34), additional bottom margin is needed to clear navigation bars
-                            val baseMargin = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) 112 else 104
+                            // Lowered by ~16dp (from 112/104 to 96/88)
+                            val baseMargin = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) 96 else 88
                             bottomMargin = (baseMargin * resources.displayMetrics.density).toInt() + navInsets.bottom
                         }
                         insets
