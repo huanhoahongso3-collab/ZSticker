@@ -317,9 +317,44 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     setupSecondaryInfo()
                 }
 
-                private fun handleThemeSelection(prefs: SharedPreferences, newMode: Int) {
-                    applyAndSaveTheme(prefs, newMode)
+    private fun handleThemeSelection(prefs: SharedPreferences, newMode: Int) {
+        if (prefs.getBoolean("dont_show_theme_warning", false)) {
+            applyAndSaveTheme(prefs, newMode)
+        } else {
+            val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_warning, null)
+            val dialog = MaterialAlertDialogBuilder(this)
+                .setView(dialogView)
+                .setCancelable(false)
+                .create()
+
+            val titleView = dialogView.findViewById<TextView>(R.id.dialog_title)
+            val messageView = dialogView.findViewById<TextView>(R.id.dialog_message)
+            val iconView = dialogView.findViewById<ImageView>(R.id.icon_warning)
+            val checkBox = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cb_dont_show_again)
+            val btnContinue = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_continue)
+            val btnCancel = dialogView.findViewById<View>(R.id.btn_cancel)
+
+            btnCancel.visibility = View.GONE
+            
+            titleView.text = getString(R.string.theme_change_warning_title)
+            messageView.text = getString(R.string.theme_change_warning_message)
+            btnContinue.text = getString(R.string.ok)
+            
+            iconView.setImageResource(R.drawable.ic_palette)
+            iconView.setColorFilter(getColor(R.color.orange_primary))
+
+            btnContinue.setOnClickListener {
+                if (checkBox.isChecked) {
+                    prefs.edit().putBoolean("dont_show_theme_warning", true).apply()
                 }
+                applyAndSaveTheme(prefs, newMode)
+                dialog.dismiss()
+            }
+
+            dialog.window?.setDimAmount(0.35f)
+            dialog.show()
+        }
+    }
 
                 private fun applyAndSaveTheme(prefs: SharedPreferences, mode: Int) {
                     prefs.edit().putInt("theme_mode", mode).apply()

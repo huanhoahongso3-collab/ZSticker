@@ -61,4 +61,6 @@
     <string name="no_history_found">Không tìm thấy lịch sử</string>
     <string name="changed_group">Đã thay đổi nhóm!</string>
     <string name="secret_game_triggered">Trò chơi bí mật đã được kích hoạt!</string>
+    <string name="theme_change_warning_title">Thay đổi giao diện</string>
+    <string name="theme_change_warning_message">Bạn có thể cần khởi động lại ứng dụng để giao diện được áp dụng chính xác.</string>
 </resources>

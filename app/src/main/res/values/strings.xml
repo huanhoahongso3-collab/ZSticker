@@ -61,4 +61,6 @@
     <string name="no_history_found">No history found</string>
     <string name="changed_group">Changed Group!</string>
     <string name="secret_game_triggered">Secret game triggered!</string>
+    <string name="theme_change_warning_title">Theme Change</string>
+    <string name="theme_change_warning_message">A restart may be needed for the theme to apply correctly.</string>
 </resources>
