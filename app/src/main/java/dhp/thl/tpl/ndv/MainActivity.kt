@@ -263,8 +263,13 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     // No programmatic tinting here - let XML/Theme handle it like other icons
 
                     binding.switchMaterialColor.isChecked = materialColorEnabled
-                    binding.switchMaterialColor.setOnCheckedChangeListener { _, isChecked ->
+                    binding.switchMaterialColor.setOnCheckedChangeListener { buttonView, isChecked ->
                         if (isChecked) {
+                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                                ToastUtils.showToast(this, getString(R.string.material_color_unsupported))
+                                buttonView.isChecked = false
+                                return@setOnCheckedChangeListener
+                            }
                             if (prefs.getBoolean("dont_show_material_warning", false)) {
                                 prefs.edit().putBoolean("material_color_enabled", true).apply()
                                 recreate()
@@ -309,8 +314,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                                 dialog.show()
                             }
                         } else {
-                            prefs.edit().putBoolean("material_color_enabled", false).apply()
-                            recreate()
+                            if (prefs.getBoolean("material_color_enabled", false)) {
+                                prefs.edit().putBoolean("material_color_enabled", false).apply()
+                                recreate()
+                            }
                         }
                     }
 
@@ -687,9 +694,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 override fun onStickerClick(uri: Uri) {
                     try {
                         val file = File(filesDir, uri.lastPathSegment ?: "")
-                        if (file.exists()) {
-                            addToRecents(file.name)
-                        }
+                        if (!file.exists()) return
+
                         val contentUri = FileProvider.getUriForFile(this, "$packageName.provider", file)
                         val intent = Intent(Intent.ACTION_SEND).apply {
                             type = "image/png"
@@ -700,6 +706,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                             setClassName("com.zing.zalo", "com.zing.zalo.ui.TempShareViaActivity")
                         }
                         startActivity(intent)
+                        
+                        // Only add to recents if sharing didn't fail (no exception occurred)
+                        addToRecents(file.name)
                     } catch (e: Exception) {
                         ToastUtils.showToast(this, getString(R.string.zalo_share_failed))
                     }
