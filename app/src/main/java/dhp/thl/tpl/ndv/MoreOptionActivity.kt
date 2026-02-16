@@ -19,7 +19,9 @@ class MoreOptionActivity : AppCompatActivity() {
     private lateinit var rootLayout: FrameLayout
     private lateinit var imgLogo: ImageView
     private lateinit var txtMessage: TextView
+    private lateinit var txtCounter: TextView
     private val random = Random()
+    private var clickCount = 0
 
     private val messages = listOf(
         "THL loves you!",
@@ -147,9 +149,6 @@ class MoreOptionActivity : AppCompatActivity() {
         "choose wisely between THL and TPL"
     )
 
-    private var clickCount = 0
-    private lateinit var txtClickCount: TextView
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -172,22 +171,22 @@ class MoreOptionActivity : AppCompatActivity() {
         }
         rootLayout.addView(bgLogo)
 
-        // Click count display
-        txtClickCount = TextView(this).apply {
+        // Click Counter
+        txtCounter = TextView(this).apply {
             layoutParams = FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply {
-                gravity = Gravity.CENTER_HORIZONTAL or Gravity.CENTER_VERTICAL
-                setMargins(0, 0, 0, (130 * resources.displayMetrics.density).toInt())
+                gravity = Gravity.CENTER_HORIZONTAL or Gravity.CENTER
+                setMargins(0, 0, 0, (150 * resources.displayMetrics.density).toInt())
             }
             setTextColor(Color.WHITE)
-            textSize = 24f
+            textSize = 28f
+            setTypeface(null, android.graphics.Typeface.BOLD)
             text = "0"
-            gravity = Gravity.CENTER
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            visibility = View.INVISIBLE
         }
-        rootLayout.addView(txtClickCount)
+        rootLayout.addView(txtCounter)
 
         // Text display
         txtMessage = TextView(this).apply {
@@ -227,7 +226,8 @@ class MoreOptionActivity : AppCompatActivity() {
         
         imgLogo.setOnClickListener {
             clickCount++
-            txtClickCount.text = clickCount.toString()
+            txtCounter.text = clickCount.toString()
+            txtCounter.visibility = View.VISIBLE
             showRandomMessage()
             vibrate()
         }

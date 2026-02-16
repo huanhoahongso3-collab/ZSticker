@@ -105,7 +105,8 @@
                                 android:id="@+id/imgMaterialColor"
                                 android:layout_width="24dp"
                                 android:layout_height="24dp"
-                                android:src="@drawable/ic_water_drop"/>
+                                android:src="@drawable/ic_water_drop"
+                                app:tint="?attr/colorControlNormal"/>
                             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
                                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_material_color_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_material_color_subtitle" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
@@ -115,7 +116,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 app:thumbIcon="@drawable/ic_switch_thumb"
-                                app:thumbIconTint="?attr/colorOnSurfaceVariant" />
+                                app:trackDecorationTint="@android:color/transparent" />
                         </LinearLayout>
 
                         <LinearLayout
