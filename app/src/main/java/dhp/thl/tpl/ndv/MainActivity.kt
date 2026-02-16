@@ -198,7 +198,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
                         val adapter = ThemeAdapter(this, themes, selectedIndex)
 
-                        val dialog = MaterialAlertDialogBuilder(this)
+                        val dialog = MaterialAlertDialogBuilder(this, R.style.Theme_ZSticker_Dialog)
                         .setTitle(getString(R.string.info_theme_title))
                         .setAdapter(adapter) { dialog, which ->
                             val newMode = when (which) {
@@ -237,7 +237,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         
                          val adapter = ThemeAdapter(this, langs, selectedIndex) // Reusing ThemeAdapter as it fits (OptionItem with Radio)
 
-                         val dialog = MaterialAlertDialogBuilder(this)
+                         val dialog = MaterialAlertDialogBuilder(this, R.style.Theme_ZSticker_Dialog)
                             .setTitle(getString(R.string.info_language_title))
                             .setAdapter(adapter) { d, which ->
                                 val langCode = when (which) {
@@ -258,36 +258,56 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
 
                     // --- MATERIAL COLOR TOGGLE ---
-                    binding.switchMaterialColor.isChecked = prefs.getBoolean("material_color_enabled", false)
+                    val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
+                    binding.itemSystemColor.visibility = if (materialColorEnabled) View.VISIBLE else View.GONE
+                    binding.switchMaterialColor.isChecked = materialColorEnabled
                     binding.switchMaterialColor.setOnCheckedChangeListener { _, isChecked ->
-                        prefs.edit().putBoolean("material_color_enabled", isChecked).apply()
-                        recreate()
+                        if (isChecked) {
+                            val dontShowAgain = prefs.getBoolean("dont_show_material_warning", false)
+                            if (!dontShowAgain && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_warning, null)
+                                val dialog = MaterialAlertDialogBuilder(this, R.style.Theme_ZSticker_Dialog)
+                                    .setView(dialogView)
+                                    .create()
+
+                                dialogView.findViewById<ImageView>(R.id.icon_warning).setImageResource(R.drawable.ic_palette)
+                                dialogView.findViewById<TextView>(R.id.text_title).text = getString(R.string.dynamic_color_warning_title)
+                                dialogView.findViewById<TextView>(R.id.text_message).text = getString(R.string.dynamic_color_warning_message)
+                                
+                                val checkBox = dialogView.findViewById<android.widget.CheckBox>(R.id.cb_dont_show_again)
+                                
+                                dialogView.findViewById<View>(R.id.btn_cancel).setOnClickListener { 
+                                    binding.switchMaterialColor.isChecked = false
+                                    dialog.dismiss() 
+                                }
+                                dialogView.findViewById<View>(R.id.btn_continue).setOnClickListener {
+                                    if (checkBox.isChecked) {
+                                        prefs.edit().putBoolean("dont_show_material_warning", true).apply()
+                                    }
+                                    prefs.edit().putBoolean("material_color_enabled", true).apply()
+                                    dialog.dismiss()
+                                    recreate()
+                                }
+                                dialog.window?.setDimAmount(0.35f)
+                                dialog.show()
+                            } else {
+                                prefs.edit().putBoolean("material_color_enabled", true).apply()
+                                recreate()
+                            }
+                        } else {
+                            prefs.edit().putBoolean("material_color_enabled", false).apply()
+                            recreate()
+                        }
+                    }
+
+                    binding.itemSystemColor.setOnClickListener {
+                        showSystemColorPicker()
                     }
 
                     setupSecondaryInfo()
                 }
 
                 private fun handleThemeSelection(prefs: SharedPreferences, newMode: Int) {
-                    val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
-                    
-                    // Show warning only if Material Color is enabled and theme differs from system
-                    if (materialColorEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        val systemNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-                        val isDifferentFromSystem = (newMode == AppCompatDelegate.MODE_NIGHT_YES && systemNightMode != Configuration.UI_MODE_NIGHT_YES) ||
-                        (newMode == AppCompatDelegate.MODE_NIGHT_NO && systemNightMode != Configuration.UI_MODE_NIGHT_NO)
-
-                        if (isDifferentFromSystem && newMode != AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM) {
-                            val dialog = MaterialAlertDialogBuilder(this)
-                            .setTitle(getString(R.string.dynamic_color_warning_title))
-                            .setMessage(getString(R.string.dynamic_color_warning_message))
-                            .setPositiveButton(getString(R.string.ok)) { _, _ -> applyAndSaveTheme(prefs, newMode) }
-                            .setNegativeButton(getString(R.string.cancel), null)
-                            .create()
-                            dialog.window?.setDimAmount(0.35f)
-                            dialog.show()
-                            return
-                        }
-                    }
                     applyAndSaveTheme(prefs, newMode)
                 }
 
@@ -547,9 +567,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         insets
                     }
                     ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
-                        val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+                        val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
                         view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                            bottomMargin = (96 * resources.displayMetrics.density).toInt() + navInsets.bottom
+                            val baseMargin = (96 * resources.displayMetrics.density).toInt()
+                            bottomMargin = baseMargin + systemBars.bottom
                         }
                         insets
                     }
@@ -672,7 +693,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
         val adapter = OptionAdapter(this, options)
 
-        val dialog = MaterialAlertDialogBuilder(this)
+        val dialog = MaterialAlertDialogBuilder(this, R.style.Theme_ZSticker_Dialog)
             .setTitle(title)
             .setAdapter(adapter) { _, which ->
                 val selectedOption = options[which].text
@@ -698,7 +719,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         }
 
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_warning, null)
-        val dialog = MaterialAlertDialogBuilder(this)
+        val dialog = MaterialAlertDialogBuilder(this, R.style.Theme_ZSticker_Dialog)
             .setView(dialogView)
             .create()
 
@@ -769,6 +790,31 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
                 }
 
+                private fun showSystemColorPicker() {
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+
+                    val colorOptions = listOf(
+                        "Accent 1 - 500" to android.R.color.system_accent1_500,
+                        "Accent 1 - 100" to android.R.color.system_accent1_100,
+                        "Accent 2 - 500" to android.R.color.system_accent2_500,
+                        "Accent 3 - 500" to android.R.color.system_accent3_500,
+                        "Neutral 1 - 500" to android.R.color.system_neutral1_500
+                    )
+
+                    val items = colorOptions.map { OptionItem(R.drawable.ic_water_drop, it.first) }
+                    val adapter = OptionAdapter(this, items)
+
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle("System Accent Colors")
+                        .setAdapter(adapter) { _, which ->
+                            // In a real app, we might save this preference. 
+                            // For now, it shows we can access these system colors.
+                            ToastUtils.showToast(this, "Selected ${colorOptions[which].first}")
+                        }
+                        .setNegativeButton(getString(R.string.cancel), null)
+                        .show()
+                }
+
                 private fun requestLegacyPermissions() {
                     if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                         ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 999)
@@ -807,8 +853,11 @@ class ThemeAdapter(context: Context, objects: List<OptionItem>, private val sele
         val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.item_radio_icon_text, parent, false)
         val item = getItem(position)
         view.findViewById<ImageView>(R.id.item_icon).setImageResource(item!!.iconRes)
-        view.findViewById<TextView>(R.id.item_text).text = item.text
+        val textView = view.findViewById<TextView>(R.id.item_text)
+        val text = item.text
+        textView.text = if (text == context.getString(R.string.lang_vi)) context.getString(R.string.lang_vi_display) else text
         view.findViewById<RadioButton>(R.id.item_radio).isChecked = (position == selectedIndex)
+
         return view
     }
 }

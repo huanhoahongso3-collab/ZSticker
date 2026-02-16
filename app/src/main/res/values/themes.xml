@@ -20,12 +20,26 @@
     </style>
 
     <style name="Theme.ZSticker.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_transparent</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
         <item name="postSplashScreenTheme">@style/Theme.ZSticker</item>
+        <item name="windowSplashScreenBehavior">icon_animations</item>
+    </style>
+
+    <style name="Theme.ZSticker.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="shapeAppearanceHeader">@style/ShapeAppearance.ZSticker.ExtraLargeComponent</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.ZSticker.ExtraLargeComponent</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.Material3.Button.TextButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.Material3.Button.TextButton</item>
+        <item name="android:windowBackground">?attr/colorSurfaceContainerHigh</item>
+    </style>
+
+
+    <style name="ShapeAppearance.ZSticker.ExtraLargeComponent" parent="ShapeAppearance.Material3.ExtraLargeComponent">
+        <item name="cornerSize">28dp</item>
     </style>
 
     <style name="ShapeAppearance.ZSticker.MediumComponent" parent="ShapeAppearance.Material3.MediumComponent">
-        <item name="cornerSize">16dp</item>
+        <item name="cornerSize">20dp</item>
     </style>
 
     <style name="InfoItemStyle">

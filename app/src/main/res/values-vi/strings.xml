@@ -61,4 +61,5 @@
     <string name="no_history_found">Không tìm thấy lịch sử</string>
     <string name="changed_group">Đã thay đổi nhóm!</string>
     <string name="secret_game_triggered">Trò chơi bí mật đã được kích hoạt!</string>
+    <string name="add_sticker">Thêm nhãn dán</string>
 </resources>
