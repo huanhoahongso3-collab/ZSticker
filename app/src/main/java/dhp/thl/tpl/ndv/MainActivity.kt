@@ -769,7 +769,15 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             .setView(dialogView)
             .create()
 
-        val checkBox = dialogView.findViewById<android.widget.CheckBox>(R.id.cb_dont_show_again)
+        val titleView = dialogView.findViewById<TextView>(R.id.dialog_title)
+        val messageView = dialogView.findViewById<TextView>(R.id.dialog_message)
+        val iconView = dialogView.findViewById<ImageView>(R.id.icon_warning)
+        val checkBox = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cb_dont_show_again)
+
+        titleView.text = getString(R.string.rb_warning_title)
+        messageView.text = getString(R.string.rb_warning_message)
+        iconView.setImageResource(R.drawable.ic_remove_bg)
+        iconView.setColorFilter(getColor(R.color.orange_primary))
 
         dialogView.findViewById<View>(R.id.btn_cancel).setOnClickListener { dialog.dismiss() }
         dialogView.findViewById<View>(R.id.btn_continue).setOnClickListener {
