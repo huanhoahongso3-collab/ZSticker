@@ -258,7 +258,16 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
 
                     // --- MATERIAL COLOR TOGGLE ---
-                    binding.switchMaterialColor.isChecked = prefs.getBoolean("material_color_enabled", false)
+                    val materialColorIcon = binding.imgMaterialColor
+                    if (materialColorEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        materialColorIcon.setColorFilter(getColor(android.R.color.system_accent1_600))
+                        binding.loadingIndicator.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(getColor(android.R.color.system_accent1_600)))
+                    } else {
+                        materialColorIcon.setColorFilter(getColor(R.color.orange_primary))
+                        binding.loadingIndicator.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.orange_primary)))
+                    }
+
+                    binding.switchMaterialColor.isChecked = materialColorEnabled
                     binding.switchMaterialColor.setOnCheckedChangeListener { _, isChecked ->
                         if (isChecked) {
                             if (prefs.getBoolean("dont_show_material_warning", false)) {
@@ -272,12 +281,17 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
                                 val titleView = dialogView.findViewById<TextView>(R.id.dialog_title)
                                 val messageView = dialogView.findViewById<TextView>(R.id.dialog_message)
-                                val checkBox = dialogView.findViewById<android.widget.CheckBox>(R.id.cb_dont_show_again)
+                                val iconView = dialogView.findViewById<ImageView>(R.id.icon_warning)
+                                val checkBox = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cb_dont_show_again)
                                 val btnCancel = dialogView.findViewById<View>(R.id.btn_cancel)
                                 val btnContinue = dialogView.findViewById<View>(R.id.btn_continue)
 
                                 titleView.text = getString(R.string.dynamic_color_warning_title)
                                 messageView.text = getString(R.string.dynamic_color_warning_message)
+                                
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                    iconView.setColorFilter(getColor(android.R.color.system_accent1_600))
+                                }
 
                                 btnCancel.setOnClickListener {
                                     binding.switchMaterialColor.isChecked = false
@@ -570,8 +584,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
                         val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
                         view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                            // Ensure it stays above bottom navigation (80dp) + margin (24dp)
-                            bottomMargin = (104 * resources.displayMetrics.density).toInt() + navInsets.bottom
+                            // On Android 14+ (SDK 34), additional bottom margin is needed to clear navigation bars
+                            val baseMargin = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) 112 else 104
+                            bottomMargin = (baseMargin * resources.displayMetrics.density).toInt() + navInsets.bottom
                         }
                         insets
                     }
@@ -818,14 +833,15 @@ class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<
             val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
             
             if (materialColorEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // Directly use the system accent color ID as requested
                 val systemAccent = context.getColor(android.R.color.system_accent1_600)
                 textView.setTextColor(systemAccent)
                 iconView.setColorFilter(systemAccent)
             } else {
-                val typedValue = android.util.TypedValue()
-                context.theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, typedValue, true)
-                textView.setTextColor(typedValue.data)
-                iconView.setColorFilter(typedValue.data)
+                // Use local orange_primary color as fallback to avoid unresolved R.attr issues
+                val orangePrimary = context.getColor(R.color.orange_primary)
+                textView.setTextColor(orangePrimary)
+                iconView.setColorFilter(orangePrimary)
             }
         }
         
