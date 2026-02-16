@@ -4,9 +4,9 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:paddingStart="20dp" 
+    android:paddingStart="14dp" 
     android:paddingEnd="24dp"
-    android:minHeight="64dp"
+    android:minHeight="48dp"
     android:background="?attr/selectableItemBackground">
 
     <RadioButton
@@ -29,7 +29,7 @@
         android:id="@+id/item_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textAppearance="?attr/textAppearanceTitleMedium"
+        android:textAppearance="?attr/textAppearanceBodyLarge"
         android:textColor="?attr/colorOnSurface"
         android:text="Option Text" />
 

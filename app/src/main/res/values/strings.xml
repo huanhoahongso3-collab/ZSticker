@@ -61,10 +61,4 @@
     <string name="no_history_found">No history found</string>
     <string name="changed_group">Changed Group!</string>
     <string name="secret_game_triggered">Secret game triggered!</string>
-    <string name="add_sticker">Add Sticker</string>
-    <string name="info_system_color_title">System Primary Color</string>
-    <string name="info_system_color_subtitle">System Default</string>
-    <string name="system_accent_colors_title">System Accent Colors</string>
-    <string name="lang_vi_display">Tiếng Việt</string>
-
 </resources>

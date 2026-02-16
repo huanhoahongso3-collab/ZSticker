@@ -100,33 +100,15 @@
                             android:padding="16dp"
                             android:background="?attr/selectableItemBackground"
                             android:gravity="center_vertical">
-                            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_water_drop" app:tint="?attr/colorControlNormal"/>
+                            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_palette" app:tint="?attr/colorControlNormal"/>
                             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
                                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_material_color_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_material_color_subtitle" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
                             </LinearLayout>
-                            <com.google.android.material.materialswitch.MaterialSwitch
+                            <com.google.android.material.switchmaterial.SwitchMaterial
                                 android:id="@+id/switchMaterialColor"
                                 android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                app:thumbIcon="@drawable/ic_check"
-                                app:trackDecorationIcon="@drawable/ic_close" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:id="@+id/itemSystemColor"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:padding="16dp"
-                            android:background="?attr/selectableItemBackground"
-                            android:gravity="center_vertical"
-                            android:visibility="gone"> <!-- Visible only when material color is enabled -->
-                            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_water_drop" app:tint="?attr/colorControlNormal"/>
-                            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
-                                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="System Primary Color" style="@style/TextAppearance.Material3.TitleMedium"/>
-                                <TextView android:id="@+id/txtCurrentSystemColor" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="System Default" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
-                            </LinearLayout>
+                                android:layout_height="wrap_content"/>
                         </LinearLayout>
 
                         <LinearLayout
@@ -259,16 +241,15 @@
 
             </LinearLayout>
 
-            <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/addButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom|end"
                 android:layout_marginEnd="16dp"
-                android:layout_marginBottom="96dp"
-                app:icon="@drawable/ic_add"
-                android:text="@string/add_sticker"
-                app:iconTint="?attr/colorOnPrimaryContainer"
+                android:layout_marginBottom="56dp"
+                app:srcCompat="@drawable/ic_add"
+                app:tint="?attr/colorOnPrimaryContainer"
                 app:backgroundTint="?attr/colorPrimaryContainer"
                 app:elevation="6dp" />
 
@@ -276,22 +257,17 @@
                 android:id="@+id/progressBar"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="#99000000"
+                android:background="#B3000000"
                 android:visibility="gone"
                 android:clickable="true"
                 android:focusable="true"
-                android:translationZ="10dp"> 
-                
-                <!-- Using modern M3 CircularProgressIndicator with thick track as requested -->
-                <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:translationZ="10dp"> <ProgressBar
+                    style="?android:attr/progressBarStyleLarge"
                     android:layout_width="64dp"
                     android:layout_height="64dp"
                     android:layout_gravity="center"
-                    android:indeterminate="true"
-                    app:trackThickness="8dp"
-                    app:indicatorColor="?attr/colorPrimary"
-                    app:trackCornerRadius="8dp" />
+                    android:indeterminateTint="?attr/colorPrimary" />
 
-            </FrameLayout>
+                </FrameLayout>
 
             </androidx.coordinatorlayout.widget.CoordinatorLayout>
