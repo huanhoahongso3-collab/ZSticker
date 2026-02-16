@@ -258,6 +258,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
 
                     // --- MATERIAL COLOR TOGGLE ---
+                    val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
                     val materialColorIcon = binding.imgMaterialColor
                     if (materialColorEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         materialColorIcon.setColorFilter(getColor(android.R.color.system_accent1_600))
