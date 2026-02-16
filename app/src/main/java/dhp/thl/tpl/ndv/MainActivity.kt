@@ -34,6 +34,7 @@ import androidx.core.view.updatePadding
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.color.DynamicColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.R as MaterialR
 import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
 import java.io.File
 import java.io.FileOutputStream
@@ -823,7 +824,7 @@ class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<
                 iconView.setColorFilter(systemAccent)
             } else {
                 val typedValue = android.util.TypedValue()
-                context.theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, typedValue, true)
+                context.theme.resolveAttribute(MaterialR.attr.colorPrimary, typedValue, true)
                 textView.setTextColor(typedValue.data)
                 iconView.setColorFilter(typedValue.data)
             }
