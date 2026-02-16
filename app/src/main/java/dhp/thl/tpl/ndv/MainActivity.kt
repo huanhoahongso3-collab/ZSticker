@@ -355,7 +355,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             iconView.setImageResource(R.drawable.ic_palette)
             val isMaterial = prefs.getBoolean("material_color_enabled", false)
             if (isMaterial) {
-                iconView.setColorFilter(getThemeColor(com.google.android.material.R.attr.colorPrimary))
+                iconView.setColorFilter(getThemeColor(R.attr.colorPrimary))
             } else {
                 iconView.setColorFilter(getColor(R.color.orange_primary))
             }
@@ -801,7 +801,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         
         val isMaterial = prefs.getBoolean("material_color_enabled", false)
         if (isMaterial) {
-            iconView.setColorFilter(getThemeColor(com.google.android.material.R.attr.colorPrimary))
+            iconView.setColorFilter(getThemeColor(R.attr.colorPrimary))
         } else {
             iconView.setColorFilter(getColor(R.color.orange_primary))
         }
