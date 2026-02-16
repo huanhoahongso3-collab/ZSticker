@@ -260,13 +260,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     // --- MATERIAL COLOR TOGGLE ---
                     val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
                     val materialColorIcon = binding.imgMaterialColor
-                    if (materialColorEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        materialColorIcon.setColorFilter(getColor(android.R.color.system_accent1_600))
-                        binding.loadingIndicator.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(getColor(android.R.color.system_accent1_600)))
-                    } else {
-                        materialColorIcon.setColorFilter(getColor(R.color.orange_primary))
-                        binding.loadingIndicator.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.orange_primary)))
-                    }
+                    // No programmatic tinting here - let XML/Theme handle it like other icons
 
                     binding.switchMaterialColor.isChecked = materialColorEnabled
                     binding.switchMaterialColor.setOnCheckedChangeListener { _, isChecked ->
@@ -830,20 +824,10 @@ class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<
             textView.setTextColor(android.graphics.Color.parseColor("#FF3b30"))
             iconView.setColorFilter(android.graphics.Color.parseColor("#FF3b30"))
         } else {
-            val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-            val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
-            
-            if (materialColorEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                // Directly use the system accent color ID as requested
-                val systemAccent = context.getColor(android.R.color.system_accent1_600)
-                textView.setTextColor(systemAccent)
-                iconView.setColorFilter(systemAccent)
-            } else {
-                // Use local orange_primary color as fallback to avoid unresolved R.attr issues
-                val orangePrimary = context.getColor(R.color.orange_primary)
-                textView.setTextColor(orangePrimary)
-                iconView.setColorFilter(orangePrimary)
-            }
+            val typedValue = android.util.TypedValue()
+            context.theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, typedValue, true)
+            textView.setTextColor(typedValue.data)
+            iconView.setColorFilter(typedValue.data)
         }
         
         return view

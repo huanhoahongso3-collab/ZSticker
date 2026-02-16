@@ -30,7 +30,7 @@
 
     <style name="ShapeAppearance.ZSticker.Expressive" parent="ShapeAppearance.Material3.LargeComponent">
         <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">35%</item>
+        <item name="cornerSize">40%</item>
     </style>
 
     <style name="InfoItemStyle">

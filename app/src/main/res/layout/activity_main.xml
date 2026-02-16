@@ -115,7 +115,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 app:thumbIcon="@drawable/ic_switch_thumb"
-                                app:trackDecorationTint="?attr/colorPrimary" />
+                                app:trackDecorationTint="@android:color/transparent" />
                         </LinearLayout>
 
                         <LinearLayout
