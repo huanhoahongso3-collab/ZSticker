@@ -59,8 +59,6 @@
     <string name="ok">Đã hiểu</string>
     <string name="no_internet_access">Không có kết nối internet</string>
     <string name="no_history_found">Không tìm thấy lịch sử</string>
-    <string name="changed_group">Đã thay đổi nhóm!</string>
-    <string name="secret_game_triggered">Trò chơi bí mật đã được kích hoạt!</string>
     <string name="theme_change_warning_title">Thay đổi giao diện</string>
     <string name="theme_change_warning_message">Bạn có thể cần khởi động lại ứng dụng để giao diện được áp dụng chính xác.</string>
     <string name="material_color_unsupported">Phiên bản Android này không hỗ trợ màu Material.</string>

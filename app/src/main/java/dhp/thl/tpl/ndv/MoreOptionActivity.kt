@@ -134,8 +134,17 @@ class MoreOptionActivity : AppCompatActivity() {
         "Now you love TPL?",
         "TPL + HDH?",
         "What about NDV?",
-        "Fall in love with NDV in C5K67?",
-        "TPL is not here anymore"
+        "Fall in love with NDV?",
+        "Watching NDV in new class?",
+        "TPL is not here anymore",
+        "Never touch her when you don't have enough evidence.",
+        "If you have evidences, just do anything because she's trying to angry",
+        "Despite of not having done anything, you met her mom!",
+        "DHP loves THL?????!!!!!",
+        "Or TPL?",
+        "Choose one",
+        "TPL or THL",
+        "choose wisely between THL and TPL"
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {

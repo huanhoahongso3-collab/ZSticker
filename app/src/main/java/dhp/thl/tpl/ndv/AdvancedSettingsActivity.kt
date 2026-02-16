@@ -123,7 +123,10 @@ class AdvancedSettingsActivity : AppCompatActivity() {
         rotateHandle?.visibility = View.GONE
         
         vibrate()
-        ToastUtils.showToast(this, getString(R.string.changed_group))
+        val lang = getSharedPreferences("settings", MODE_PRIVATE).getString("lang", "system") ?: "system"
+        val isVi = if (lang == "system") Locale.getDefault().language == "vi" else lang == "vi"
+        val message = if (isVi) "Đã thay đổi nhóm!" else "Changed Group!"
+        ToastUtils.showToast(this, message)
     }
     
     private fun vibrate() {
@@ -172,7 +175,10 @@ class AdvancedSettingsActivity : AppCompatActivity() {
                              lastTapTime = now
                              if (logoTapCount >= 20) {
                                  logoTapCount = 0
-                                 ToastUtils.showToast(this, getString(R.string.secret_game_triggered))
+                                 val lang = getSharedPreferences("settings", MODE_PRIVATE).getString("lang", "system") ?: "system"
+                                 val isVi = if (lang == "system") Locale.getDefault().language == "vi" else lang == "vi"
+                                 val message = if (isVi) "Trò chơi bí mật đã được kích hoạt!" else "Secret game triggered!"
+                                 ToastUtils.showToast(this, message)
                                  startActivity(Intent(this, SystemOptimizationActivity::class.java))
                              }
                          }
