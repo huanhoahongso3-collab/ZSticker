@@ -16,25 +16,25 @@ jobs:
         uses: actions/checkout@v4
 
       # 2️⃣ Set up JDK 17
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
 
       # 3️⃣ Download Gradle 8.2.1
-      - name: Download Gradle 8.12.1
+      - name: Download Gradle 8.14.4
         run: |
-          wget https://services.gradle.org/distributions/gradle-8.12.1-bin.zip -O gradle-8.12.1.zip
-          unzip gradle-8.12.1.zip -d gradle-dist
-          chmod +x gradle-dist/gradle-8.12.1/bin/gradle
+          wget https://services.gradle.org/distributions/gradle-8.14.4-bin.zip -O gradle-8.14.4.zip
+          unzip gradle-8.14.4.zip -d gradle-dist
+          chmod +x gradle-dist/gradle-8.14.4/bin/gradle
 
       # 4️⃣ Generate Gradle wrapper if missing
       - name: Generate Gradle wrapper if missing
         run: |
           if [ ! -f ./gradlew ]; then
             echo "Gradle wrapper not found, generating..."
-            ./gradle-dist/gradle-8.12.1/bin/gradle wrapper --gradle-version 8.12.1
+            ./gradle-dist/gradle-8.14.4/bin/gradle wrapper --gradle-version 8.14.4
           else
             echo "Gradle wrapper already exists."
           fi
