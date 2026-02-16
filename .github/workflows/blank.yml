@@ -23,18 +23,18 @@ jobs:
           java-version: 21
 
       # 3️⃣ Download Gradle 8.2.1
-      - name: Download Gradle 8.2.1
+      - name: Download Gradle 8.13.2
         run: |
-          wget https://services.gradle.org/distributions/gradle-8.2.1-bin.zip -O gradle-8.2.1.zip
-          unzip gradle-8.2.1.zip -d gradle-dist
-          chmod +x gradle-dist/gradle-8.2.1/bin/gradle
+          wget https://services.gradle.org/distributions/gradle-8.13.2-bin.zip -O gradle-8.13.2.zip
+          unzip gradle-8.13.2.zip -d gradle-dist
+          chmod +x gradle-dist/gradle-8.13.2/bin/gradle
 
       # 4️⃣ Generate Gradle wrapper if missing
       - name: Generate Gradle wrapper if missing
         run: |
           if [ ! -f ./gradlew ]; then
             echo "Gradle wrapper not found, generating..."
-            ./gradle-dist/gradle-8.2.1/bin/gradle wrapper --gradle-version 8.2.1
+            ./gradle-dist/gradle-8.13.2/bin/gradle wrapper --gradle-version 8.13.2
           else
             echo "Gradle wrapper already exists."
           fi
