@@ -259,8 +259,7 @@
                 app:srcCompat="@drawable/ic_add"
                 app:tint="?attr/colorOnPrimaryContainer"
                 app:backgroundTint="?attr/colorPrimaryContainer"
-                app:elevation="6dp"
-                app:shapeAppearance="@style/ShapeAppearance.ZSticker.Expressive" />
+                app:elevation="6dp" />
 
             <FrameLayout
                 android:id="@+id/progressBar"

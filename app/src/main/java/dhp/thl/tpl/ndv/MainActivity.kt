@@ -613,8 +613,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
                         val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
                         view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                            // Lowered by ~16dp (from 112/104 to 96/88)
-                            val baseMargin = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) 96 else 88
+                            // Returned to original height (+16dp from previous state)
+                            val baseMargin = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) 112 else 104
                             bottomMargin = (baseMargin * resources.displayMetrics.density).toInt() + navInsets.bottom
                         }
                         insets

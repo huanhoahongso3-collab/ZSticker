@@ -28,10 +28,7 @@
         <item name="cornerSize">16dp</item>
     </style>
 
-    <style name="ShapeAppearance.ZSticker.Expressive" parent="ShapeAppearance.Material3.LargeComponent">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">40%</item>
-    </style>
+
 
     <style name="InfoItemStyle">
         <item name="android:layout_width">match_parent</item>
