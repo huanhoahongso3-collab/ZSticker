@@ -354,11 +354,11 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             
             iconView.setImageResource(R.drawable.ic_palette)
             val isMaterial = prefs.getBoolean("material_color_enabled", false)
-            if (isMaterial) {
-                iconView.setColorFilter(getThemeColor(R.attr.colorPrimary))
-            } else {
+            if (!isMaterial) {
+                // Override with orange when Material Color is OFF
                 iconView.setColorFilter(getColor(R.color.orange_primary))
             }
+            // When Material Color is ON, the XML's app:tint="?attr/colorPrimary" handles it
 
             btnContinue.setOnClickListener {
                 if (checkBox.isChecked) {
@@ -800,11 +800,11 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         iconView.setImageResource(R.drawable.ic_remove_bg)
         
         val isMaterial = prefs.getBoolean("material_color_enabled", false)
-        if (isMaterial) {
-            iconView.setColorFilter(getThemeColor(R.attr.colorPrimary))
-        } else {
+        if (!isMaterial) {
+            // Override with orange when Material Color is OFF
             iconView.setColorFilter(getColor(R.color.orange_primary))
         }
+        // When Material Color is ON, the XML's app:tint="?attr/colorPrimary" handles it
 
         dialogView.findViewById<View>(R.id.btn_cancel).setOnClickListener { dialog.dismiss() }
         dialogView.findViewById<View>(R.id.btn_continue).setOnClickListener {
