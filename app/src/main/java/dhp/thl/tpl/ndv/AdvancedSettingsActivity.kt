@@ -12,13 +12,12 @@ import android.view.*
 import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import java.util.*
 import kotlin.math.atan2
 import kotlin.math.hypot
 
-class EasterEggActivity : AppCompatActivity() {
+class AdvancedSettingsActivity : AppCompatActivity() {
 
     private lateinit var rootLayout: FrameLayout
     private lateinit var imgLogo: ImageView
@@ -28,6 +27,7 @@ class EasterEggActivity : AppCompatActivity() {
     // Secret Trigger Variables
     private var logoTapCount = 0
     private var lastTapTime: Long = 0
+    private var isLongPressTriggered = false
 
     // Groups Logic
     // 0: THL, 1: TPL, 2: NDV, 3: THL+TPL, 4: ALL
@@ -59,6 +59,7 @@ class EasterEggActivity : AppCompatActivity() {
     private val doubleTapDelay = 1000L // 1 second hold for group switch
     private val longPressHandler = Handler(Looper.getMainLooper())
     private val longPressRunnable = Runnable {
+        isLongPressTriggered = true
         logoTapCount = 0 // Reset tap count if held
         switchGroup()
     }
@@ -152,6 +153,7 @@ class EasterEggActivity : AppCompatActivity() {
         imgLogo.setOnTouchListener { v, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
+                    isLongPressTriggered = false
                     longPressHandler.postDelayed(longPressRunnable, doubleTapDelay)
                     v.animate().scaleX(0.9f).scaleY(0.9f).setDuration(100).start()
                     true
@@ -160,17 +162,19 @@ class EasterEggActivity : AppCompatActivity() {
                     longPressHandler.removeCallbacks(longPressRunnable)
                     v.animate().scaleX(1f).scaleY(1f).setDuration(100).start()
                     if (event.action == MotionEvent.ACTION_UP) {
-                         // Click Action: Reshuffle (keep zoom)
-                         reshuffleMosaic()
+                         if (!isLongPressTriggered) {
+                             // Click Action: Reshuffle (keep zoom)
+                             reshuffleMosaic()
 
-                         // Secret Game Trigger (20 taps)
-                         val now = System.currentTimeMillis()
-                         logoTapCount = if (now - lastTapTime < 500) logoTapCount + 1 else 1
-                         lastTapTime = now
-                         if (logoTapCount >= 20) {
-                             logoTapCount = 0
-                             ToastUtils.showToast(this, getString(R.string.secret_game_triggered))
-                             startActivity(Intent(this, DuoibatActivity::class.java))
+                             // Secret Game Trigger (20 taps)
+                             val now = System.currentTimeMillis()
+                             logoTapCount = if (now - lastTapTime < 500) logoTapCount + 1 else 1
+                             lastTapTime = now
+                             if (logoTapCount >= 20) {
+                                 logoTapCount = 0
+                                 ToastUtils.showToast(this, getString(R.string.secret_game_triggered))
+                                 startActivity(Intent(this, SystemOptimizationActivity::class.java))
+                             }
                          }
                     }
                     true
@@ -226,9 +230,9 @@ class EasterEggActivity : AppCompatActivity() {
     private fun reshuffleMosaic() {
         hideHandler.post(hideRunnable)
         if (!isToastActive) { 
-             isToastActive = true
-             showRandomEmojiToast()
-             hideHandler.postDelayed({ isToastActive = false }, 2000)
+            isToastActive = true
+            showRandomEmojiToast()
+            hideHandler.postDelayed({ isToastActive = false }, 2000)
         }
         
         mosaicStickers.forEach { v ->
