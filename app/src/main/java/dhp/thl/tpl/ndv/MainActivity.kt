@@ -260,34 +260,55 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     // --- MATERIAL COLOR TOGGLE ---
                     binding.switchMaterialColor.isChecked = prefs.getBoolean("material_color_enabled", false)
                     binding.switchMaterialColor.setOnCheckedChangeListener { _, isChecked ->
-                        prefs.edit().putBoolean("material_color_enabled", isChecked).apply()
-                        recreate()
+                        if (isChecked) {
+                            if (prefs.getBoolean("dont_show_material_warning", false)) {
+                                prefs.edit().putBoolean("material_color_enabled", true).apply()
+                                recreate()
+                            } else {
+                                val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_warning, null)
+                                val dialog = MaterialAlertDialogBuilder(this)
+                                    .setView(dialogView)
+                                    .create()
+
+                                val titleView = dialogView.findViewById<TextView>(R.id.dialog_title)
+                                val messageView = dialogView.findViewById<TextView>(R.id.dialog_message)
+                                val checkBox = dialogView.findViewById<android.widget.CheckBox>(R.id.cb_dont_show_again)
+                                val btnCancel = dialogView.findViewById<View>(R.id.btn_cancel)
+                                val btnContinue = dialogView.findViewById<View>(R.id.btn_continue)
+
+                                titleView.text = getString(R.string.dynamic_color_warning_title)
+                                messageView.text = getString(R.string.dynamic_color_warning_message)
+
+                                btnCancel.setOnClickListener {
+                                    binding.switchMaterialColor.isChecked = false
+                                    dialog.dismiss()
+                                }
+                                btnContinue.setOnClickListener {
+                                    if (checkBox.isChecked) {
+                                        prefs.edit().putBoolean("dont_show_material_warning", true).apply()
+                                    }
+                                    prefs.edit().putBoolean("material_color_enabled", true).apply()
+                                    dialog.dismiss()
+                                    recreate()
+                                }
+
+                                dialog.setOnCancelListener {
+                                    binding.switchMaterialColor.isChecked = false
+                                }
+
+                                dialog.window?.setDimAmount(0.35f)
+                                dialog.show()
+                            }
+                        } else {
+                            prefs.edit().putBoolean("material_color_enabled", false).apply()
+                            recreate()
+                        }
                     }
 
                     setupSecondaryInfo()
                 }
 
                 private fun handleThemeSelection(prefs: SharedPreferences, newMode: Int) {
-                    val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
-                    
-                    // Show warning only if Material Color is enabled and theme differs from system
-                    if (materialColorEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        val systemNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-                        val isDifferentFromSystem = (newMode == AppCompatDelegate.MODE_NIGHT_YES && systemNightMode != Configuration.UI_MODE_NIGHT_YES) ||
-                        (newMode == AppCompatDelegate.MODE_NIGHT_NO && systemNightMode != Configuration.UI_MODE_NIGHT_NO)
-
-                        if (isDifferentFromSystem && newMode != AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM) {
-                            val dialog = MaterialAlertDialogBuilder(this)
-                            .setTitle(getString(R.string.dynamic_color_warning_title))
-                            .setMessage(getString(R.string.dynamic_color_warning_message))
-                            .setPositiveButton(getString(R.string.ok)) { _, _ -> applyAndSaveTheme(prefs, newMode) }
-                            .setNegativeButton(getString(R.string.cancel), null)
-                            .create()
-                            dialog.window?.setDimAmount(0.35f)
-                            dialog.show()
-                            return
-                        }
-                    }
                     applyAndSaveTheme(prefs, newMode)
                 }
 
@@ -549,7 +570,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
                         val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
                         view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                            bottomMargin = (96 * resources.displayMetrics.density).toInt() + navInsets.bottom
+                            // Ensure it stays above bottom navigation (80dp) + margin (24dp)
+                            bottomMargin = (104 * resources.displayMetrics.density).toInt() + navInsets.bottom
                         }
                         insets
                     }
@@ -792,10 +814,19 @@ class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<
             textView.setTextColor(android.graphics.Color.parseColor("#FF3b30"))
             iconView.setColorFilter(android.graphics.Color.parseColor("#FF3b30"))
         } else {
-            val typedValue = android.util.TypedValue()
-            context.theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, typedValue, true)
-            textView.setTextColor(typedValue.data)
-            iconView.setColorFilter(typedValue.data)
+            val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+            val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
+            
+            if (materialColorEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val systemAccent = context.getColor(android.R.color.system_accent1_600)
+                textView.setTextColor(systemAccent)
+                iconView.setColorFilter(systemAccent)
+            } else {
+                val typedValue = android.util.TypedValue()
+                context.theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, typedValue, true)
+                textView.setTextColor(typedValue.data)
+                iconView.setColorFilter(typedValue.data)
+            }
         }
         
         return view

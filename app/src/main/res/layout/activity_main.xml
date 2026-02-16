@@ -100,15 +100,17 @@
                             android:padding="16dp"
                             android:background="?attr/selectableItemBackground"
                             android:gravity="center_vertical">
-                            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_palette" app:tint="?attr/colorControlNormal"/>
+                            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_water_drop" app:tint="?attr/colorControlNormal"/>
                             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="16dp" android:orientation="vertical">
                                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_material_color_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_material_color_subtitle" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
                             </LinearLayout>
-                            <com.google.android.material.switchmaterial.SwitchMaterial
+                            <com.google.android.material.materialswitch.MaterialSwitch
                                 android:id="@+id/switchMaterialColor"
                                 android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"/>
+                                android:layout_height="wrap_content"
+                                app:thumbIcon="@drawable/ic_switch_thumb"
+                                app:trackDecorationTint="?attr/colorPrimary" />
                         </LinearLayout>
 
                         <LinearLayout
@@ -246,12 +248,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom|end"
-                android:layout_marginEnd="16dp"
-                android:layout_marginBottom="56dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginBottom="112dp"
                 app:srcCompat="@drawable/ic_add"
                 app:tint="?attr/colorOnPrimaryContainer"
                 app:backgroundTint="?attr/colorPrimaryContainer"
-                app:elevation="6dp" />
+                app:elevation="6dp"
+                app:shapeAppearance="@style/ShapeAppearance.ZSticker.Expressive" />
 
             <FrameLayout
                 android:id="@+id/progressBar"
@@ -261,11 +264,15 @@
                 android:visibility="gone"
                 android:clickable="true"
                 android:focusable="true"
-                android:translationZ="10dp"> <ProgressBar
+                android:translationZ="10dp">
+
+                <ProgressBar
+                    android:id="@+id/loadingIndicator"
                     style="?android:attr/progressBarStyleLarge"
-                    android:layout_width="64dp"
-                    android:layout_height="64dp"
+                    android:layout_width="72dp"
+                    android:layout_height="72dp"
                     android:layout_gravity="center"
+                    android:indeterminateDrawable="@drawable/anim_loader"
                     android:indeterminateTint="?attr/colorPrimary" />
 
                 </FrameLayout>

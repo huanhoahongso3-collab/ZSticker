@@ -20,12 +20,17 @@
     </style>
 
     <style name="Theme.ZSticker.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_transparent</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
         <item name="postSplashScreenTheme">@style/Theme.ZSticker</item>
     </style>
 
     <style name="ShapeAppearance.ZSticker.MediumComponent" parent="ShapeAppearance.Material3.MediumComponent">
         <item name="cornerSize">16dp</item>
+    </style>
+
+    <style name="ShapeAppearance.ZSticker.Expressive" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">35%</item>
     </style>
 
     <style name="InfoItemStyle">
