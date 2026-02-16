@@ -33,6 +33,7 @@ import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.color.DynamicColors
+import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
 import java.io.File
@@ -260,7 +261,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     // --- MATERIAL COLOR TOGGLE ---
                     val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
                     val materialColorIcon = binding.imgMaterialColor
-                    // No programmatic tinting here - let XML/Theme handle it like other icons
+                    val materialPrimaryColor = MaterialColors.getColor(materialColorIcon, com.google.android.material.R.attr.colorPrimary)
+                    val colorNormal = MaterialColors.getColor(materialColorIcon, com.google.android.material.R.attr.colorControlNormal)
+                    
+                    materialColorIcon.setColorFilter(if (materialColorEnabled) materialPrimaryColor else colorNormal)
 
                     binding.switchMaterialColor.isChecked = materialColorEnabled
                     binding.switchMaterialColor.setOnCheckedChangeListener { buttonView, isChecked ->
@@ -290,8 +294,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                                 titleView.text = getString(R.string.dynamic_color_warning_title)
                                 messageView.text = getString(R.string.dynamic_color_warning_message)
                                 
-                                // Always use orange_primary for the warning icon as it represents the current app state
-                                iconView.setColorFilter(getColor(R.color.orange_primary))
+                                // Use theme primary color for the warning icon
+                                iconView.setColorFilter(MaterialColors.getColor(iconView, com.google.android.material.R.attr.colorPrimary))
 
                                 btnCancel.setOnClickListener {
                                     binding.switchMaterialColor.isChecked = false
@@ -347,7 +351,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             btnContinue.text = getString(R.string.ok)
             
             iconView.setImageResource(R.drawable.ic_palette)
-            iconView.setColorFilter(getColor(R.color.orange_primary))
+            iconView.setColorFilter(MaterialColors.getColor(iconView, com.google.android.material.R.attr.colorPrimary))
 
             btnContinue.setOnClickListener {
                 if (checkBox.isChecked) {
@@ -787,7 +791,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         titleView.text = getString(R.string.rb_warning_title)
         messageView.text = getString(R.string.rb_warning_message)
         iconView.setImageResource(R.drawable.ic_remove_bg)
-        iconView.setColorFilter(getColor(R.color.orange_primary))
+        iconView.setColorFilter(MaterialColors.getColor(iconView, com.google.android.material.R.attr.colorPrimary))
 
         dialogView.findViewById<View>(R.id.btn_cancel).setOnClickListener { dialog.dismiss() }
         dialogView.findViewById<View>(R.id.btn_continue).setOnClickListener {

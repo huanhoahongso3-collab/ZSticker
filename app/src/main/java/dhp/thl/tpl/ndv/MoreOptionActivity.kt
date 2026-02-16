@@ -147,6 +147,9 @@ class MoreOptionActivity : AppCompatActivity() {
         "choose wisely between THL and TPL"
     )
 
+    private var clickCount = 0
+    private lateinit var txtClickCount: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -168,6 +171,23 @@ class MoreOptionActivity : AppCompatActivity() {
             scaleType = ImageView.ScaleType.FIT_CENTER
         }
         rootLayout.addView(bgLogo)
+
+        // Click count display
+        txtClickCount = TextView(this).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = Gravity.CENTER_HORIZONTAL or Gravity.CENTER_VERTICAL
+                setMargins(0, 0, 0, (130 * resources.displayMetrics.density).toInt())
+            }
+            setTextColor(Color.WHITE)
+            textSize = 24f
+            text = "0"
+            gravity = Gravity.CENTER
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        }
+        rootLayout.addView(txtClickCount)
 
         // Text display
         txtMessage = TextView(this).apply {
@@ -206,6 +226,8 @@ class MoreOptionActivity : AppCompatActivity() {
         }
         
         imgLogo.setOnClickListener {
+            clickCount++
+            txtClickCount.text = clickCount.toString()
             showRandomMessage()
             vibrate()
         }
