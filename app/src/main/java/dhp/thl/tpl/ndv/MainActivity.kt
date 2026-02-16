@@ -324,7 +324,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_warning, null)
             val dialog = MaterialAlertDialogBuilder(this)
                 .setView(dialogView)
-                .setCancelable(false)
                 .create()
 
             val titleView = dialogView.findViewById<TextView>(R.id.dialog_title)
