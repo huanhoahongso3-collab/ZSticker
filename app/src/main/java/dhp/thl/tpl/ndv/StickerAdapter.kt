@@ -17,7 +17,8 @@ import java.util.*
 class StickerAdapter(
     private var items: MutableList<Any>,
     private val listener: StickerListener,
-    private val isRecents: Boolean = false
+    private val isRecents: Boolean = false,
+    private val materialColorEnabled: Boolean = false
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     data class RecentSticker(val file: File, val timestamp: Long)
@@ -45,6 +46,12 @@ class StickerAdapter(
         val item = items[position]
         if (holder is HeaderViewHolder && item is String) {
             holder.text.text = item
+            if (materialColorEnabled) {
+                val primary = com.kieronquinn.monetcompat.core.MonetCompat.getInstance().getAccentColor(holder.itemView.context)
+                holder.text.setTextColor(primary)
+            } else {
+                holder.text.setTextColor(androidx.core.content.ContextCompat.getColor(holder.itemView.context, R.color.orange_primary))
+            }
         } else if (holder is StickerViewHolder && (item is File || item is RecentSticker)) {
             val file = if (item is RecentSticker) item.file else item as File
             Glide.with(holder.image).load(file).into(holder.image)

@@ -193,27 +193,6 @@ class MoreOptionActivity : MonetCompatActivity() {
         }
         setContentView(rootLayout)
 
-        lifecycleScope.launch {
-            if (materialColorEnabled) {
-                monet.awaitMonetReady()
-                val monetInstance = MonetCompat.getInstance()
-                val primaryColor = monetInstance.getAccentColor(this@MoreOptionActivity)
-                val backgroundColor = monetInstance.getBackgroundColor(this@MoreOptionActivity)
-                
-                rootLayout.setBackgroundColor(backgroundColor)
-                rootLayout.applyMonetRecursively()
-                
-                // Keep background logo subtle with alpha but tinted with primary
-                bgLogo.setColorFilter(primaryColor)
-                
-                txtCounter.setTextColor(primaryColor)
-                txtMessage.setTextColor(primaryColor)
-                
-                // Logo background circle should contrast with the main background
-                (imgLogo.background as? GradientDrawable)?.setColor(primaryColor)
-            }
-        }
-
         val isDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
 
         // Logo background (large and subtle)
@@ -306,6 +285,27 @@ class MoreOptionActivity : MonetCompatActivity() {
         }
         
         rootLayout.addView(imgLogo)
+
+        lifecycleScope.launch {
+            if (materialColorEnabled) {
+                monet.awaitMonetReady()
+                val monetInstance = MonetCompat.getInstance()
+                val primaryColor = monetInstance.getAccentColor(this@MoreOptionActivity)
+                val backgroundColor = monetInstance.getBackgroundColor(this@MoreOptionActivity)
+                
+                rootLayout.setBackgroundColor(backgroundColor)
+                rootLayout.applyMonetRecursively()
+                
+                // Keep background logo subtle with alpha but tinted with primary
+                bgLogo.setColorFilter(primaryColor)
+                
+                txtCounter.setTextColor(primaryColor)
+                txtMessage.setTextColor(primaryColor)
+                
+                // Logo background circle should contrast with the main background
+                (imgLogo.background as? GradientDrawable)?.setColor(primaryColor)
+            }
+        }
     }
 
     private fun showRandomMessage() {

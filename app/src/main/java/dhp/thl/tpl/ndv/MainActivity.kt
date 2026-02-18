@@ -158,7 +158,9 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                     binding.bottomNavigation.selectedItemId = startTab
                     updateLayoutVisibility(startTab)
 
-                    handleIncomingShare(intent)
+                    if (savedInstanceState == null) {
+                        handleIncomingShare(intent)
+                    }
                     handleEdgeToEdge()
                     updateStatusBar()
 
@@ -315,8 +317,55 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                     binding.switchMaterialColor.isChecked = materialColorEnabled
                     binding.switchMaterialColor.setOnCheckedChangeListener { buttonView, isChecked ->
                         if (isChecked) {
-                            prefs.edit().putBoolean("material_color_enabled", true).apply()
-                            recreate()
+                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                                ToastUtils.showToast(this, getString(R.string.material_color_unsupported))
+                                buttonView.isChecked = false
+                                return@setOnCheckedChangeListener
+                            }
+                            if (prefs.getBoolean("dont_show_material_warning", false)) {
+                                prefs.edit().putBoolean("material_color_enabled", true).apply()
+                                recreate()
+                            } else {
+                                val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_warning, null)
+                                val dialog = MaterialAlertDialogBuilder(this)
+                                    .setView(dialogView)
+                                    .create()
+
+                                val titleView = dialogView.findViewById<TextView>(R.id.dialog_title)
+                                val messageView = dialogView.findViewById<TextView>(R.id.dialog_message)
+                                val iconView = dialogView.findViewById<ImageView>(R.id.icon_warning)
+                                val checkBox = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cb_dont_show_again)
+                                
+                                val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_cancel)
+                                val btnContinue = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_continue)
+
+                                titleView.text = getString(R.string.dynamic_color_warning_title)
+                                messageView.text = getString(R.string.dynamic_color_warning_message)
+                                
+                                val orange = getColor(R.color.orange_primary)
+                                iconView.setColorFilter(orange)
+                                btnCancel.setTextColor(orange)
+                                btnContinue.setTextColor(orange)
+
+                                btnCancel.setOnClickListener {
+                                    binding.switchMaterialColor.isChecked = false
+                                    dialog.dismiss()
+                                }
+                                btnContinue.setOnClickListener {
+                                    if (checkBox.isChecked) {
+                                        prefs.edit().putBoolean("dont_show_material_warning", true).apply()
+                                    }
+                                    prefs.edit().putBoolean("material_color_enabled", true).apply()
+                                    dialog.dismiss()
+                                    recreate()
+                                }
+
+                                dialog.setOnCancelListener {
+                                    binding.switchMaterialColor.isChecked = false
+                                }
+
+                                dialog.showMonetDialog(this)
+                            }
                         } else {
                             if (prefs.getBoolean("material_color_enabled", false)) {
                                 prefs.edit().putBoolean("material_color_enabled", false).apply()
@@ -342,7 +391,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
             val iconView = dialogView.findViewById<ImageView>(R.id.icon_warning)
             val checkBox = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cb_dont_show_again)
             val btnContinue = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_continue)
-            val btnCancel = dialogView.findViewById<View>(R.id.btn_cancel)
+            val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_cancel)
 
             btnCancel.visibility = View.GONE
             
@@ -351,15 +400,10 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
             btnContinue.text = getString(R.string.ok)
             
             iconView.setImageResource(R.drawable.ic_palette)
-            val isMaterial = prefs.getBoolean("material_color_enabled", false)
-            if (!isMaterial) {
-                iconView.setColorFilter(getColor(R.color.orange_primary))
-            } else {
-                val primary = MonetCompat.getInstance().getAccentColor(this)
-                iconView.setColorFilter(primary)
-                btnContinue.setTextColor(primary)
-                (btnCancel as? com.google.android.material.button.MaterialButton)?.setTextColor(primary)
-            }
+            val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
+            val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
+            iconView.setColorFilter(primary)
+            btnContinue.setTextColor(primary)
 
             btnContinue.setOnClickListener {
                 if (checkBox.isChecked) {
@@ -429,7 +473,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
 
                 private fun confirmRemoveRecent() {
                     MaterialAlertDialogBuilder(this)
-                        .setTitle(getString(R.string.info_remove_recent_confirm_title))
+                        .setTitle(boldTitle(getString(R.string.info_remove_recent_confirm_title)))
                         .setMessage(getString(R.string.info_remove_recent_confirm_message))
                         .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
                         .setNegativeButton(getString(R.string.cancel), null)
@@ -450,7 +494,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
 
                 private fun confirmDeleteAll() {
                     MaterialAlertDialogBuilder(this)
-                        .setTitle(getString(R.string.info_remove_all_confirm_title))
+                        .setTitle(boldTitle(getString(R.string.info_remove_all_confirm_title)))
                         .setMessage(getString(R.string.info_remove_all_confirm_message))
                         .setPositiveButton(getString(R.string.delete)) { _, _ -> deleteAllStickers() }
                         .setNegativeButton(getString(R.string.cancel), null)
@@ -687,9 +731,11 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                 }
 
                 private fun setupStickerList() {
+                    val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+                    
                     // Home adapter
                     val items = StickerAdapter.loadOrdered(this)
-                    adapter = StickerAdapter(items, this)
+                    adapter = StickerAdapter(items, this, materialColorEnabled = materialColorEnabled)
                     val layoutManager = GridLayoutManager(this, 3)
                     layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
                         override fun getSpanSize(pos: Int): Int = if (adapter.getItemViewType(pos) == 0) 3 else 1
@@ -699,7 +745,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
 
                     // Recents adapter
                     val recentItems = StickerAdapter.loadRecents(this)
-                    adapterRecents = StickerAdapter(recentItems, this, isRecents = true)
+                    adapterRecents = StickerAdapter(recentItems, this, isRecents = true, materialColorEnabled = materialColorEnabled)
                     val layoutManagerRecents = GridLayoutManager(this, 3)
                     layoutManagerRecents.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
                         override fun getSpanSize(pos: Int): Int = if (adapterRecents.getItemViewType(pos) == 0) 3 else 1
@@ -798,7 +844,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
         val container = dialogView.findViewById<ViewGroup>(R.id.dialog_item_container)
         
         val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle(title)
+            .setTitle(boldTitle(title))
             .setView(dialogView)
             .setNegativeButton(getString(R.string.cancel), null)
             .create()
@@ -853,22 +899,23 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
         val iconView = dialogView.findViewById<ImageView>(R.id.icon_warning)
         val checkBox = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cb_dont_show_again)
 
-        titleView.text = getString(R.string.rb_warning_title)
+        titleView.text = boldTitle(getString(R.string.rb_warning_title))
         messageView.text = getString(R.string.rb_warning_message)
         iconView.setImageResource(R.drawable.ic_remove_bg)
         
-        val isMaterial = prefs.getBoolean("material_color_enabled", false)
-        if (!isMaterial) {
-            iconView.setColorFilter(getColor(R.color.orange_primary))
-        } else {
-            val primary = MonetCompat.getInstance().getAccentColor(this)
-            iconView.setColorFilter(primary)
-            (dialogView.findViewById<View>(R.id.btn_continue) as? com.google.android.material.button.MaterialButton)?.setTextColor(primary)
-            (dialogView.findViewById<View>(R.id.btn_cancel) as? com.google.android.material.button.MaterialButton)?.setTextColor(primary)
-        }
+        val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
+        val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
+        iconView.setColorFilter(primary)
+        messageView.setLinkTextColor(primary)
 
-        dialogView.findViewById<View>(R.id.btn_cancel).setOnClickListener { dialog.dismiss() }
-        dialogView.findViewById<View>(R.id.btn_continue).setOnClickListener {
+        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_cancel)
+        val btnContinue = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_continue)
+        
+        btnCancel.setTextColor(primary)
+        btnContinue.setTextColor(primary)
+
+        btnCancel.setOnClickListener { dialog.dismiss() }
+        btnContinue.setOnClickListener {
             if (checkBox.isChecked) {
                 prefs.edit().putBoolean("dont_show_rb_warning", true).apply()
             }
@@ -936,6 +983,12 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                         ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 999)
                     }
                 }
+
+                private fun boldTitle(title: String): android.text.SpannableString {
+                    return android.text.SpannableString(title).apply {
+                        setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, length, 0)
+                    }
+                }
 }
 
 data class OptionItem(val iconRes: Int, val text: String)
@@ -950,14 +1003,32 @@ class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<
         textView.text = item!!.text
         iconView.setImageResource(item.iconRes)
         
+        val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+        val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
+        
+        val primary = if (materialColorEnabled) {
+            MonetCompat.getInstance().getAccentColor(context)
+        } else {
+            androidx.core.content.ContextCompat.getColor(context, R.color.orange_primary)
+        }
+
         if (item.text == context.getString(R.string.delete) || item.text == context.getString(R.string.delete_history)) {
-            textView.setTextColor(android.graphics.Color.parseColor("#FF3b30"))
-            iconView.setColorFilter(android.graphics.Color.parseColor("#FF3b30"))
+            val red = android.graphics.Color.parseColor("#FF3b30")
+            textView.setTextColor(red)
+            iconView.setColorFilter(red)
+            iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(red, 40))
         } else {
             val typedValue = android.util.TypedValue()
             context.theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, typedValue, true)
             textView.setTextColor(typedValue.data)
-            iconView.setColorFilter(typedValue.data)
+            
+            if (item.iconRes != R.drawable.ic_flag_en && item.iconRes != R.drawable.ic_flag_vi) {
+                 iconView.setColorFilter(primary)
+                 iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 40))
+            } else {
+                 iconView.clearColorFilter()
+                 iconView.background = null
+            }
         }
         
         return view
@@ -975,14 +1046,27 @@ class ThemeAdapter(context: Context, objects: List<OptionItem>, private val sele
         view.findViewById<TextView>(R.id.item_text).text = item.text
         radioButton.isChecked = (position == selectedIndex)
         
-        if (context.getSharedPreferences("settings", Context.MODE_PRIVATE).getBoolean("material_color_enabled", false)) {
-            val primary = MonetCompat.getInstance().getAccentColor(context)
-            val sl = android.content.res.ColorStateList(
-                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf(-android.R.attr.state_checked)),
-                intArrayOf(primary, android.graphics.Color.GRAY)
-            )
-            radioButton.buttonTintList = sl
-            iconView.setColorFilter(primary)
+        val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+        val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
+        
+        val primary = if (materialColorEnabled) {
+            MonetCompat.getInstance().getAccentColor(context)
+        } else {
+            androidx.core.content.ContextCompat.getColor(context, R.color.orange_primary)
+        }
+
+        val sl = android.content.res.ColorStateList(
+            arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf(-android.R.attr.state_checked)),
+            intArrayOf(primary, android.graphics.Color.GRAY)
+        )
+        radioButton.buttonTintList = sl
+        
+        if (item.iconRes != R.drawable.ic_flag_en && item.iconRes != R.drawable.ic_flag_vi) {
+             iconView.setColorFilter(primary)
+             iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 40))
+        } else {
+             iconView.clearColorFilter()
+             iconView.background = null
         }
         
         return view
@@ -990,9 +1074,29 @@ class ThemeAdapter(context: Context, objects: List<OptionItem>, private val sele
 }
 
 private fun androidx.appcompat.app.AlertDialog.showMonetDialog(context: android.content.Context) {
-    if (context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE).getBoolean("material_color_enabled", false)) {
+    val prefs = context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+    val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
+    val isDark = (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+
+    if (materialColorEnabled) {
         window?.decorView?.applyMonetRecursively()
     }
+    
     show()
+    
+    if (isDark) {
+        window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.BLACK))
+    }
+
+    val primary = if (materialColorEnabled) {
+        MonetCompat.getInstance().getAccentColor(context)
+    } else {
+        androidx.core.content.ContextCompat.getColor(context, R.color.orange_primary)
+    }
+
+    getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(primary)
+    getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(primary)
+    getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL)?.setTextColor(primary)
+    
     window?.setDimAmount(0.35f)
 }

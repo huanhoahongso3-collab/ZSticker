@@ -17,6 +17,7 @@
         android:padding="20dp">
 
         <androidx.constraintlayout.helper.widget.Flow
+            android:id="@+id/flowHeader"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:flow_wrapMode="aligned"
@@ -52,15 +53,15 @@
 
         <TextView
             android:id="@+id/txtLicenseText"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:textSize="13sp"
             android:alpha="0.7"
-            android:fontFamily="monospace"
             android:textColor="?attr/colorOnSurfaceVariant"
-            app:layout_constraintTop_toBottomOf="@+id/txtName"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:layout_constraintTop_toBottomOf="@+id/flowHeader"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

@@ -84,6 +84,10 @@ class AdvancedSettingsActivity : MonetCompatActivity() {
         }
         setContentView(rootLayout)
 
+        initEmojiPool()
+        setupLogo()
+        setupRotateHandle()
+
         lifecycleScope.launch {
             if (materialColorEnabled) {
                 monet.awaitMonetReady()
@@ -99,10 +103,6 @@ class AdvancedSettingsActivity : MonetCompatActivity() {
                 (rotateHandle?.background as? GradientDrawable)?.setColor(ColorUtils.setAlphaComponent(primaryColor, 153)) // ~99 hex alpha
             }
         }
-
-        initEmojiPool()
-        setupLogo()
-        setupRotateHandle()
 
         // Initial Shuffle
         generateNextCycle()

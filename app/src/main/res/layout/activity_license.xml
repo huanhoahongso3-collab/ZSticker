@@ -18,6 +18,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:navigationIcon="?attr/homeAsUpIndicator"
+            app:titleTextAppearance="@style/ToolbarBoldTitle"
             app:title="@string/info_opensource_title" />
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -44,12 +45,23 @@
 
 
             <TextView
+                android:id="@+id/txtContentTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/info_opensource_title"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:layout_marginTop="16dp"
+                android:gravity="center"
+                style="@style/TextAppearance.Material3.HeadlineSmall" />
+
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/info_opensource_note"
-                android:textSize="16sp"
-                android:alpha="0.7"
-                android:layout_marginTop="8dp"
+                android:textSize="14sp"
+                android:alpha="0.6"
+                android:layout_marginTop="4dp"
                 android:gravity="center"
                 style="@style/TextAppearance.Material3.BodyMedium" />
 

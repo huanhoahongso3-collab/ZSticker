@@ -17,6 +17,11 @@
         <!-- System Bars -->
         <item name="android:statusBarColor">?android:attr/colorBackground</item>
         <item name="android:navigationBarColor">?attr/colorSurfaceContainer</item>
+        <item name="titleTextAppearance">@style/ToolbarBoldTitle</item>
+    </style>
+
+    <style name="ToolbarBoldTitle" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textStyle">bold</item>
     </style>
 
     <style name="Theme.ZSticker.Splash" parent="Theme.SplashScreen">
