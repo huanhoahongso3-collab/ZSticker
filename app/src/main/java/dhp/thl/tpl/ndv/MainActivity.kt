@@ -962,11 +962,11 @@ class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<
             
             if (item.iconRes != R.drawable.ic_flag_en && item.iconRes != R.drawable.ic_flag_vi) {
                  iconView.setColorFilter(primary)
-                 iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 40))
             } else {
                  iconView.clearColorFilter()
-                 iconView.background = null
             }
+            iconView.background = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.bg_circle_icon)
+            iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 40))
         }
         
         return view
@@ -1001,11 +1001,11 @@ class ThemeAdapter(context: Context, objects: List<OptionItem>, private val sele
         
         if (item.iconRes != R.drawable.ic_flag_en && item.iconRes != R.drawable.ic_flag_vi) {
              iconView.setColorFilter(primary)
-             iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 40))
         } else {
              iconView.clearColorFilter()
-             iconView.background = null
         }
+        iconView.background = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.bg_circle_icon)
+        iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 40))
         
         return view
     }

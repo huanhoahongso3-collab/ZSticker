@@ -58,6 +58,7 @@ class LicenseActivity : MonetCompatActivity() {
             }
 
             // Style Navigation Icon
+            toolbar.navigationIcon = androidx.core.content.ContextCompat.getDrawable(this@LicenseActivity, R.drawable.ic_back_bold)
             toolbar.navigationIcon?.let { icon ->
                 val circleBg = androidx.core.content.ContextCompat.getDrawable(this@LicenseActivity, R.drawable.bg_circle_icon)?.mutate()
                 val primary = if (materialColorEnabled) {
