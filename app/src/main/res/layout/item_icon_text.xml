@@ -11,10 +11,11 @@
 
     <ImageView
         android:id="@+id/item_icon"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:padding="6dp"
         android:layout_marginEnd="16dp"
-        android:tint="?attr/colorControlNormal"
+        android:background="@drawable/bg_circle_icon"
         android:src="@drawable/ic_remove_bg" />
 
     <TextView

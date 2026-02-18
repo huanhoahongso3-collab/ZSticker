@@ -12,16 +12,26 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.kieronquinn.monetcompat.app.MonetCompatActivity
+import com.kieronquinn.monetcompat.core.MonetCompat
+import com.kieronquinn.monetcompat.extensions.views.applyMonetRecursively
+import androidx.lifecycle.lifecycleScope
+import androidx.core.graphics.ColorUtils
+import kotlinx.coroutines.launch
+import android.content.res.Configuration
 import java.util.*
 
-class MoreOptionActivity : AppCompatActivity() {
+class MoreOptionActivity : BaseActivity() {
 
     private lateinit var rootLayout: FrameLayout
     private lateinit var imgLogo: ImageView
     private lateinit var txtMessage: TextView
     private lateinit var txtCounter: TextView
+    private lateinit var bgLogo: ImageView
     private val random = Random()
     private var clickCount = 0
+    private val eggClicks = mutableSetOf<Int>()
+    private var eggFailed = false
 
     private val messages = listOf(
         "THL loves you!",
@@ -146,13 +156,36 @@ class MoreOptionActivity : AppCompatActivity() {
         "Or TPL?",
         "Choose one",
         "TPL or THL",
-        "choose wisely between THL and TPL"
+        "choose wisely between THL and TPL",
+        "bad dream with TPL?",
+        "bad dream with both",
+        "comeback with TPL in the bed",
+        "trying to do something with TPL",
+        "such a bad dream",
+        "TPL is so cute",
+        "trying to .... TPL",
+        "bye bye",
+        "not so ended at SDK 36",
+        "a bad dream about TPL",
+        "such a not so funny time with TPL",
+        "Capture her!",
+        "Bye bye TPL",
+        "Have fun with PDA",
+        "It's no fun trying to go to bed with TPL",
+        "Don't do anything bad with TPL",
+        "Welcome to SDK 41",
+        "Say goodbye to TPL for the last time",
+        "Banana is a codename for TPL",
+        "Bye bye .... bye bye K7A2.... bye bye TPL... bye bye all",
+        "Bye bye banana for the last time"
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        rootLayout = FrameLayout(this).apply {
+        val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+
+        rootLayout = FrameLayout(this@MoreOptionActivity).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
@@ -161,18 +194,24 @@ class MoreOptionActivity : AppCompatActivity() {
         }
         setContentView(rootLayout)
 
+        val isDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+
         // Logo background (large and subtle)
-        val bgLogo = ImageView(this).apply {
+        bgLogo = ImageView(this@MoreOptionActivity).apply {
             val size = (400 * resources.displayMetrics.density).toInt()
             layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
             setImageResource(R.drawable.ic_launcher_foreground)
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                setColor(if (isDark) Color.WHITE else Color.BLACK)
+            }
             alpha = 0.1f
             scaleType = ImageView.ScaleType.FIT_CENTER
         }
         rootLayout.addView(bgLogo)
 
         // Click Counter
-        txtCounter = TextView(this).apply {
+        txtCounter = TextView(this@MoreOptionActivity).apply {
             layoutParams = FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
@@ -180,16 +219,39 @@ class MoreOptionActivity : AppCompatActivity() {
                 gravity = Gravity.CENTER_HORIZONTAL or Gravity.CENTER
                 setMargins(0, 0, 0, (150 * resources.displayMetrics.density).toInt())
             }
-            setTextColor(Color.WHITE)
+            setTextColor(if (isDark) Color.WHITE else Color.BLACK)
             textSize = 28f
             setTypeface(null, android.graphics.Typeface.BOLD)
             text = "0"
             visibility = View.INVISIBLE
+            isClickable = true
+            setOnClickListener {
+                if (clickCount == 10 || clickCount == 56 || clickCount == 74) {
+                    if (eggClicks.contains(clickCount)) {
+                        if (clickCount == 74) {
+                            startActivity(android.content.Intent(this@MoreOptionActivity, AdvancedSettingsActivity::class.java))
+                        } else {
+                            eggFailed = true
+                        }
+                    } else {
+                         eggClicks.add(clickCount)
+                    }
+                } else {
+                    eggFailed = true
+                }
+
+                if (eggClicks.size == 3 && !eggFailed) {
+                    startActivity(android.content.Intent(this@MoreOptionActivity, AdvancedSettingsActivity::class.java))
+                    eggClicks.clear()
+                    eggFailed = false
+                    // Stay at current count
+                }
+            }
         }
         rootLayout.addView(txtCounter)
 
         // Text display
-        txtMessage = TextView(this).apply {
+        txtMessage = TextView(this@MoreOptionActivity).apply {
             layoutParams = FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
@@ -197,7 +259,7 @@ class MoreOptionActivity : AppCompatActivity() {
                 gravity = Gravity.CENTER_HORIZONTAL or Gravity.BOTTOM
                 setMargins(0, 0, 0, (100 * resources.displayMetrics.density).toInt())
             }
-            setTextColor(Color.WHITE)
+            setTextColor(if (isDark) Color.WHITE else Color.BLACK)
             textSize = 20f
             gravity = Gravity.CENTER
             visibility = View.INVISIBLE
@@ -205,7 +267,7 @@ class MoreOptionActivity : AppCompatActivity() {
         rootLayout.addView(txtMessage)
 
         // Center Logo
-        imgLogo = ImageView(this).apply {
+        imgLogo = ImageView(this@MoreOptionActivity).apply {
             val size = (126 * resources.displayMetrics.density).toInt()
             layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
             outlineProvider = object : ViewOutlineProvider() {
@@ -218,7 +280,7 @@ class MoreOptionActivity : AppCompatActivity() {
             setImageResource(R.drawable.ic_launcher_foreground)
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
-                setColor(Color.WHITE)
+                setColor(if (isDark) Color.WHITE else Color.BLACK)
             }
             elevation = 100f
             isClickable = true
@@ -233,6 +295,23 @@ class MoreOptionActivity : AppCompatActivity() {
         }
         
         rootLayout.addView(imgLogo)
+
+        lifecycleScope.launch {
+            monet.awaitMonetReady()
+            val accentColor = if (materialColorEnabled) {
+                monet.getAccentColor(this@MoreOptionActivity)
+            } else {
+                getColor(R.color.orange_primary)
+            }
+
+            // Always black background and white/static colors for vintage look
+            rootLayout.setBackgroundColor(Color.BLACK)
+            
+            bgLogo.clearColorFilter()
+            txtCounter.setTextColor(accentColor)
+            txtMessage.setTextColor(accentColor)
+            (imgLogo.background as? GradientDrawable)?.setColor(Color.WHITE)
+        }
     }
 
     private fun showRandomMessage() {

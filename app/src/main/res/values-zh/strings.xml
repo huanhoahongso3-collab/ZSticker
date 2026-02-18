@@ -1,0 +1,69 @@
+<resources>
+    <string name="app_name">ZSticker</string>
+
+    <string name="nav_home">首页</string>
+    <string name="nav_recents">最近</string>
+    <string name="nav_options">选项</string>
+
+    <string name="section_settings">设置</string>
+    <string name="section_general">关于</string>
+
+    <string name="info_theme_title">主题</string>
+    <string name="info_language_title">语言</string>
+    <string name="info_version_title">版本</string>
+    <string name="info_repo_title">源代码</string>
+    <string name="info_repo_note">https://github.com/huanhoahongso3-collab/ZSticker</string>
+    <string name="info_license_title">许可证</string>
+    <string name="info_export_all_title">导出所有贴纸</string>
+    <string name="info_remove_recent_title">清除所有最近贴纸</string>
+    <string name="info_remove_recent_confirm_title">删除所有历史记录？</string>
+    <string name="info_remove_all_title">删除所有贴纸</string>
+    <string name="info_remove_all_confirm_title">删除所有贴纸？</string>
+    <string name="info_remove_all_confirm_message">这将永久删除您的所有贴纸。此操作无法撤销。</string>
+    <string name="info_remove_recent_confirm_message">这将永久删除您的所有贴纸历史记录。此操作无法撤销。</string>
+
+    <string name="theme_light">浅色</string>
+    <string name="theme_dark">深色</string>
+    <string name="theme_system">系统默认</string>
+    
+    <string name="info_material_color_title">Material 配色</string>
+    <string name="info_material_color_subtitle">使用系统配色</string>
+    
+    <string name="info_license_note">GNU General Public License v3.0</string>
+    
+    <string name="sticker_options_title">贴纸选项</string>
+    <string name="export">导出到图库</string>
+    <string name="delete">删除贴纸</string>
+    <string name="delete_history">删除历史记录</string>
+    <string name="recent_options_title">最近选项</string>
+    <string name="cancel">取消</string>
+    <string name="zalo_share_failed">未找到 Zalo 或分享失败</string>
+    <string name="success">成功</string>
+    <string name="failed">失败</string>
+    <string name="no_stickers_found">未找到贴纸</string>
+    <string name="unsupported_file_type">不支持的文件类型</string>
+    <string name="remove_bg">移除背景</string>
+    <string name="rb_completed">背景移除完成！</string>
+    <string name="rb_failed">背景移除失败</string>
+    <string name="rb_warning_title">背景移除警告</string>
+    <string name="rb_warning_message">此功能使用第三方接口 (BRIA RMBG 2.0)。继续操作即表示您知晓我们没有权限读取您的图片，所有操作均由 Hugging Face 及第三方服务控制。\n\n项目链接：https://huggingface.co/spaces/briaai/BRIA-RMBG-2.0\n接口源代码：http://github.com/huanhoahongso3-collab/briarmbg2.0/</string>
+    <string name="dont_show_again">不再显示</string>
+    <string name="continue_action">继续</string>
+    
+    <string name="lang_en">英语</string>
+    <string name="lang_vi">越南语</string>
+    <string name="lang_zh">简体中文</string>
+    <string name="lang_ru">俄语</string>
+    <string name="lang_system">系统默认</string>
+
+    <string name="dynamic_color_warning_title">动态色彩通知</string>
+    <string name="dynamic_color_warning_message">更改为与系统设置不同的主题可能会在某些 Android 12+ 设备上禁用 Material You 动态色彩。</string>
+    <string name="ok">确定</string>
+    <string name="no_internet_access">无网络连接</string>
+    <string name="no_history_found">未发现历史记录</string>
+    <string name="theme_change_warning_title">主题更改</string>
+    <string name="theme_change_warning_message">可能需要重启应用才能正确应用主题。</string>
+    <string name="material_color_unsupported">此 Android 版本不支持 Material 配色。</string>
+    <string name="info_opensource_title">开源许可</string>
+    <string name="info_opensource_note">ZSticker 使用的库</string>
+</resources>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="0dp"
+    android:backgroundTint="?attr/colorSurfaceContainer"
+    style="@style/Widget.Material3.CardView.Filled">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="20dp">
+
+        <androidx.constraintlayout.helper.widget.Flow
+            android:id="@+id/flowHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:flow_wrapMode="aligned"
+            app:flow_horizontalStyle="packed"
+            app:flow_horizontalBias="0"
+            app:flow_horizontalGap="8dp"
+            app:flow_verticalGap="4dp"
+            app:flow_horizontalAlign="start"
+            app:constraint_referenced_ids="txtName,txtLicenseName"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <TextView
+            android:id="@+id/txtName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textAlignment="viewStart"
+            android:gravity="start"
+            android:textColor="?attr/colorOnSurface" />
+
+        <TextView
+            android:id="@+id/txtLicenseName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp"
+            android:background="@drawable/bg_circle_icon"
+            android:backgroundTint="?attr/colorPrimary"
+            android:textColor="?attr/colorOnPrimary"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textAlignment="viewStart"
+            android:gravity="start"
+            android:textAllCaps="true" />
+
+        <TextView
+            android:id="@+id/txtLicenseText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:textSize="13sp"
+            android:alpha="0.7"
+            android:textAlignment="viewStart"
+            android:gravity="start"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            app:layout_constraintTop_toBottomOf="@+id/flowHeader"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

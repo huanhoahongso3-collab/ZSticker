@@ -1,0 +1,68 @@
+<resources>
+    <string name="app_name">ZSticker</string>
+
+    <string name="nav_home">Главная</string>
+    <string name="nav_recents">Недавние</string>
+    <string name="nav_options">Опции</string>
+
+    <string name="section_settings">Настройки</string>
+    <string name="section_general">О программе</string>
+
+    <string name="info_theme_title">Тема</string>
+    <string name="info_language_title">Язык</string>
+    <string name="info_version_title">Версия</string>
+    <string name="info_repo_title">Исходный код</string>
+    <string name="info_repo_note">https://github.com/huanhoahongso3-collab/ZSticker</string>
+    <string name="info_license_title">Лицензия</string>
+    <string name="info_export_all_title">Экспортировать все стикеры</string>
+    <string name="info_remove_recent_title">Удалить все недавние стикеры</string>
+    <string name="info_remove_recent_confirm_title">Очистить историю?</string>
+    <string name="info_remove_all_title">Удалить все стикеры</string>
+    <string name="info_remove_all_confirm_title">Удалить все стикеры?</string>
+    <string name="info_remove_all_confirm_message">Это действие безвозвратно удалит все ваши стикеры. Это действие нельзя отменить.</string>
+    <string name="info_remove_recent_confirm_message">Это действие безвозвратно удалит всю историю ваших стикеров. Это действие нельзя отменить.</string>
+
+    <string name="theme_light">Светлая</string>
+    <string name="theme_dark">Тёмная</string>
+    <string name="theme_system">Системная</string>
+    
+    <string name="info_material_color_title">Цвета Material</string>
+    <string name="info_material_color_subtitle">Использовать системные цвета</string>
+    
+    <string name="info_license_note">GNU General Public License v3.0</string>
+    
+    <string name="sticker_options_title">Опции стикера</string>
+    <string name="export">Экспорт в галерею</string>
+    <string name="delete">Удалить стикер</string>
+    <string name="delete_history">Удалить из истории</string>
+    <string name="recent_options_title">Опции недавних</string>
+    <string name="cancel">Отмена</string>
+    <string name="zalo_share_failed">Zalo не найден или ошибка отправки</string>
+    <string name="success">Успешно</string>
+    <string name="failed">Ошибка</string>
+    <string name="no_stickers_found">Стикеры не найдены</string>
+    <string name="unsupported_file_type">Неподдерживаемый тип файла</string>
+    <string name="remove_bg">Удалить фон</string>
+    <string name="rb_completed">Фон успешно удален!</string>
+    <string name="rb_failed">Не удалось удалить фон</string>
+    <string name="rb_warning_title">Предупреждение об удалении фона</string>
+    <string name="rb_warning_message">Эта функция использует стороннее API (BRIA RMBG 2.0). Продолжая, вы подтверждаете, что мы не имеем доступа к чтению изображения, и всё используется и контролируется Hugging Face и сторонним сервисом.\n\nСсылка на проект: https://huggingface.co/spaces/briaai/BRIA-RMBG-2.0\nИсходный код эндпоинта: http://github.com/huanhoahongso3-collab/briarmbg2.0/</string>
+    <string name="dont_show_again">Больше не показывать</string>
+    <string name="continue_action">Продолжить</string>
+    
+    <string name="lang_en">Английский</string>
+    <string name="lang_vi">Вьетнамский</string>
+    <string name="lang_ru">Русский</string>
+    <string name="lang_system">Системный</string>
+
+    <string name="dynamic_color_warning_title">Уведомление о динамических цветах</string>
+    <string name="dynamic_color_warning_message">Переключение на тему, отличную от системных настроек, может отключить динамические цвета Material You на некоторых устройствах Android 12+.</string>
+    <string name="ok">ОК</string>
+    <string name="no_internet_access">Нет доступа к интернету</string>
+    <string name="no_history_found">История не найдена</string>
+    <string name="theme_change_warning_title">Смена темы</string>
+    <string name="theme_change_warning_message">Для правильного применения темы может потребоваться перезапуск приложения.</string>
+    <string name="material_color_unsupported">Эта версия Android не поддерживает material color.</string>
+    <string name="info_opensource_title">Лицензии открытого ПО</string>
+    <string name="info_opensource_note">Библиотеки, используемые в ZSticker</string>
+</resources>

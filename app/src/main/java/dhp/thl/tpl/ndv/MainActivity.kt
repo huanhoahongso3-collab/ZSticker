@@ -11,6 +11,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
 import android.os.Build
@@ -32,7 +33,11 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.recyclerview.widget.GridLayoutManager
-import com.google.android.material.color.DynamicColors
+import com.kieronquinn.monetcompat.app.MonetCompatActivity
+import com.kieronquinn.monetcompat.core.MonetCompat
+import com.kieronquinn.monetcompat.extensions.views.applyMonetRecursively
+import com.kieronquinn.monetcompat.extensions.views.applyMonet
+import com.kieronquinn.monetcompat.extensions.views.enableStretchOverscroll
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
 import java.io.File
@@ -48,45 +53,23 @@ import android.widget.TextView
 import android.widget.RadioButton
 import android.view.LayoutInflater
 import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.lifecycleScope
+import android.widget.LinearLayout
+import androidx.core.graphics.ColorUtils
+import kotlinx.coroutines.launch
 
-class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
-
+class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var adapter: StickerAdapter
     private lateinit var adapterRecents: StickerAdapter
+    private var versionClickCount = 0
+    private var lastClickTime: Long = 0
 
-            private var versionClickCount = 0
-            private var lastClickTime: Long = 0
-
-            private fun getThemeColor(attr: Int): Int {
-                val typedValue = android.util.TypedValue()
-                theme.resolveAttribute(attr, typedValue, true)
-                return typedValue.data
-            }
-
-                override fun attachBaseContext(newBase: Context) {
-                    val prefs = newBase.getSharedPreferences("settings", MODE_PRIVATE)
-                    val langCode = prefs.getString("lang", "system") ?: "system"
-
-                    val config = Configuration(newBase.resources.configuration)
-
-                    // Apply Locale
-                    if (langCode != "system") {
-                        val locale = Locale(langCode)
-                        Locale.setDefault(locale)
-                        config.setLocale(locale)
-                    } else {
-                        // Revert to device system locale
-                        val systemLocale = Configuration(newBase.resources.configuration).locales[0]
-                        config.setLocale(systemLocale)
-                    }
-
-                    // Removed manual config.uiMode override here as it conflicts with DynamicColors 
-                    // initialization in onCreate. AppCompatDelegate handles the switch.
-                    
-                    val context = newBase.createConfigurationContext(config)
-                    super.attachBaseContext(context)
-                }
+    private fun getThemeColor(attr: Int): Int {
+        val typedValue = android.util.TypedValue()
+        theme.resolveAttribute(attr, typedValue, true)
+        return typedValue.data
+    }
 
                 override fun onCreate(savedInstanceState: Bundle?) {
                     val splashScreen = installSplashScreen()
@@ -98,62 +81,102 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     // Ensure theme is set BEFORE super.onCreate
                     AppCompatDelegate.setDefaultNightMode(savedTheme)
                     
-                    // Apply Material Dynamic Colors if enabled
-                    if (materialColorEnabled) {
-                        DynamicColors.applyToActivityIfAvailable(this)
-                    }
+                    // Applied via MonetCompatActivity automatically if enabled
+                    // Removed old DynamicColors implementation
+
 
                     super.onCreate(savedInstanceState)
                     
                     splashScreen.setOnExitAnimationListener { splashScreenView ->
-                        val zoomX = ObjectAnimator.ofFloat(
-                            splashScreenView.iconView,
-                            View.SCALE_X,
-                            1.0f,
-                            5.0f
-                        )
-                        val zoomY = ObjectAnimator.ofFloat(
-                            splashScreenView.iconView,
-                            View.SCALE_Y,
-                            1.0f,
-                            5.0f
-                        )
-                        val alpha = ObjectAnimator.ofFloat(
-                            splashScreenView.view,
-                            View.ALPHA,
-                            1.0f,
-                            0.0f
-                        )
+                        val iconView = try { splashScreenView.iconView } catch (e: Exception) { null }
+                        if (iconView != null) {
+                            val zoomX = ObjectAnimator.ofFloat(iconView, View.SCALE_X, 1.0f, 5.0f)
+                            val zoomY = ObjectAnimator.ofFloat(iconView, View.SCALE_Y, 1.0f, 5.0f)
+                            val alpha = ObjectAnimator.ofFloat(splashScreenView.view, View.ALPHA, 1.0f, 0.0f)
 
-                        zoomX.duration = 500L
-                        zoomY.duration = 500L
-                        alpha.duration = 500L
-                        
-                        zoomX.interpolator = AnticipateInterpolator()
-                        zoomY.interpolator = AnticipateInterpolator()
-                        
-                        zoomX.doOnEnd { splashScreenView.remove() }
-                        
-                        zoomX.start()
-                        zoomY.start()
-                        alpha.start()
+                            zoomX.duration = 500L
+                            zoomY.duration = 500L
+                            alpha.duration = 500L
+                            
+                            zoomX.interpolator = AnticipateInterpolator()
+                            zoomY.interpolator = AnticipateInterpolator()
+                            
+                            zoomX.doOnEnd { splashScreenView.remove() }
+                            
+                            zoomX.start()
+                            zoomY.start()
+                            alpha.start()
+                        } else {
+                            splashScreenView.remove()
+                        }
                     }
 
                     binding = ActivityMainBinding.inflate(layoutInflater)
                     setContentView(binding.root)
 
-                    val lastTab = prefs.getInt("last_tab", R.id.nav_home)
-                    binding.bottomNavigation.selectedItemId = lastTab
-                    updateLayoutVisibility(lastTab)
-
-                    setupNavigation()
                     setupStickerList()
+                    setupNavigation()
                     setupInfoSection()
+
+                    val startTab = if (savedInstanceState == null) R.id.nav_home else prefs.getInt("last_tab", R.id.nav_home)
+                    binding.bottomNavigation.selectedItemId = startTab
+                    updateLayoutVisibility(startTab)
+
                     if (savedInstanceState == null) {
                         handleIncomingShare(intent)
                     }
                     handleEdgeToEdge()
                     updateStatusBar()
+
+                    lifecycleScope.launch {
+                        if (materialColorEnabled) {
+                            monet.awaitMonetReady()
+                            binding.root.applyMonetRecursively()
+                            binding.bottomNavigation.applyMonet()
+                            
+                            val monetInstance = MonetCompat.getInstance()
+                            val primary = monetInstance.getAccentColor(this@MainActivity)
+                            val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+                            val surface = if (isDark) monetInstance.getBackgroundColor(this@MainActivity, true) else Color.WHITE
+                            
+                            // Colors for light/dark mode
+                            val headColor = if (isDark) primary else primary
+                            val cardColor = if (isDark) surface else Color.parseColor("#F5F5F5") 
+                            
+                            binding.sectionSettingsHeader.setTextColor(headColor)
+                            binding.sectionGeneralHeader.setTextColor(headColor)
+                            binding.cardSettings.setCardBackgroundColor(cardColor)
+                            binding.cardGeneral.setCardBackgroundColor(cardColor)
+                            
+                            // Force apply to FAB
+                            binding.addButton.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
+                            binding.addButton.imageTintList = android.content.res.ColorStateList.valueOf(monetInstance.getBackgroundColor(this@MainActivity))
+
+                            // Tint all icons in options pane
+                            listOf(
+                                binding.imgTheme, binding.imgMaterialColor, binding.imgLanguage,
+                                binding.imgExportAll, binding.imgRemoveRecent, binding.imgRemoveAll,
+                                binding.imgVersion, binding.imgRepo, binding.imgLicense, binding.imgOpenSource
+                            ).forEach { icon ->
+                                icon.setColorFilter(primary)
+                            }
+                            
+                            // Fix Switch tinting
+                            val states = arrayOf(
+                                intArrayOf(android.R.attr.state_checked),
+                                intArrayOf(-android.R.attr.state_checked)
+                            )
+                            val thumbColors = intArrayOf(primary, Color.WHITE)
+                            val trackColors = intArrayOf(ColorUtils.setAlphaComponent(primary, 128), ColorUtils.setAlphaComponent(Color.LTGRAY, 128))
+                            
+                            binding.switchMaterialColor.thumbTintList = android.content.res.ColorStateList(states, thumbColors)
+                            binding.switchMaterialColor.trackTintList = android.content.res.ColorStateList(states, trackColors)
+                            binding.switchMaterialColor.thumbIconTintList = android.content.res.ColorStateList.valueOf(
+                                if (isDark) monetInstance.getBackgroundColor(this@MainActivity) else Color.WHITE
+                            )
+                            binding.loadingIndicator.setIndicatorColor(primary)
+                        }
+                    }
 
                     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
                         requestLegacyPermissions()
@@ -165,16 +188,12 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }
 
                 private fun updateStatusBar() {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        val nightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-                        val isLightMode = nightMode == Configuration.UI_MODE_NIGHT_NO
-                        
-                        window.decorView.systemUiVisibility = if (isLightMode) {
-                            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-                        } else {
-                            0
-                        }
-                    }
+                    val nightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+                    val isLightMode = nightMode == Configuration.UI_MODE_NIGHT_NO
+                    
+                    val windowInsetsController = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
+                    windowInsetsController.isAppearanceLightStatusBars = isLightMode
+                    windowInsetsController.isAppearanceLightNavigationBars = isLightMode
                 }
 
                 override fun onNewIntent(intent: Intent?) {
@@ -185,6 +204,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
                 private fun setupInfoSection() {
                     val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+                    val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
 
                     // --- THEME SELECTOR ---
                     updateThemeText(prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM))
@@ -202,21 +222,18 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                             else -> 2
                         }
 
-                        val adapter = ThemeAdapter(this, themes, selectedIndex)
-
-                        val dialog = MaterialAlertDialogBuilder(this)
-                        .setTitle(getString(R.string.info_theme_title))
-                        .setAdapter(adapter) { dialog, which ->
+                        showPaneDialog(
+                            getString(R.string.info_theme_title),
+                            themes,
+                            selectedIndex
+                        ) { which ->
                             val newMode = when (which) {
                                 0 -> AppCompatDelegate.MODE_NIGHT_NO
                                 1 -> AppCompatDelegate.MODE_NIGHT_YES
                                 else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
                             }
-                            handleThemeSelection(prefs, newMode)
-                            dialog.dismiss()
-                        }.create()
-                        dialog.window?.setDimAmount(0.35f)
-                        dialog.show()
+                            applyAndSaveTheme(prefs, newMode)
+                        }
                     }
 
                     // --- LANGUAGE SELECTOR ---
@@ -224,6 +241,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     binding.txtCurrentLanguage.text = when (currentLang) {
                         "en" -> getString(R.string.lang_en)
                         "vi" -> getString(R.string.lang_vi)
+                        "ru" -> getString(R.string.lang_ru)
+                        "zh" -> getString(R.string.lang_zh)
                         else -> getString(R.string.lang_system)
                     }
 
@@ -231,6 +250,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         val langs = listOf(
                             OptionItem(R.drawable.ic_flag_en, getString(R.string.lang_en)),
                             OptionItem(R.drawable.ic_flag_vi, getString(R.string.lang_vi)),
+                            OptionItem(R.drawable.ic_flag_ru, getString(R.string.lang_ru)),
+                            OptionItem(R.drawable.ic_flag_zh, getString(R.string.lang_zh)),
                             OptionItem(R.drawable.ic_settings_system, getString(R.string.lang_system))
                         )
 
@@ -238,87 +259,39 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         val selectedIndex = when (langSelection) {
                             "en" -> 0
                             "vi" -> 1
-                            else -> 2
+                            "ru" -> 2
+                            "zh" -> 3
+                            else -> 4
                         }
                         
-                         val adapter = ThemeAdapter(this, langs, selectedIndex) // Reusing ThemeAdapter as it fits (OptionItem with Radio)
-
-                         val dialog = MaterialAlertDialogBuilder(this)
-                            .setTitle(getString(R.string.info_language_title))
-                            .setAdapter(adapter) { d, which ->
-                                val langCode = when (which) {
-                                    0 -> "en"
-                                    1 -> "vi"
-                                    else -> "system"
-                                }
-                                if (currentLang != langCode) {
-                                    prefs.edit().putString("lang", langCode).apply()
-                                    recreate()
-                                }
-                                d.dismiss()
+                        showPaneDialog(
+                            getString(R.string.info_language_title),
+                            langs,
+                            selectedIndex
+                        ) { which ->
+                            val langCode = when (which) {
+                                0 -> "en"
+                                1 -> "vi"
+                                2 -> "ru"
+                                3 -> "zh"
+                                else -> "system"
                             }
-                            .create()
-                        
-                        dialog.window?.setDimAmount(0.35f)
-                        dialog.show()
+                            if (currentLang != langCode) {
+                                prefs.edit().putString("lang", langCode).apply()
+                                recreate()
+                            }
+                        }
                     }
 
                     // --- MATERIAL COLOR TOGGLE ---
-                    val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
                     val materialColorIcon = binding.imgMaterialColor
                     // No programmatic tinting here - let XML/Theme handle it like other icons
 
                     binding.switchMaterialColor.isChecked = materialColorEnabled
                     binding.switchMaterialColor.setOnCheckedChangeListener { buttonView, isChecked ->
                         if (isChecked) {
-                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-                                ToastUtils.showToast(this, getString(R.string.material_color_unsupported))
-                                buttonView.isChecked = false
-                                return@setOnCheckedChangeListener
-                            }
-                            if (prefs.getBoolean("dont_show_material_warning", false)) {
-                                prefs.edit().putBoolean("material_color_enabled", true).apply()
-                                recreate()
-                            } else {
-                                val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_warning, null)
-                                val dialog = MaterialAlertDialogBuilder(this)
-                                    .setView(dialogView)
-                                    .create()
-
-                                val titleView = dialogView.findViewById<TextView>(R.id.dialog_title)
-                                val messageView = dialogView.findViewById<TextView>(R.id.dialog_message)
-                                val iconView = dialogView.findViewById<ImageView>(R.id.icon_warning)
-                                val checkBox = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cb_dont_show_again)
-                                
-                                val btnCancel = dialogView.findViewById<View>(R.id.btn_cancel)
-                                val btnContinue = dialogView.findViewById<View>(R.id.btn_continue)
-
-                                titleView.text = getString(R.string.dynamic_color_warning_title)
-                                messageView.text = getString(R.string.dynamic_color_warning_message)
-                                
-                                // Since we are currently in orange mode (Material Color is OFF), use orange_primary
-                                iconView.setColorFilter(getColor(R.color.orange_primary))
-
-                                btnCancel.setOnClickListener {
-                                    binding.switchMaterialColor.isChecked = false
-                                    dialog.dismiss()
-                                }
-                                btnContinue.setOnClickListener {
-                                    if (checkBox.isChecked) {
-                                        prefs.edit().putBoolean("dont_show_material_warning", true).apply()
-                                    }
-                                    prefs.edit().putBoolean("material_color_enabled", true).apply()
-                                    dialog.dismiss()
-                                    recreate()
-                                }
-
-                                dialog.setOnCancelListener {
-                                    binding.switchMaterialColor.isChecked = false
-                                }
-
-                                dialog.window?.setDimAmount(0.35f)
-                                dialog.show()
-                            }
+                            prefs.edit().putBoolean("material_color_enabled", true).apply()
+                            recreate()
                         } else {
                             if (prefs.getBoolean("material_color_enabled", false)) {
                                 prefs.edit().putBoolean("material_color_enabled", false).apply()
@@ -329,49 +302,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
                     setupSecondaryInfo()
                 }
-
-    private fun handleThemeSelection(prefs: SharedPreferences, newMode: Int) {
-        if (prefs.getBoolean("dont_show_theme_warning", false)) {
-            applyAndSaveTheme(prefs, newMode)
-        } else {
-            val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_warning, null)
-            val dialog = MaterialAlertDialogBuilder(this)
-                .setView(dialogView)
-                .create()
-
-            val titleView = dialogView.findViewById<TextView>(R.id.dialog_title)
-            val messageView = dialogView.findViewById<TextView>(R.id.dialog_message)
-            val iconView = dialogView.findViewById<ImageView>(R.id.icon_warning)
-            val checkBox = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cb_dont_show_again)
-            val btnContinue = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_continue)
-            val btnCancel = dialogView.findViewById<View>(R.id.btn_cancel)
-
-            btnCancel.visibility = View.GONE
-            
-            titleView.text = getString(R.string.theme_change_warning_title)
-            messageView.text = getString(R.string.theme_change_warning_message)
-            btnContinue.text = getString(R.string.ok)
-            
-            iconView.setImageResource(R.drawable.ic_palette)
-            val isMaterial = prefs.getBoolean("material_color_enabled", false)
-            if (!isMaterial) {
-                // Override with orange when Material Color is OFF
-                iconView.setColorFilter(getColor(R.color.orange_primary))
-            }
-            // When Material Color is ON, the XML's app:tint="?attr/colorPrimary" handles it
-
-            btnContinue.setOnClickListener {
-                if (checkBox.isChecked) {
-                    prefs.edit().putBoolean("dont_show_theme_warning", true).apply()
-                }
-                applyAndSaveTheme(prefs, newMode)
-                dialog.dismiss()
-            }
-
-            dialog.window?.setDimAmount(0.35f)
-            dialog.show()
-        }
-    }
 
                 private fun applyAndSaveTheme(prefs: SharedPreferences, mode: Int) {
                     prefs.edit().putInt("theme_mode", mode).apply()
@@ -421,21 +351,25 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     binding.itemExportAll.setOnClickListener { exportAllStickers() }
                     binding.itemRemoveRecent.setOnClickListener { confirmRemoveRecent() }
                     binding.itemRemoveAll.setOnClickListener { confirmDeleteAll() }
+                    binding.itemOpenSource.setOnClickListener { showOpenSourceLicenses() }
+                }
+                private fun showOpenSourceLicenses() {
+                    startActivity(Intent(this, LicenseActivity::class.java))
                 }
 
                 private fun confirmRemoveRecent() {
                     MaterialAlertDialogBuilder(this)
-                        .setTitle(getString(R.string.info_remove_recent_confirm_title))
+                        .setTitle(boldTitle(getString(R.string.info_remove_recent_confirm_title)))
                         .setMessage(getString(R.string.info_remove_recent_confirm_message))
                         .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
                         .setNegativeButton(getString(R.string.cancel), null)
-                        .show()
+                        .create().showMonetDialog(this)
                 }
 
                 private fun removeRecentUsage() {
                     val prefs = getSharedPreferences("recents", MODE_PRIVATE)
-                    val history = prefs.getString("list", "")
-                    if (history.isNullOrEmpty()) {
+                    val history = prefs.getString("list", "") ?: ""
+                    if (history.isEmpty()) {
                         ToastUtils.showToast(this, getString(R.string.no_history_found))
                         return
                     }
@@ -446,19 +380,20 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
                 private fun confirmDeleteAll() {
                     MaterialAlertDialogBuilder(this)
-                        .setTitle(getString(R.string.info_remove_all_confirm_title))
+                        .setTitle(boldTitle(getString(R.string.info_remove_all_confirm_title)))
                         .setMessage(getString(R.string.info_remove_all_confirm_message))
                         .setPositiveButton(getString(R.string.delete)) { _, _ -> deleteAllStickers() }
                         .setNegativeButton(getString(R.string.cancel), null)
-                        .show()
+                        .create().showMonetDialog(this)
                 }
 
                 private fun deleteAllStickers() {
-                    val files = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
-                    if (files.isNullOrEmpty()) {
+                    val stickers = adapter.getItems() // Get currently displayed stickers
+                    if (stickers.isEmpty()) {
                         ToastUtils.showToast(this, getString(R.string.no_stickers_found))
                         return
                     }
+                    val files = filesDir.listFiles { f -> f.name.startsWith("zsticker_") } ?: emptyArray()
                     var successCount = 0
                     files.forEach { if (it.delete()) successCount++ }
                     
@@ -481,8 +416,8 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 // --- STICKER OPERATIONS ---
 
                 private fun exportAllStickers() {
-                    val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
-                    if (stickerFiles.isNullOrEmpty()) {
+                    val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") } ?: emptyArray()
+                    if (stickerFiles.isEmpty()) {
                         ToastUtils.showToast(this, getString(R.string.no_stickers_found))
                         return
                     }
@@ -534,12 +469,32 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     val uris = mutableListOf<Uri>()
                     when (intent.action) {
                         Intent.ACTION_SEND -> {
-                            @Suppress("DEPRECATION")
-                            intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.let { uris.add(it) }
+                            intent.clipData?.let { clip ->
+                                for (i in 0 until clip.itemCount) {
+                                    clip.getItemAt(i).uri?.let { uris.add(it) }
+                                }
+                            }
+                            if (uris.isEmpty()) {
+                                @Suppress("DEPRECATION")
+                                intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.let { uris.add(it) }
+                                if (uris.isEmpty()) {
+                                    intent.data?.let { uris.add(it) }
+                                }
+                            }
                         }
                         Intent.ACTION_SEND_MULTIPLE -> {
-                            @Suppress("DEPRECATION")
-                            intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)?.let { uris.addAll(it) }
+                            intent.clipData?.let { clip ->
+                                for (i in 0 until clip.itemCount) {
+                                    clip.getItemAt(i).uri?.let { uris.add(it) }
+                                }
+                            }
+                            if (uris.isEmpty()) {
+                                @Suppress("DEPRECATION")
+                                intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)?.let { uris.addAll(it) }
+                            }
+                        }
+                        Intent.ACTION_VIEW -> {
+                            intent.data?.let { uris.add(it) }
                         }
                     }
 
@@ -582,6 +537,13 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         ToastUtils.showToast(this@MainActivity, getString(R.string.no_internet_access))
                         return
                     }
+                    val surfaceColor = getThemeColor(com.google.android.material.R.attr.colorSurface)
+                    binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(surfaceColor, 153)) // 60% alpha
+                    
+                    val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+                    val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
+                    binding.loadingIndicator.setIndicatorColor(primary)
+
                     binding.progressBar.visibility = View.VISIBLE
                     thread {
                         var isSuccess = false
@@ -625,6 +587,15 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }
 
                 private fun handleEdgeToEdge() {
+                    window.statusBarColor = android.graphics.Color.TRANSPARENT
+                    window.navigationBarColor = android.graphics.Color.TRANSPARENT
+                    androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+
+                    ViewCompat.setOnApplyWindowInsetsListener(binding.appBarLayout) { view, insets ->
+                        val statusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+                        view.updatePadding(top = statusBarInsets.top)
+                        insets
+                    }
                     ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigation) { view, insets ->
                         val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
                         view.updatePadding(bottom = navInsets.bottom)
@@ -633,7 +604,6 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
                         val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
                         view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                            // Returned to original height (+16dp from previous state)
                             val baseMargin = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) 112 else 104
                             bottomMargin = (baseMargin * resources.displayMetrics.density).toInt() + navInsets.bottom
                         }
@@ -675,9 +645,11 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 }
 
                 private fun setupStickerList() {
+                    val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+                    
                     // Home adapter
                     val items = StickerAdapter.loadOrdered(this)
-                    adapter = StickerAdapter(items, this)
+                    adapter = StickerAdapter(items, this, materialColorEnabled = materialColorEnabled)
                     val layoutManager = GridLayoutManager(this, 3)
                     layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
                         override fun getSpanSize(pos: Int): Int = if (adapter.getItemViewType(pos) == 0) 3 else 1
@@ -687,13 +659,21 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
                     // Recents adapter
                     val recentItems = StickerAdapter.loadRecents(this)
-                    adapterRecents = StickerAdapter(recentItems, this, isRecents = true)
+                    adapterRecents = StickerAdapter(recentItems, this, isRecents = true, materialColorEnabled = materialColorEnabled)
                     val layoutManagerRecents = GridLayoutManager(this, 3)
                     layoutManagerRecents.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
                         override fun getSpanSize(pos: Int): Int = if (adapterRecents.getItemViewType(pos) == 0) 3 else 1
                     }
                     binding.recyclerRecents.layoutManager = layoutManagerRecents
                     binding.recyclerRecents.adapter = adapterRecents
+
+                    // Enable stretch overscroll if material color is enabled
+                    if (materialColorEnabled) {
+                        binding.recycler.enableStretchOverscroll()
+                        binding.recyclerRecents.enableStretchOverscroll()
+                        // info_layout is a ScrollView, enableStretchOverscroll supports NestedScrollView/RecyclerView
+                        // binding.infoLayout.enableStretchOverscroll() 
+                    }
                 }
 
                 private fun setupNavigation() {
@@ -701,6 +681,13 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         getSharedPreferences("settings", MODE_PRIVATE).edit().putInt("last_tab", item.itemId).apply()
                         updateLayoutVisibility(item.itemId)
                         true
+                    }
+                    
+                    // Disable tooltips on long press
+                    val menu = binding.bottomNavigation.menu
+                    for (i in 0 until menu.size()) {
+                        val item = menu.getItem(i)
+                        binding.bottomNavigation.findViewById<View>(item.itemId)?.setOnLongClickListener { true }
                     }
                 }
 
@@ -744,9 +731,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
     override fun onStickerLongClick(uri: Uri, isRecent: Boolean, entry: String?) {
         val titleRes = if (isRecent) R.string.recent_options_title else R.string.sticker_options_title
-        val title = SpannableString(getString(titleRes)).apply {
-            setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
-        }
+        val title = getString(titleRes)
 
         val options = mutableListOf<OptionItem>()
         options.add(OptionItem(R.drawable.ic_export, getString(R.string.export)))
@@ -758,24 +743,68 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             options.add(OptionItem(R.drawable.ic_delete, getString(R.string.delete_history)))
         }
 
-        val adapter = OptionAdapter(this, options)
-
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle(title)
-            .setAdapter(adapter) { _, which ->
-                val selectedOption = options[which].text
-                when {
-                    selectedOption == getString(R.string.export) -> exportSingleSticker(uri)
-                    selectedOption == getString(R.string.remove_bg) -> checkAndShowBackgroundRemovalWarning(uri)
-                    selectedOption == getString(R.string.delete) -> deleteSticker(uri)
-                    selectedOption == getString(R.string.delete_history) -> entry?.let { removeFromRecents(it) }
-                }
+        showPaneDialog(title, options) { which ->
+            val selectedOption = options[which].text
+            when {
+                selectedOption == getString(R.string.export) -> exportSingleSticker(uri)
+                selectedOption == getString(R.string.remove_bg) -> checkAndShowBackgroundRemovalWarning(uri)
+                selectedOption == getString(R.string.delete) -> deleteSticker(uri)
+                selectedOption == getString(R.string.delete_history) -> entry?.let { removeFromRecents(it) }
             }
+        }
+    }
+
+    private fun showPaneDialog(
+        title: String,
+        items: List<OptionItem>,
+        selectedIndex: Int = -1,
+        onItemClick: (Int) -> Unit
+    ) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_list_pane, null)
+        val container = dialogView.findViewById<ViewGroup>(R.id.dialog_item_container)
+        
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(boldTitle(title))
+            .setView(dialogView)
             .setNegativeButton(getString(R.string.cancel), null)
             .create()
-        
-        dialog.window?.setDimAmount(0.35f)
-        dialog.show()
+
+        items.forEachIndexed { index, item ->
+            val itemView = if (selectedIndex != -1) {
+                val adapter = ThemeAdapter(this, items, selectedIndex)
+                adapter.getView(index, null, container)
+            } else {
+                val adapter = OptionAdapter(this, items)
+                adapter.getView(index, null, container)
+            }
+
+            val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+            val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
+            val rippleColor = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 40))
+            itemView.background = android.graphics.drawable.RippleDrawable(rippleColor, itemView.background, null)
+
+            itemView.setOnClickListener {
+                onItemClick(index)
+                dialog.dismiss()
+            }
+            container.addView(itemView)
+
+            if (index < items.size - 1) {
+                val divider = View(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        1
+                    )
+                    val typedValue = android.util.TypedValue()
+                    theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurfaceVariant, typedValue, true)
+                    setBackgroundColor(typedValue.data)
+                    alpha = 0.1f
+                }
+                container.addView(divider)
+            }
+        }
+
+        dialog.showMonetDialog(this)
     }
 
     private fun checkAndShowBackgroundRemovalWarning(uri: Uri) {
@@ -795,19 +824,28 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
         val iconView = dialogView.findViewById<ImageView>(R.id.icon_warning)
         val checkBox = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cb_dont_show_again)
 
-        titleView.text = getString(R.string.rb_warning_title)
+        titleView.text = boldTitle(getString(R.string.rb_warning_title))
         messageView.text = getString(R.string.rb_warning_message)
         iconView.setImageResource(R.drawable.ic_remove_bg)
         
-        val isMaterial = prefs.getBoolean("material_color_enabled", false)
-        if (!isMaterial) {
-            // Override with orange when Material Color is OFF
-            iconView.setColorFilter(getColor(R.color.orange_primary))
-        }
-        // When Material Color is ON, the XML's app:tint="?attr/colorPrimary" handles it
+        val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
+        val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
+        iconView.setColorFilter(primary)
+        messageView.setLinkTextColor(primary)
 
-        dialogView.findViewById<View>(R.id.btn_cancel).setOnClickListener { dialog.dismiss() }
-        dialogView.findViewById<View>(R.id.btn_continue).setOnClickListener {
+        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_cancel)
+        val btnContinue = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_continue)
+        
+        btnCancel.setTextColor(primary)
+        
+        checkBox.buttonTintList = android.content.res.ColorStateList.valueOf(primary)
+        
+        val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        btnContinue.setTextColor(if (isDark) Color.BLACK else Color.WHITE)
+        btnContinue.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
+
+        btnCancel.setOnClickListener { dialog.dismiss() }
+        btnContinue.setOnClickListener {
             if (checkBox.isChecked) {
                 prefs.edit().putBoolean("dont_show_rb_warning", true).apply()
             }
@@ -815,8 +853,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             removeBackground(uri)
         }
 
-        dialog.window?.setDimAmount(0.35f)
-        dialog.show()
+        dialog.showMonetDialog(this)
     }
 
                 private fun exportSingleSticker(uri: Uri) {
@@ -876,6 +913,12 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 999)
                     }
                 }
+
+                private fun boldTitle(title: String): android.text.SpannableString {
+                    return android.text.SpannableString(title).apply {
+                        setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, length, 0)
+                    }
+                }
 }
 
 data class OptionItem(val iconRes: Int, val text: String)
@@ -890,14 +933,32 @@ class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<
         textView.text = item!!.text
         iconView.setImageResource(item.iconRes)
         
+        val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+        val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
+        
+        val primary = if (materialColorEnabled) {
+            MonetCompat.getInstance().getAccentColor(context)
+        } else {
+            androidx.core.content.ContextCompat.getColor(context, R.color.orange_primary)
+        }
+
         if (item.text == context.getString(R.string.delete) || item.text == context.getString(R.string.delete_history)) {
-            textView.setTextColor(android.graphics.Color.parseColor("#FF3b30"))
-            iconView.setColorFilter(android.graphics.Color.parseColor("#FF3b30"))
+            val red = android.graphics.Color.parseColor("#FF3b30")
+            textView.setTextColor(red)
+            iconView.setColorFilter(red)
+            iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(red, 40))
         } else {
             val typedValue = android.util.TypedValue()
             context.theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, typedValue, true)
             textView.setTextColor(typedValue.data)
-            iconView.setColorFilter(typedValue.data)
+            
+            if (item.iconRes != R.drawable.ic_flag_en && item.iconRes != R.drawable.ic_flag_vi && item.iconRes != R.drawable.ic_flag_ru && item.iconRes != R.drawable.ic_flag_zh) {
+                 iconView.setColorFilter(primary)
+            } else {
+                 iconView.clearColorFilter()
+            }
+            iconView.background = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.bg_circle_icon)
+            iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 40))
         }
         
         return view
@@ -908,9 +969,62 @@ class ThemeAdapter(context: Context, objects: List<OptionItem>, private val sele
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.item_radio_icon_text, parent, false)
         val item = getItem(position)
-        view.findViewById<ImageView>(R.id.item_icon).setImageResource(item!!.iconRes)
+        val iconView = view.findViewById<ImageView>(R.id.item_icon)
+        val radioButton = view.findViewById<RadioButton>(R.id.item_radio)
+        
+        iconView.setImageResource(item!!.iconRes)
         view.findViewById<TextView>(R.id.item_text).text = item.text
-        view.findViewById<RadioButton>(R.id.item_radio).isChecked = (position == selectedIndex)
+        radioButton.isChecked = (position == selectedIndex)
+        
+        val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+        val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
+        
+        val primary = if (materialColorEnabled) {
+            MonetCompat.getInstance().getAccentColor(context)
+        } else {
+            androidx.core.content.ContextCompat.getColor(context, R.color.orange_primary)
+        }
+
+        val sl = android.content.res.ColorStateList(
+            arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf(-android.R.attr.state_checked)),
+            intArrayOf(primary, android.graphics.Color.GRAY)
+        )
+        radioButton.buttonTintList = sl
+        
+        if (item.iconRes != R.drawable.ic_flag_en && item.iconRes != R.drawable.ic_flag_vi && item.iconRes != R.drawable.ic_flag_ru && item.iconRes != R.drawable.ic_flag_zh) {
+             iconView.setColorFilter(primary)
+        } else {
+             iconView.clearColorFilter()
+        }
+        iconView.background = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.bg_circle_icon)
+        iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 40))
+        
         return view
     }
+}
+
+private fun androidx.appcompat.app.AlertDialog.showMonetDialog(context: android.content.Context) {
+    val prefs = context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
+    val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
+    val isDark = (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+
+    if (materialColorEnabled) {
+        window?.decorView?.applyMonetRecursively()
+    }
+    
+    show()
+    
+    /* Removed manual black background to follow theme default as requested */
+
+    val primary = if (materialColorEnabled) {
+        MonetCompat.getInstance().getAccentColor(context)
+    } else {
+        androidx.core.content.ContextCompat.getColor(context, R.color.orange_primary)
+    }
+
+    getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(primary)
+    getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(primary)
+    getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL)?.setTextColor(primary)
+    
+    window?.setDimAmount(0.35f)
 }

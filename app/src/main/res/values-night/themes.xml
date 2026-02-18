@@ -17,6 +17,11 @@
         <!-- System Bars -->
         <item name="android:statusBarColor">?android:attr/colorBackground</item>
         <item name="android:navigationBarColor">?attr/colorSurfaceContainer</item>
+        <item name="titleTextAppearance">@style/ToolbarBoldTitle</item>
+    </style>
+
+    <style name="ToolbarBoldTitle" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textStyle">bold</item>
     </style>
 
     <style name="Theme.ZSticker.Splash" parent="Theme.SplashScreen">
@@ -38,9 +43,11 @@
     </style>
 
     <style name="InfoIconStyle">
-        <item name="android:layout_width">24dp</item>
-        <item name="android:layout_height">24dp</item>
+        <item name="android:layout_width">36dp</item>
+        <item name="android:layout_height">36dp</item>
+        <item name="android:padding">6dp</item>
         <item name="android:layout_marginEnd">16dp</item>
+        <item name="android:background">@drawable/bg_circle_icon</item>
         <item name="android:tint">?attr/colorPrimary</item>
     </style>
 

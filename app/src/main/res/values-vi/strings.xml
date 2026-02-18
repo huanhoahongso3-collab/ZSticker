@@ -27,7 +27,7 @@
     <string name="theme_system">Theo hệ thống</string>
     
     <string name="info_material_color_title">Màu Material</string>
-    <string name="info_material_color_subtitle">Dùng màu hệ thống (Android 12+)</string>
+    <string name="info_material_color_subtitle">Dùng màu hệ thống</string>
     
     <string name="info_license_note">Giấy phép Công cộng GNU v3.0</string>
     
@@ -55,11 +55,14 @@
     <string name="lang_system">Theo hệ thống</string>
 
     <string name="dynamic_color_warning_title">Lưu ý về màu sắc hệ thống</string>
-    <string name="dynamic_color_warning_message">Việc thay đổi giao diện khác với cài đặt hệ thống có thể làm mất hiệu ứng màu Material You (màu sắc động) trên một số thiết bị Android 12+.</string>
+    <string name="dynamic_color_warning_message">Việc thay đổi giao diện khác với cài đặt hệ thống có thể làm mất hiệu ứng màu Material You (màu sắc động) trên một số thiết bị.</string>
     <string name="ok">Đã hiểu</string>
     <string name="no_internet_access">Không có kết nối internet</string>
     <string name="no_history_found">Không tìm thấy lịch sử</string>
     <string name="theme_change_warning_title">Thay đổi giao diện</string>
     <string name="theme_change_warning_message">Bạn có thể cần khởi động lại ứng dụng để giao diện được áp dụng chính xác.</string>
     <string name="material_color_unsupported">Phiên bản Android này không hỗ trợ màu Material.</string>
+    <string name="info_opensource_title">Giấy phép mã nguồn mở</string>
+    <string name="info_opensource_note">Các thư viện được sử dụng trong ZSticker</string>
+    <string name="lang_ru">Tiếng Nga</string>
 </resources>

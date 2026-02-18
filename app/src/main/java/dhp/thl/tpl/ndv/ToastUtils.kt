@@ -11,4 +11,5 @@ object ToastUtils {
         currentToast = Toast.makeText(context.applicationContext, message, Toast.LENGTH_SHORT)
         currentToast?.show()
     }
+
 }
