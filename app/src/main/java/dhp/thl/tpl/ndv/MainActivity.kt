@@ -325,9 +325,15 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                         } else {
                             @Suppress("DEPRECATION") packageManager.getPackageInfo(packageName, 0)
                         }
-                        binding.txtVersion.text = pInfo.versionName
+                        val versionName = pInfo.versionName
+                        val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            pInfo.longVersionCode
+                        } else {
+                            @Suppress("DEPRECATION") pInfo.versionCode.toLong()
+                        }
+                        binding.txtVersion.text = "$versionName ($versionCode)"
                     } catch (e: Exception) {
-                        binding.txtVersion.text = "1.0.0"
+                        binding.txtVersion.text = "1.0.0 (1)"
                     }
 
                     binding.itemVersion.setOnClickListener {
