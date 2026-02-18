@@ -62,4 +62,6 @@
     <string name="theme_change_warning_title">Thay đổi giao diện</string>
     <string name="theme_change_warning_message">Bạn có thể cần khởi động lại ứng dụng để giao diện được áp dụng chính xác.</string>
     <string name="material_color_unsupported">Phiên bản Android này không hỗ trợ màu Material.</string>
+    <string name="info_opensource_title">Giấy phép mã nguồn mở</string>
+    <string name="info_opensource_note">Các thư viện được sử dụng trong ZSticker</string>
 </resources>

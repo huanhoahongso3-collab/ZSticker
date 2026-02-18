@@ -62,4 +62,6 @@
     <string name="theme_change_warning_title">Theme Change</string>
     <string name="theme_change_warning_message">A restart may be needed for the theme to apply correctly.</string>
     <string name="material_color_unsupported">This version of Android doesn\'t support material color.</string>
+    <string name="info_opensource_title">Open Source Licenses</string>
+    <string name="info_opensource_note">Libraries used in ZSticker</string>
 </resources>

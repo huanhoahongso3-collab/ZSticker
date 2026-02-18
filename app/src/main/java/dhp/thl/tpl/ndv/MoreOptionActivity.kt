@@ -15,6 +15,8 @@ import androidx.appcompat.app.AppCompatActivity
 import com.kieronquinn.monetcompat.app.MonetCompatActivity
 import com.kieronquinn.monetcompat.core.MonetCompat
 import com.kieronquinn.monetcompat.extensions.views.applyMonetRecursively
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import android.content.res.Configuration
 import java.util.*
 
@@ -179,113 +181,120 @@ class MoreOptionActivity : MonetCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        rootLayout = FrameLayout(this).apply {
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-        }
-        setContentView(rootLayout)
-
         val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
-        if (materialColorEnabled) {
-            val monet = MonetCompat.getInstance()
-            rootLayout.setBackgroundColor(monet.getBackgroundColor(this))
-            rootLayout.applyMonetRecursively()
-        }
 
-        // Logo background (large and subtle)
-        val bgLogo = ImageView(this).apply {
-            val size = (400 * resources.displayMetrics.density).toInt()
-            layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
-            setImageResource(R.drawable.ic_launcher_foreground)
-            alpha = 0.1f
-            scaleType = ImageView.ScaleType.FIT_CENTER
-        }
-        rootLayout.addView(bgLogo)
-
-        // Click Counter
-        txtCounter = TextView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                gravity = Gravity.CENTER_HORIZONTAL or Gravity.CENTER
-                setMargins(0, 0, 0, (150 * resources.displayMetrics.density).toInt())
+        lifecycleScope.launch {
+            if (materialColorEnabled) {
+                monet.awaitMonetReady()
             }
+
+            rootLayout = FrameLayout(this@MoreOptionActivity).apply {
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            }
+            setContentView(rootLayout)
+
+            if (materialColorEnabled) {
+                val monetInstance = MonetCompat.getInstance()
+                rootLayout.setBackgroundColor(monetInstance.getBackgroundColor(this@MoreOptionActivity))
+                rootLayout.applyMonetRecursively()
+            }
+
             val isDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-            setTextColor(if (isDark) Color.WHITE else Color.BLACK)
-            textSize = 28f
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            text = "0"
-            visibility = View.INVISIBLE
-            isClickable = true
-            setOnClickListener {
-                if (clickCount == 10 || clickCount == 56 || clickCount == 74) {
-                    if (eggClicks.contains(clickCount)) {
-                        eggFailed = true
+
+            // Logo background (large and subtle)
+            val bgLogo = ImageView(this@MoreOptionActivity).apply {
+                val size = (400 * resources.displayMetrics.density).toInt()
+                layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
+                setImageResource(R.drawable.ic_launcher_foreground)
+                alpha = 0.1f
+                scaleType = ImageView.ScaleType.FIT_CENTER
+            }
+            rootLayout.addView(bgLogo)
+
+            // Click Counter
+            txtCounter = TextView(this@MoreOptionActivity).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    gravity = Gravity.CENTER_HORIZONTAL or Gravity.CENTER
+                    setMargins(0, 0, 0, (150 * resources.displayMetrics.density).toInt())
+                }
+                setTextColor(if (isDark) Color.WHITE else Color.BLACK)
+                textSize = 28f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                text = "0"
+                visibility = View.INVISIBLE
+                isClickable = true
+                setOnClickListener {
+                    if (clickCount == 10 || clickCount == 56 || clickCount == 74) {
+                        if (eggClicks.contains(clickCount)) {
+                            eggFailed = true
+                        } else {
+                            eggClicks.add(clickCount)
+                        }
                     } else {
-                        eggClicks.add(clickCount)
+                        eggFailed = true
                     }
-                } else {
-                    eggFailed = true
-                }
 
-                if (eggClicks.size == 3 && !eggFailed) {
-                    startActivity(android.content.Intent(this@MoreOptionActivity, AdvancedSettingsActivity::class.java))
-                    eggClicks.clear()
-                    eggFailed = false
+                    if (eggClicks.size == 3 && !eggFailed) {
+                        startActivity(android.content.Intent(this@MoreOptionActivity, AdvancedSettingsActivity::class.java))
+                        eggClicks.clear()
+                        eggFailed = false
+                    }
                 }
             }
-        }
-        rootLayout.addView(txtCounter)
+            rootLayout.addView(txtCounter)
 
-        // Text display
-        txtMessage = TextView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply { 
-                gravity = Gravity.CENTER_HORIZONTAL or Gravity.BOTTOM
-                setMargins(0, 0, 0, (100 * resources.displayMetrics.density).toInt())
-            }
-            val isDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-            setTextColor(if (isDark) Color.WHITE else Color.BLACK)
-            textSize = 20f
-            gravity = Gravity.CENTER
-            visibility = View.INVISIBLE
-        }
-        rootLayout.addView(txtMessage)
-
-        // Center Logo
-        imgLogo = ImageView(this).apply {
-            val size = (126 * resources.displayMetrics.density).toInt()
-            layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
-            outlineProvider = object : ViewOutlineProvider() {
-                override fun getOutline(view: View, outline: Outline) {
-                    outline.setOval(0, 0, view.width, view.height)
+            // Text display
+            txtMessage = TextView(this@MoreOptionActivity).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { 
+                    gravity = Gravity.CENTER_HORIZONTAL or Gravity.BOTTOM
+                    setMargins(0, 0, 0, (100 * resources.displayMetrics.density).toInt())
                 }
+                setTextColor(if (isDark) Color.WHITE else Color.BLACK)
+                textSize = 20f
+                gravity = Gravity.CENTER
+                visibility = View.INVISIBLE
             }
-            clipToOutline = true
-            scaleType = ImageView.ScaleType.CENTER_CROP
-            setImageResource(R.drawable.ic_launcher_foreground)
-            background = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor(Color.WHITE)
+            rootLayout.addView(txtMessage)
+
+            // Center Logo
+            imgLogo = ImageView(this@MoreOptionActivity).apply {
+                val size = (126 * resources.displayMetrics.density).toInt()
+                layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
+                outlineProvider = object : ViewOutlineProvider() {
+                    override fun getOutline(view: View, outline: Outline) {
+                        outline.setOval(0, 0, view.width, view.height)
+                    }
+                }
+                clipToOutline = true
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                setImageResource(R.drawable.ic_launcher_foreground)
+                background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(if (isDark) Color.WHITE else Color.BLACK)
+                }
+                elevation = 100f
+                isClickable = true
             }
-            elevation = 100f
-            isClickable = true
+            
+            imgLogo.setOnClickListener {
+                clickCount++
+                txtCounter.text = clickCount.toString()
+                txtCounter.visibility = View.VISIBLE
+                showRandomMessage()
+                vibrate()
+            }
+            
+            rootLayout.addView(imgLogo)
         }
-        
-        imgLogo.setOnClickListener {
-            clickCount++
-            txtCounter.text = clickCount.toString()
-            txtCounter.visibility = View.VISIBLE
-            showRandomMessage()
-            vibrate()
-        }
-        
-        rootLayout.addView(imgLogo)
     }
 
     private fun showRandomMessage() {

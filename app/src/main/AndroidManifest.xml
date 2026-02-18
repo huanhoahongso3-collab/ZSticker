@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
+        android:name=".ZStickerApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -51,6 +52,12 @@
 
         <activity
             android:name=".MoreOptionActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.ZSticker" />
+
+        <activity
+            android:name=".LicenseActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.ZSticker" />

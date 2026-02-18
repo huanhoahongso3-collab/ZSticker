@@ -7,6 +7,7 @@
     android:background="?attr/colorSurface">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/colorSurface"
@@ -17,7 +18,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:title="@string/app_name"
-            app:titleCentered="false"
+            app:titleCentered="true"
             app:titleTextAppearance="@style/TextAppearance.Material3.HeadlineSmall" />
         </com.google.android.material.appbar.AppBarLayout>
 
@@ -96,7 +97,7 @@
                                 <LinearLayout
                                     android:id="@+id/itemTheme"
                                     style="@style/InfoItemStyle">
-                                    <ImageView style="@style/InfoIconStyle" android:src="@drawable/ic_palette"/>
+                                    <ImageView android:id="@+id/imgTheme" style="@style/InfoIconStyle" android:src="@drawable/ic_palette"/>
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_theme_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                                         <TextView android:id="@+id/txtCurrentTheme" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/theme_light" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
@@ -132,7 +133,7 @@
                                 <LinearLayout
                                     android:id="@+id/itemLanguage"
                                     style="@style/InfoItemStyle">
-                                    <ImageView style="@style/InfoIconStyle" android:src="@drawable/ic_language"/>
+                                    <ImageView android:id="@+id/imgLanguage" style="@style/InfoIconStyle" android:src="@drawable/ic_language"/>
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_language_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                                         <TextView android:id="@+id/txtCurrentLanguage" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="English" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
@@ -144,7 +145,7 @@
                                 <LinearLayout
                                     android:id="@+id/itemExportAll"
                                     style="@style/InfoItemStyle">
-                                    <ImageView style="@style/InfoIconStyle" android:src="@drawable/ic_export_all"/>
+                                    <ImageView android:id="@+id/imgExportAll" style="@style/InfoIconStyle" android:src="@drawable/ic_export_all"/>
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_export_all_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                                     </LinearLayout>
@@ -155,7 +156,7 @@
                                 <LinearLayout
                                     android:id="@+id/itemRemoveRecent"
                                     style="@style/InfoItemStyle">
-                                    <ImageView style="@style/InfoIconStyle" android:src="@drawable/ic_delete_history"/>
+                                    <ImageView android:id="@+id/imgRemoveRecent" style="@style/InfoIconStyle" android:src="@drawable/ic_delete_history"/>
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_remove_recent_title" style="@style/TextAppearance.Material3.TitleMedium" />
                                     </LinearLayout>
@@ -166,7 +167,7 @@
                                 <LinearLayout
                                     android:id="@+id/itemRemoveAll"
                                     style="@style/InfoItemStyle">
-                                    <ImageView style="@style/InfoIconStyle" android:src="@drawable/ic_delete_all"/>
+                                    <ImageView android:id="@+id/imgRemoveAll" style="@style/InfoIconStyle" android:src="@drawable/ic_delete_all"/>
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_remove_all_title" style="@style/TextAppearance.Material3.TitleMedium" />
                                     </LinearLayout>
@@ -208,7 +209,7 @@
                                     style="@style/InfoItemStyle"
                                     android:clickable="true"
                                     android:focusable="true">
-                                    <ImageView style="@style/InfoIconStyle" android:src="@drawable/ic_info"/>
+                                    <ImageView android:id="@+id/imgVersion" style="@style/InfoIconStyle" android:src="@drawable/ic_info"/>
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_version_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                                         <TextView android:id="@+id/txtVersion" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1.0.0" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
@@ -220,7 +221,7 @@
                                 <LinearLayout
                                     android:id="@+id/itemRepo"
                                     style="@style/InfoItemStyle">
-                                    <ImageView style="@style/InfoIconStyle" android:src="@drawable/ic_code"/>
+                                    <ImageView android:id="@+id/imgRepo" style="@style/InfoIconStyle" android:src="@drawable/ic_code"/>
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_repo_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_repo_note" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
@@ -232,10 +233,22 @@
                                 <LinearLayout
                                     android:id="@+id/itemLicense"
                                     style="@style/InfoItemStyle">
-                                    <ImageView style="@style/InfoIconStyle" android:src="@drawable/ic_description"/>
+                                    <ImageView android:id="@+id/imgLicense" style="@style/InfoIconStyle" android:src="@drawable/ic_description"/>
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_license_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_license_note" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
+                                    </LinearLayout>
+                                </LinearLayout>
+
+                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" android:layout_marginStart="56dp" />
+
+                                <LinearLayout
+                                    android:id="@+id/itemOpenSource"
+                                    style="@style/InfoItemStyle">
+                                    <ImageView android:id="@+id/imgOpenSource" style="@style/InfoIconStyle" android:src="@drawable/ic_opensource"/>
+                                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_opensource_title" style="@style/TextAppearance.Material3.TitleMedium"/>
+                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_opensource_note" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
                                     </LinearLayout>
                                 </LinearLayout>
 

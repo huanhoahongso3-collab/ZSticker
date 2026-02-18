@@ -17,6 +17,8 @@ import androidx.appcompat.app.AppCompatActivity
 import com.kieronquinn.monetcompat.app.MonetCompatActivity
 import com.kieronquinn.monetcompat.core.MonetCompat
 import com.kieronquinn.monetcompat.extensions.views.applyMonetRecursively
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.math.atan2
 import kotlin.math.hypot
@@ -70,29 +72,37 @@ class AdvancedSettingsActivity : MonetCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        rootLayout = FrameLayout(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-        }
-        setContentView(rootLayout)
-
-        val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
-        if (materialColorEnabled) {
-            rootLayout.applyMonetRecursively()
-        }
-
-        initEmojiPool()
-        setupLogo()
-        setupRotateHandle()
-
-        // Initial Shuffle
-        generateNextCycle()
         
-        rootLayout.post {
-            spawnDenseMosaic(cycle[0])
-            imgLogo.bringToFront()
+        val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+
+        lifecycleScope.launch {
+            if (materialColorEnabled) {
+                monet.awaitMonetReady()
+            }
+
+            rootLayout = FrameLayout(this@AdvancedSettingsActivity).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            }
+            setContentView(rootLayout)
+
+            if (materialColorEnabled) {
+                rootLayout.applyMonetRecursively()
+            }
+
+            initEmojiPool()
+            setupLogo()
+            setupRotateHandle()
+
+            // Initial Shuffle
+            generateNextCycle()
+            
+            rootLayout.post {
+                spawnDenseMosaic(cycle[0])
+                imgLogo.bringToFront()
+            }
         }
     }
 

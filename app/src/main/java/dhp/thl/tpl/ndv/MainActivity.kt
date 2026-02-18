@@ -52,6 +52,8 @@ import android.widget.TextView
 import android.widget.RadioButton
 import android.view.LayoutInflater
 import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
 
@@ -142,42 +144,57 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                         alpha.start()
                     }
 
-                    binding = ActivityMainBinding.inflate(layoutInflater)
-                    setContentView(binding.root)
+                    lifecycleScope.launch {
+                        if (materialColorEnabled) {
+                            monet.awaitMonetReady()
+                        }
+                        
+                        binding = ActivityMainBinding.inflate(layoutInflater)
+                        setContentView(binding.root)
 
-                    // Apply Monet colors recursively
-                    if (materialColorEnabled) {
-                        binding.root.applyMonetRecursively()
-                        // Force apply to some elements that might be missed
-                        binding.bottomNavigation.applyMonet()
-                        
-                        // Force manual coloring for options elements
-                        val monet = MonetCompat.getInstance()
-                        val primary = monet.getAccentColor(this)
-                        val surface = monet.getBackgroundColor(this, true) // md3Style = true
-                        
-                        binding.sectionSettingsHeader.setTextColor(primary)
-                        binding.sectionGeneralHeader.setTextColor(primary)
-                        binding.cardSettings.setCardBackgroundColor(surface)
-                        binding.cardGeneral.setCardBackgroundColor(surface)
-                        
-                        // Force apply to FAB
-                        binding.addButton.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
-                        binding.addButton.imageTintList = android.content.res.ColorStateList.valueOf(monet.getBackgroundColor(this))
+                        // Apply Monet colors recursively
+                        if (materialColorEnabled) {
+                            binding.root.applyMonetRecursively()
+                            // Force apply to some elements that might be missed
+                            binding.bottomNavigation.applyMonet()
+                            
+                            // Force manual coloring for options elements
+                            val monetInstance = MonetCompat.getInstance()
+                            val primary = monetInstance.getAccentColor(this@MainActivity)
+                            val surface = monetInstance.getBackgroundColor(this@MainActivity, true) 
+                            
+                            binding.sectionSettingsHeader.setTextColor(primary)
+                            binding.sectionGeneralHeader.setTextColor(primary)
+                            binding.cardSettings.setCardBackgroundColor(surface)
+                            binding.cardGeneral.setCardBackgroundColor(surface)
+                            
+                            // Force apply to FAB
+                            binding.addButton.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
+                            binding.addButton.imageTintList = android.content.res.ColorStateList.valueOf(monetInstance.getBackgroundColor(this@MainActivity))
+
+                            // Tint all icons in options pane
+                            listOf(
+                                binding.imgTheme, binding.imgMaterialColor, binding.imgLanguage,
+                                binding.imgExportAll, binding.imgRemoveRecent, binding.imgRemoveAll,
+                                binding.imgVersion, binding.imgRepo, binding.imgLicense, binding.imgOpenSource
+                            ).forEach { icon ->
+                                icon.setColorFilter(primary)
+                            }
+                        }
+
+                        val lastTab = prefs.getInt("last_tab", R.id.nav_home)
+                        binding.bottomNavigation.selectedItemId = lastTab
+                        updateLayoutVisibility(lastTab)
+
+                        setupNavigation()
+                        setupStickerList()
+                        setupInfoSection()
+                        if (savedInstanceState == null) {
+                            handleIncomingShare(intent)
+                        }
+                        handleEdgeToEdge()
+                        updateStatusBar()
                     }
-
-                    val lastTab = prefs.getInt("last_tab", R.id.nav_home)
-                    binding.bottomNavigation.selectedItemId = lastTab
-                    updateLayoutVisibility(lastTab)
-
-                    setupNavigation()
-                    setupStickerList()
-                    setupInfoSection()
-                    if (savedInstanceState == null) {
-                        handleIncomingShare(intent)
-                    }
-                    handleEdgeToEdge()
-                    updateStatusBar()
 
                     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
                         requestLegacyPermissions()
@@ -441,6 +458,10 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                     binding.itemExportAll.setOnClickListener { exportAllStickers() }
                     binding.itemRemoveRecent.setOnClickListener { confirmRemoveRecent() }
                     binding.itemRemoveAll.setOnClickListener { confirmDeleteAll() }
+                    binding.itemOpenSource.setOnClickListener { showOpenSourceLicenses() }
+                }
+                private fun showOpenSourceLicenses() {
+                    startActivity(Intent(this, LicenseActivity::class.java))
                 }
 
                 private fun confirmRemoveRecent() {
@@ -655,6 +676,11 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                     window.navigationBarColor = android.graphics.Color.TRANSPARENT
                     androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
 
+                    ViewCompat.setOnApplyWindowInsetsListener(binding.appBarLayout) { view, insets ->
+                        val statusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+                        view.updatePadding(top = statusBarInsets.top)
+                        insets
+                    }
                     ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigation) { view, insets ->
                         val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
                         view.updatePadding(bottom = navInsets.bottom)
