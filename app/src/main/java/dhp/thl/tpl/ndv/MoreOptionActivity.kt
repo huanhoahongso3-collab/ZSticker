@@ -16,6 +16,7 @@ import com.kieronquinn.monetcompat.app.MonetCompatActivity
 import com.kieronquinn.monetcompat.core.MonetCompat
 import com.kieronquinn.monetcompat.extensions.views.applyMonetRecursively
 import androidx.lifecycle.lifecycleScope
+import androidx.core.graphics.ColorUtils
 import kotlinx.coroutines.launch
 import android.content.res.Configuration
 import java.util.*
@@ -26,6 +27,7 @@ class MoreOptionActivity : MonetCompatActivity() {
     private lateinit var imgLogo: ImageView
     private lateinit var txtMessage: TextView
     private lateinit var txtCounter: TextView
+    private lateinit var bgLogo: ImageView
     private val random = Random()
     private var clickCount = 0
     private val eggClicks = mutableSetOf<Int>()
@@ -195,15 +197,27 @@ class MoreOptionActivity : MonetCompatActivity() {
             if (materialColorEnabled) {
                 monet.awaitMonetReady()
                 val monetInstance = MonetCompat.getInstance()
-                rootLayout.setBackgroundColor(monetInstance.getBackgroundColor(this@MoreOptionActivity))
+                val primaryColor = monetInstance.getAccentColor(this@MoreOptionActivity)
+                val backgroundColor = monetInstance.getBackgroundColor(this@MoreOptionActivity)
+                
+                rootLayout.setBackgroundColor(backgroundColor)
                 rootLayout.applyMonetRecursively()
+                
+                // Keep background logo subtle with alpha but tinted with primary
+                bgLogo.setColorFilter(primaryColor)
+                
+                txtCounter.setTextColor(primaryColor)
+                txtMessage.setTextColor(primaryColor)
+                
+                // Logo background circle should contrast with the main background
+                (imgLogo.background as? GradientDrawable)?.setColor(primaryColor)
             }
         }
 
         val isDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
 
         // Logo background (large and subtle)
-        val bgLogo = ImageView(this@MoreOptionActivity).apply {
+        bgLogo = ImageView(this@MoreOptionActivity).apply {
             val size = (400 * resources.displayMetrics.density).toInt()
             layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
             setImageResource(R.drawable.ic_launcher_foreground)

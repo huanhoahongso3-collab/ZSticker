@@ -11,4 +11,14 @@ object ToastUtils {
         currentToast = Toast.makeText(context.applicationContext, message, Toast.LENGTH_SHORT)
         currentToast?.show()
     }
+
+    fun showCustomDurationToast(context: Context, message: String, durationMs: Long) {
+        currentToast?.cancel()
+        currentToast = Toast.makeText(context.applicationContext, message, Toast.LENGTH_SHORT)
+        currentToast?.show()
+        
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            currentToast?.cancel()
+        }, durationMs)
+    }
 }

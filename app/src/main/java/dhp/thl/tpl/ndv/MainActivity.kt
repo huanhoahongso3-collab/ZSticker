@@ -54,6 +54,8 @@ import android.widget.RadioButton
 import android.view.LayoutInflater
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
+import android.widget.LinearLayout
+import androidx.core.graphics.ColorUtils
 import kotlinx.coroutines.launch
 
 class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
@@ -199,11 +201,11 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                                 intArrayOf(-android.R.attr.state_checked)
                             )
                             val thumbColors = intArrayOf(primary, Color.WHITE)
-                            val trackColors = intArrayOf(primary, Color.LTGRAY)
+                            val trackColors = intArrayOf(ColorUtils.setAlphaComponent(primary, 128), ColorUtils.setAlphaComponent(Color.LTGRAY, 128))
                             
                             binding.switchMaterialColor.thumbTintList = android.content.res.ColorStateList(states, thumbColors)
-                            binding.switchMaterialColor.trackTintList = android.content.res.ColorStateList(states, trackColors).withAlpha(128)
-                            binding.switchMaterialColor.thumbIconTint = android.content.res.ColorStateList.valueOf(
+                            binding.switchMaterialColor.trackTintList = android.content.res.ColorStateList(states, trackColors)
+                            binding.switchMaterialColor.thumbIconTintList = android.content.res.ColorStateList.valueOf(
                                 if (isDark) monetInstance.getBackgroundColor(this@MainActivity) else Color.WHITE
                             )
                         }

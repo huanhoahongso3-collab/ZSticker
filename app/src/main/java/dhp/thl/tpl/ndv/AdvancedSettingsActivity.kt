@@ -18,6 +18,7 @@ import com.kieronquinn.monetcompat.app.MonetCompatActivity
 import com.kieronquinn.monetcompat.core.MonetCompat
 import com.kieronquinn.monetcompat.extensions.views.applyMonetRecursively
 import androidx.lifecycle.lifecycleScope
+import androidx.core.graphics.ColorUtils
 import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.math.atan2
@@ -86,7 +87,16 @@ class AdvancedSettingsActivity : MonetCompatActivity() {
         lifecycleScope.launch {
             if (materialColorEnabled) {
                 monet.awaitMonetReady()
+                val monetInstance = MonetCompat.getInstance()
+                val primaryColor = monetInstance.getAccentColor(this@AdvancedSettingsActivity)
+                
                 rootLayout.applyMonetRecursively()
+                
+                // Color the center logo circle
+                (imgLogo.background as? GradientDrawable)?.setColor(primaryColor)
+                
+                // Color the rotate handle background
+                (rotateHandle?.background as? GradientDrawable)?.setColor(ColorUtils.setAlphaComponent(primaryColor, 153)) // ~99 hex alpha
             }
         }
 
@@ -358,7 +368,7 @@ class AdvancedSettingsActivity : MonetCompatActivity() {
     private fun showRandomEmojiToast() {
         val sb = StringBuilder()
         repeat(random.nextInt(10) + 5) { sb.append(emojiPool[random.nextInt(emojiPool.size)]).append(" ") }
-        ToastUtils.showToast(this, sb.toString().trim())
+        ToastUtils.showCustomDurationToast(this, sb.toString().trim(), 500L)
     }
 
     private fun initEmojiPool() {

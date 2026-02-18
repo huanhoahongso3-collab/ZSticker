@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.appcompat.widget.Toolbar
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
@@ -14,7 +13,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.AppBarLayout
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.appbar.MaterialToolbar
+import androidx.core.graphics.ColorUtils
 import com.kieronquinn.monetcompat.app.MonetCompatActivity
 import com.kieronquinn.monetcompat.core.MonetCompat
 import com.kieronquinn.monetcompat.extensions.views.applyMonetRecursively
@@ -36,7 +36,7 @@ class LicenseActivity : MonetCompatActivity() {
 
             setContentView(R.layout.activity_license)
 
-            val toolbar = findViewById<Toolbar>(R.id.toolbar)
+            val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
             val appBarLayout = findViewById<AppBarLayout>(R.id.appBarLayout)
             val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
             val headerIcon = findViewById<android.widget.ImageView>(R.id.imgHeaderIcon)
@@ -63,10 +63,10 @@ class LicenseActivity : MonetCompatActivity() {
                 val primary = if (materialColorEnabled) {
                     MonetCompat.getInstance().getAccentColor(this@LicenseActivity)
                 } else {
-                    getColor(R.color.orange_primary)
+                    androidx.core.content.ContextCompat.getColor(this@LicenseActivity, R.color.orange_primary)
                 }
                 
-                circleBg?.setTint(primary.withAlpha(40))
+                circleBg?.setTint(ColorUtils.setAlphaComponent(primary, 40))
                 
                 val padding = (8 * resources.displayMetrics.density).toInt()
                 val layered = android.graphics.drawable.LayerDrawable(arrayOf(circleBg, icon))
@@ -80,7 +80,7 @@ class LicenseActivity : MonetCompatActivity() {
                 window.decorView.applyMonetRecursively()
                 val primary = MonetCompat.getInstance().getAccentColor(this@LicenseActivity)
                 headerIcon.setColorFilter(primary)
-                headerIcon.backgroundTintList = android.content.res.ColorStateList.valueOf(primary).withAlpha(40)
+                headerIcon.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 40))
             }
 
             val libraries = listOf(
@@ -128,16 +128,10 @@ class LicenseActivity : MonetCompatActivity() {
 
             if (materialColorEnabled) {
                 val primary = MonetCompat.getInstance().getAccentColor(holder.itemView.context)
-                val primaryContainer = MonetCompat.getInstance().getPrimaryContainerColor(holder.itemView.context)
-                val onPrimaryContainer = MonetCompat.getInstance().getOnPrimaryContainerColor(holder.itemView.context)
-
                 holder.txtLicenseName.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
-                // If using filled container style
-                // holder.txtLicenseName.backgroundTintList = android.content.res.ColorStateList.valueOf(primaryContainer)
-                // holder.txtLicenseName.setTextColor(onPrimaryContainer)
             }
         }
 
-        override fun getItemCount() = libraries.size
+        override fun getItemCount(): Int = libraries.size
     }
 }
