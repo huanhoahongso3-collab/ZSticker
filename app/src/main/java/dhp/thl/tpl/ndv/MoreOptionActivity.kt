@@ -183,11 +183,6 @@ class MoreOptionActivity : MonetCompatActivity() {
         
         val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
 
-        lifecycleScope.launch {
-            if (materialColorEnabled) {
-                monet.awaitMonetReady()
-            }
-
             rootLayout = FrameLayout(this@MoreOptionActivity).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
@@ -196,10 +191,13 @@ class MoreOptionActivity : MonetCompatActivity() {
             }
             setContentView(rootLayout)
 
-            if (materialColorEnabled) {
-                val monetInstance = MonetCompat.getInstance()
-                rootLayout.setBackgroundColor(monetInstance.getBackgroundColor(this@MoreOptionActivity))
-                rootLayout.applyMonetRecursively()
+            lifecycleScope.launch {
+                if (materialColorEnabled) {
+                    monet.awaitMonetReady()
+                    val monetInstance = MonetCompat.getInstance()
+                    rootLayout.setBackgroundColor(monetInstance.getBackgroundColor(this@MoreOptionActivity))
+                    rootLayout.applyMonetRecursively()
+                }
             }
 
             val isDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES

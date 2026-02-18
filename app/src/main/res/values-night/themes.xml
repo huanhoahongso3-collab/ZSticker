@@ -38,9 +38,11 @@
     </style>
 
     <style name="InfoIconStyle">
-        <item name="android:layout_width">24dp</item>
-        <item name="android:layout_height">24dp</item>
+        <item name="android:layout_width">36dp</item>
+        <item name="android:layout_height">36dp</item>
+        <item name="android:padding">6dp</item>
         <item name="android:layout_marginEnd">16dp</item>
+        <item name="android:background">@drawable/bg_circle_icon</item>
         <item name="android:tint">?attr/colorPrimary</item>
     </style>
 

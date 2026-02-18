@@ -75,22 +75,20 @@ class AdvancedSettingsActivity : MonetCompatActivity() {
         
         val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
 
+        rootLayout = FrameLayout(this@AdvancedSettingsActivity).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        }
+        setContentView(rootLayout)
+
         lifecycleScope.launch {
             if (materialColorEnabled) {
                 monet.awaitMonetReady()
-            }
-
-            rootLayout = FrameLayout(this@AdvancedSettingsActivity).apply {
-                layoutParams = FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-            }
-            setContentView(rootLayout)
-
-            if (materialColorEnabled) {
                 rootLayout.applyMonetRecursively()
             }
+        }
 
             initEmojiPool()
             setupLogo()
