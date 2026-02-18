@@ -847,7 +847,9 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
         val btnContinue = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_continue)
         
         btnCancel.setTextColor(primary)
-        btnContinue.setTextColor(Color.WHITE)
+        
+        val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        btnContinue.setTextColor(if (isDark) Color.BLACK else Color.WHITE)
         btnContinue.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
 
         btnCancel.setOnClickListener { dialog.dismiss() }

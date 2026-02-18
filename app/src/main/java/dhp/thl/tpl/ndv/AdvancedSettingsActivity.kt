@@ -88,6 +88,24 @@ class AdvancedSettingsActivity : MonetCompatActivity() {
         setupLogo()
         setupRotateHandle()
 
+        lifecycleScope.launch {
+            if (materialColorEnabled) {
+                monet.awaitMonetReady()
+                val monetInstance = MonetCompat.getInstance()
+                val primaryColor = monetInstance.getAccentColor(this@AdvancedSettingsActivity)
+                
+                // Color the center logo circle background
+                (imgLogo.background as? GradientDrawable)?.setColor(primaryColor)
+                
+                // Color the rotate handle background
+                (rotateHandle?.background as? GradientDrawable)?.setColor(ColorUtils.setAlphaComponent(primaryColor, 153))
+            } else {
+                // Fallback to orange theme
+                val isDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+                val orangeColor = if (isDark) Color.parseColor("#FFB74D") else Color.parseColor("#FF9800")
+                (imgLogo.background as? GradientDrawable)?.setColor(orangeColor)
+            }
+        }
 
         // Initial Shuffle
         generateNextCycle()
