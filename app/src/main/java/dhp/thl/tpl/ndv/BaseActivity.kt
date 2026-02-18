@@ -18,7 +18,7 @@ abstract class BaseActivity : MonetCompatActivity() {
             config.setLocale(locale)
         } else {
             val systemLocale = Configuration(newBase.resources.configuration).locales[0]
-            val supportedLangs = listOf("en", "vi", "ru")
+            val supportedLangs = listOf("en", "vi", "ru", "zh")
             if (supportedLangs.contains(systemLocale.language)) {
                 config.setLocale(systemLocale)
             } else {

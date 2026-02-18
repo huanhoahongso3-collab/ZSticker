@@ -26,7 +26,7 @@
     <string name="theme_dark">Тёмная</string>
     <string name="theme_system">Системная</string>
     
-    <string name="info_material_color_title">Material Color</string>
+    <string name="info_material_color_title">Цвета Material</string>
     <string name="info_material_color_subtitle">Использовать системные цвета</string>
     
     <string name="info_license_note">GNU General Public License v3.0</string>

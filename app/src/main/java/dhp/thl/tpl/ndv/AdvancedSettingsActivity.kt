@@ -28,6 +28,7 @@ class AdvancedSettingsActivity : BaseActivity() {
 
     private lateinit var rootLayout: FrameLayout
     private lateinit var imgLogo: ImageView
+    private lateinit var bgLogo: ImageView
     private var rotateHandle: ImageView? = null
     private var activeSticker: View? = null
 
@@ -85,6 +86,7 @@ class AdvancedSettingsActivity : BaseActivity() {
         setContentView(rootLayout)
 
         initEmojiPool()
+        setupBackgroundLogo()
         setupLogo()
         setupRotateHandle()
 
@@ -94,17 +96,27 @@ class AdvancedSettingsActivity : BaseActivity() {
                 val monetInstance = MonetCompat.getInstance()
                 val primaryColor = monetInstance.getAccentColor(this@AdvancedSettingsActivity)
                 
+                val backgroundColor = monetInstance.getBackgroundColor(this@AdvancedSettingsActivity)
+                rootLayout.setBackgroundColor(backgroundColor)
+                rootLayout.applyMonetRecursively()
+                
                 // Color the center logo circle background
                 (imgLogo.background as? GradientDrawable)?.setColor(primaryColor)
                 
                 // Color the rotate handle background
                 (rotateHandle?.background as? GradientDrawable)?.setColor(ColorUtils.setAlphaComponent(primaryColor, 153))
+
+                // Tint background logo
+                bgLogo.setColorFilter(primaryColor)
             } else {
                 // Fallback to orange theme
                 val isDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
                 val orangeColor = if (isDark) Color.parseColor("#FFB74D") else Color.parseColor("#FF9800")
                 (imgLogo.background as? GradientDrawable)?.setColor(orangeColor)
                 (rotateHandle?.background as? GradientDrawable)?.setColor(ColorUtils.setAlphaComponent(orangeColor, 153))
+                bgLogo.setColorFilter(orangeColor)
+                
+                rootLayout.setBackgroundColor(if (isDark) Color.parseColor("#121212") else Color.WHITE)
             }
         }
 
@@ -161,6 +173,17 @@ class AdvancedSettingsActivity : BaseActivity() {
     
     private fun vibrate() {
          window.decorView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+    }
+
+    private fun setupBackgroundLogo() {
+        bgLogo = ImageView(this@AdvancedSettingsActivity).apply {
+            val size = (400 * resources.displayMetrics.density).toInt()
+            layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
+            setImageResource(R.drawable.ic_launcher_foreground)
+            alpha = 0.2f
+            scaleType = ImageView.ScaleType.FIT_CENTER
+        }
+        rootLayout.addView(bgLogo)
     }
 
     private fun setupLogo() {

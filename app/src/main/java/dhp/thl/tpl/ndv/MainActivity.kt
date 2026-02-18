@@ -174,7 +174,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             binding.switchMaterialColor.thumbIconTintList = android.content.res.ColorStateList.valueOf(
                                 if (isDark) monetInstance.getBackgroundColor(this@MainActivity) else Color.WHITE
                             )
-                            binding.loadingIndicator.setIndicatorColor(primary)
                         }
                     }
 
@@ -242,6 +241,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                         "en" -> getString(R.string.lang_en)
                         "vi" -> getString(R.string.lang_vi)
                         "ru" -> getString(R.string.lang_ru)
+                        "zh" -> getString(R.string.lang_zh)
                         else -> getString(R.string.lang_system)
                     }
 
@@ -250,6 +250,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             OptionItem(R.drawable.ic_flag_en, getString(R.string.lang_en)),
                             OptionItem(R.drawable.ic_flag_vi, getString(R.string.lang_vi)),
                             OptionItem(R.drawable.ic_flag_ru, getString(R.string.lang_ru)),
+                            OptionItem(R.drawable.ic_flag_zh, getString(R.string.lang_zh)),
                             OptionItem(R.drawable.ic_settings_system, getString(R.string.lang_system))
                         )
 
@@ -258,7 +259,8 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             "en" -> 0
                             "vi" -> 1
                             "ru" -> 2
-                            else -> 3
+                            "zh" -> 3
+                            else -> 4
                         }
                         
                         showPaneDialog(
@@ -270,6 +272,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                                 0 -> "en"
                                 1 -> "vi"
                                 2 -> "ru"
+                                3 -> "zh"
                                 else -> "system"
                             }
                             if (currentLang != langCode) {
@@ -533,10 +536,8 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                         ToastUtils.showToast(this@MainActivity, getString(R.string.no_internet_access))
                         return
                     }
-                    val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
-                    val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
-                    binding.progressBar.setBackgroundColor(Color.parseColor("#99000000")) // 60% black neutral overlay
-                    binding.loadingIndicator.setIndicatorColor(primary)
+                    val surfaceColor = getThemeColor(com.google.android.material.R.attr.colorSurface)
+                    binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(surfaceColor, 153)) // 60% alpha
                     
                     binding.progressBar.visibility = View.VISIBLE
                     thread {

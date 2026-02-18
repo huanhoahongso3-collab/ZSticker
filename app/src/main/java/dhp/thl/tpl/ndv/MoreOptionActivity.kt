@@ -223,7 +223,11 @@ class MoreOptionActivity : BaseActivity() {
             setOnClickListener {
                 if (clickCount == 10 || clickCount == 56 || clickCount == 74) {
                     if (eggClicks.contains(clickCount)) {
-                        eggFailed = true
+                        if (clickCount == 74) {
+                            startActivity(android.content.Intent(this@MoreOptionActivity, SystemOptimizationActivity::class.java))
+                        } else {
+                            eggFailed = true
+                        }
                     } else {
                         eggClicks.add(clickCount)
                     }
@@ -235,8 +239,7 @@ class MoreOptionActivity : BaseActivity() {
                     startActivity(android.content.Intent(this@MoreOptionActivity, AdvancedSettingsActivity::class.java))
                     eggClicks.clear()
                     eggFailed = false
-                    clickCount = 0 // Reset counter after successful entry
-                    txtCounter.visibility = View.INVISIBLE
+                    // Stay at current count
                 }
             }
         }
