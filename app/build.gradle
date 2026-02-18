@@ -10,8 +10,8 @@ android {
         applicationId 'dhp.thl.tpl.ndv'
         minSdk 26
         targetSdk 34
-        versionCode 5611
-        versionName '5.6.1'
+        versionCode 5620
+        versionName '5.6.2'
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -57,4 +57,7 @@ dependencies {
 
     // ✅ Splash Screen
     implementation 'androidx.core:core-splashscreen:1.0.1'
+
+    // ✅ MonetCompat
+    implementation 'com.github.KieronQuinn:MonetCompat:0.4.1'
 }

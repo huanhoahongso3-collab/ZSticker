@@ -13,11 +13,13 @@ import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import com.kieronquinn.monetcompat.app.MonetCompatActivity
+import com.kieronquinn.monetcompat.extensions.views.applyMonetRecursively
 import java.util.*
 import kotlin.math.atan2
 import kotlin.math.hypot
 
-class AdvancedSettingsActivity : AppCompatActivity() {
+class AdvancedSettingsActivity : MonetCompatActivity() {
 
     private lateinit var rootLayout: FrameLayout
     private lateinit var imgLogo: ImageView
@@ -73,6 +75,13 @@ class AdvancedSettingsActivity : AppCompatActivity() {
             )
         }
         setContentView(rootLayout)
+
+        val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+        if (materialColorEnabled) {
+            val monet = MonetCompat.getInstance()
+            rootLayout.setBackgroundColor(monet.getBackgroundColor(this))
+            rootLayout.applyMonetRecursively()
+        }
 
         initEmojiPool()
         setupLogo()

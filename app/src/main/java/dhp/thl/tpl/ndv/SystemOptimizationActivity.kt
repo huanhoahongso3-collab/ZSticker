@@ -4,8 +4,9 @@ import android.os.Bundle
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
+import com.kieronquinn.monetcompat.app.MonetCompatActivity
 
-class SystemOptimizationActivity : AppCompatActivity() {
+class SystemOptimizationActivity : MonetCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

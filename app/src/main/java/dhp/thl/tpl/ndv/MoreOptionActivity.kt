@@ -12,9 +12,11 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.kieronquinn.monetcompat.app.MonetCompatActivity
+import com.kieronquinn.monetcompat.extensions.views.applyMonetRecursively
 import java.util.*
 
-class MoreOptionActivity : AppCompatActivity() {
+class MoreOptionActivity : MonetCompatActivity() {
 
     private lateinit var rootLayout: FrameLayout
     private lateinit var imgLogo: ImageView
@@ -22,6 +24,8 @@ class MoreOptionActivity : AppCompatActivity() {
     private lateinit var txtCounter: TextView
     private val random = Random()
     private var clickCount = 0
+    private val eggClicks = mutableSetOf<Int>()
+    private var eggFailed = false
 
     private val messages = listOf(
         "THL loves you!",
@@ -146,7 +150,28 @@ class MoreOptionActivity : AppCompatActivity() {
         "Or TPL?",
         "Choose one",
         "TPL or THL",
-        "choose wisely between THL and TPL"
+        "choose wisely between THL and TPL",
+        "bad dream with TPL?",
+        "bad dream with both",
+        "comeback with TPL in the bed",
+        "trying to do something with TPL",
+        "such a bad dream",
+        "TPL is so cute",
+        "trying to .... TPL",
+        "bye bye",
+        "not so ended at SDK 36",
+        "a bad dream about TPL",
+        "such a not so funny time with TPL",
+        "Capture her!",
+        "Bye bye TPL",
+        "Have fun with PDA",
+        "It's no fun trying to go to bed with TPL",
+        "Don't do anything bad with TPL",
+        "Welcome to SDK 41",
+        "Say goodbye to TPL for the last time",
+        "Banana is a codename for TPL",
+        "Bye bye .... bye bye K7A2.... bye bye TPL... bye bye all",
+        "Bye bye banana for the last time"
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -160,6 +185,13 @@ class MoreOptionActivity : AppCompatActivity() {
             setBackgroundColor(Color.BLACK)
         }
         setContentView(rootLayout)
+
+        val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+        if (materialColorEnabled) {
+            val monet = MonetCompat.getInstance()
+            rootLayout.setBackgroundColor(monet.getBackgroundColor(this))
+            rootLayout.applyMonetRecursively()
+        }
 
         // Logo background (large and subtle)
         val bgLogo = ImageView(this).apply {
@@ -185,6 +217,24 @@ class MoreOptionActivity : AppCompatActivity() {
             setTypeface(null, android.graphics.Typeface.BOLD)
             text = "0"
             visibility = View.INVISIBLE
+            isClickable = true
+            setOnClickListener {
+                if (clickCount == 10 || clickCount == 56 || clickCount == 74) {
+                    if (eggClicks.contains(clickCount)) {
+                        eggFailed = true
+                    } else {
+                        eggClicks.add(clickCount)
+                    }
+                } else {
+                    eggFailed = true
+                }
+
+                if (eggClicks.size == 3 && !eggFailed) {
+                    startActivity(android.content.Intent(this@MoreOptionActivity, AdvancedSettingsActivity::class.java))
+                    eggClicks.clear()
+                    eggFailed = false
+                }
+            }
         }
         rootLayout.addView(txtCounter)
 

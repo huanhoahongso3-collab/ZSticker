@@ -32,7 +32,11 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.recyclerview.widget.GridLayoutManager
-import com.google.android.material.color.DynamicColors
+import com.kieronquinn.monetcompat.app.MonetCompatActivity
+import com.kieronquinn.monetcompat.core.MonetCompat
+import com.kieronquinn.monetcompat.extensions.views.applyMonetRecursively
+import com.kieronquinn.monetcompat.extensions.views.applyMonet
+import com.kieronquinn.monetcompat.extensions.views.enableStretchOverscroll
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
 import java.io.File
@@ -49,7 +53,7 @@ import android.widget.RadioButton
 import android.view.LayoutInflater
 import androidx.appcompat.app.AlertDialog
 
-class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
+class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var adapter: StickerAdapter
@@ -98,10 +102,9 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     // Ensure theme is set BEFORE super.onCreate
                     AppCompatDelegate.setDefaultNightMode(savedTheme)
                     
-                    // Apply Material Dynamic Colors if enabled
-                    if (materialColorEnabled) {
-                        DynamicColors.applyToActivityIfAvailable(this)
-                    }
+                    // Applied via MonetCompatActivity automatically if enabled
+                    // Removed old DynamicColors implementation
+
 
                     super.onCreate(savedInstanceState)
                     
@@ -141,6 +144,11 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
 
                     binding = ActivityMainBinding.inflate(layoutInflater)
                     setContentView(binding.root)
+
+                    // Apply Monet colors recursively
+                    if (materialColorEnabled) {
+                        binding.root.applyMonetRecursively()
+                    }
 
                     val lastTab = prefs.getInt("last_tab", R.id.nav_home)
                     binding.bottomNavigation.selectedItemId = lastTab
@@ -215,6 +223,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                             handleThemeSelection(prefs, newMode)
                             dialog.dismiss()
                         }.create()
+                        if (materialColorEnabled) dialog.applyMonet()
                         dialog.window?.setDimAmount(0.35f)
                         dialog.show()
                     }
@@ -259,6 +268,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                             }
                             .create()
                         
+                        if (materialColorEnabled) dialog.applyMonet()
                         dialog.window?.setDimAmount(0.35f)
                         dialog.show()
                     }
@@ -271,11 +281,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     binding.switchMaterialColor.isChecked = materialColorEnabled
                     binding.switchMaterialColor.setOnCheckedChangeListener { buttonView, isChecked ->
                         if (isChecked) {
-                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-                                ToastUtils.showToast(this, getString(R.string.material_color_unsupported))
-                                buttonView.isChecked = false
-                                return@setOnCheckedChangeListener
-                            }
+                            // MonetCompat supports Android 5.0+, so we don't need the Android 12 check anymore
                             if (prefs.getBoolean("dont_show_material_warning", false)) {
                                 prefs.edit().putBoolean("material_color_enabled", true).apply()
                                 recreate()
@@ -316,6 +322,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                                     binding.switchMaterialColor.isChecked = false
                                 }
 
+                                if (materialColorEnabled) dialog.applyMonet()
                                 dialog.window?.setDimAmount(0.35f)
                                 dialog.show()
                             }
@@ -368,6 +375,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                 dialog.dismiss()
             }
 
+            if (isMaterial) dialog.applyMonet()
             dialog.window?.setDimAmount(0.35f)
             dialog.show()
         }
@@ -429,7 +437,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         .setMessage(getString(R.string.info_remove_recent_confirm_message))
                         .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
                         .setNegativeButton(getString(R.string.cancel), null)
-                        .show()
+                        .create().apply {
+                            if (getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)) applyMonet()
+                            show()
+                        }
                 }
 
                 private fun removeRecentUsage() {
@@ -450,7 +461,10 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                         .setMessage(getString(R.string.info_remove_all_confirm_message))
                         .setPositiveButton(getString(R.string.delete)) { _, _ -> deleteAllStickers() }
                         .setNegativeButton(getString(R.string.cancel), null)
-                        .show()
+                        .create().apply {
+                            if (getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)) applyMonet()
+                            show()
+                        }
                 }
 
                 private fun deleteAllStickers() {
@@ -694,6 +708,15 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
                     }
                     binding.recyclerRecents.layoutManager = layoutManagerRecents
                     binding.recyclerRecents.adapter = adapterRecents
+
+                    // Enable stretch overscroll if material color is enabled
+                    val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+                    if (materialColorEnabled) {
+                        binding.recycler.enableStretchOverscroll()
+                        binding.recyclerRecents.enableStretchOverscroll()
+                        // info_layout is a ScrollView, enableStretchOverscroll supports NestedScrollView/RecyclerView
+                        // binding.infoLayout.enableStretchOverscroll() 
+                    }
                 }
 
                 private fun setupNavigation() {
@@ -774,6 +797,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             .setNegativeButton(getString(R.string.cancel), null)
             .create()
         
+        if (getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)) dialog.applyMonet()
         dialog.window?.setDimAmount(0.35f)
         dialog.show()
     }
@@ -815,6 +839,7 @@ class MainActivity : AppCompatActivity(), StickerAdapter.StickerListener {
             removeBackground(uri)
         }
 
+        if (prefs.getBoolean("material_color_enabled", false)) dialog.applyMonet()
         dialog.window?.setDimAmount(0.35f)
         dialog.show()
     }
