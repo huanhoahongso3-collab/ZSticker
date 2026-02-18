@@ -952,7 +952,7 @@ class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<
             context.theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, typedValue, true)
             textView.setTextColor(typedValue.data)
             
-            if (item.iconRes != R.drawable.ic_flag_en && item.iconRes != R.drawable.ic_flag_vi && item.iconRes != R.drawable.ic_flag_ru) {
+            if (item.iconRes != R.drawable.ic_flag_en && item.iconRes != R.drawable.ic_flag_vi && item.iconRes != R.drawable.ic_flag_ru && item.iconRes != R.drawable.ic_flag_zh) {
                  iconView.setColorFilter(primary)
             } else {
                  iconView.clearColorFilter()
@@ -991,7 +991,7 @@ class ThemeAdapter(context: Context, objects: List<OptionItem>, private val sele
         )
         radioButton.buttonTintList = sl
         
-        if (item.iconRes != R.drawable.ic_flag_en && item.iconRes != R.drawable.ic_flag_vi && item.iconRes != R.drawable.ic_flag_ru) {
+        if (item.iconRes != R.drawable.ic_flag_en && item.iconRes != R.drawable.ic_flag_vi && item.iconRes != R.drawable.ic_flag_ru && item.iconRes != R.drawable.ic_flag_zh) {
              iconView.setColorFilter(primary)
         } else {
              iconView.clearColorFilter()

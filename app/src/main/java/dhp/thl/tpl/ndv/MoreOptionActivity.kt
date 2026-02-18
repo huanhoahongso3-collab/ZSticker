@@ -268,14 +268,14 @@ class MoreOptionActivity : BaseActivity() {
             layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
             outlineProvider = object : ViewOutlineProvider() {
                 override fun getOutline(view: View, outline: Outline) {
-                    outline.setOval(0, 0, view.width, view.height)
+                    outline.setRect(0, 0, view.width, view.height)
                 }
             }
             clipToOutline = true
             scaleType = ImageView.ScaleType.CENTER_CROP
             setImageResource(R.drawable.ic_launcher_foreground)
             background = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
+                shape = GradientDrawable.RECTANGLE
                 setColor(if (isDark) Color.WHITE else Color.BLACK)
             }
             elevation = 100f
@@ -293,18 +293,20 @@ class MoreOptionActivity : BaseActivity() {
         rootLayout.addView(imgLogo)
 
         lifecycleScope.launch {
+            monet.awaitMonetReady()
+            val accentColor = if (materialColorEnabled) {
+                monet.getAccentColor(this@MoreOptionActivity)
+            } else {
+                getColor(R.color.orange_primary)
+            }
+
             // Always black background and white/static colors for vintage look
             rootLayout.setBackgroundColor(Color.BLACK)
             
             bgLogo.clearColorFilter()
-            txtCounter.setTextColor(Color.WHITE)
-            txtMessage.setTextColor(Color.WHITE)
+            txtCounter.setTextColor(accentColor)
+            txtMessage.setTextColor(accentColor)
             (imgLogo.background as? GradientDrawable)?.setColor(Color.WHITE)
-
-            if (materialColorEnabled) {
-                // If material is enabled, we still want the rotate handle etc to be tinted if they exist
-                // but for this screen we mostly stick to static black/white
-            }
         }
     }
 
