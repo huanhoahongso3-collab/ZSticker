@@ -193,6 +193,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
 
                 private fun setupInfoSection() {
                     val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+                    val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
 
                     // --- THEME SELECTOR ---
                     updateThemeText(prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM))
@@ -223,7 +224,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                             handleThemeSelection(prefs, newMode)
                             dialog.dismiss()
                         }.create()
-                        if (materialColorEnabled) dialog.applyMonet()
+                        if (materialColorEnabled) dialog.window?.decorView?.applyMonetRecursively()
                         dialog.window?.setDimAmount(0.35f)
                         dialog.show()
                     }
@@ -268,13 +269,12 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                             }
                             .create()
                         
-                        if (materialColorEnabled) dialog.applyMonet()
+                        if (materialColorEnabled) dialog.window?.decorView?.applyMonetRecursively()
                         dialog.window?.setDimAmount(0.35f)
                         dialog.show()
                     }
 
                     // --- MATERIAL COLOR TOGGLE ---
-                    val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
                     val materialColorIcon = binding.imgMaterialColor
                     // No programmatic tinting here - let XML/Theme handle it like other icons
 
@@ -322,7 +322,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                                     binding.switchMaterialColor.isChecked = false
                                 }
 
-                                if (materialColorEnabled) dialog.applyMonet()
+                                if (materialColorEnabled) dialog.window?.decorView?.applyMonetRecursively()
                                 dialog.window?.setDimAmount(0.35f)
                                 dialog.show()
                             }
@@ -375,7 +375,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                 dialog.dismiss()
             }
 
-            if (isMaterial) dialog.applyMonet()
+            if (isMaterial) dialog.window?.decorView?.applyMonetRecursively()
             dialog.window?.setDimAmount(0.35f)
             dialog.show()
         }
@@ -438,7 +438,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                         .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
                         .setNegativeButton(getString(R.string.cancel), null)
                         .create().apply {
-                            if (getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)) applyMonet()
+                            if (getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)) window?.decorView?.applyMonetRecursively()
                             show()
                         }
                 }
@@ -462,7 +462,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                         .setPositiveButton(getString(R.string.delete)) { _, _ -> deleteAllStickers() }
                         .setNegativeButton(getString(R.string.cancel), null)
                         .create().apply {
-                            if (getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)) applyMonet()
+                            if (getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)) window?.decorView?.applyMonetRecursively()
                             show()
                         }
                 }
@@ -797,7 +797,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
             .setNegativeButton(getString(R.string.cancel), null)
             .create()
         
-        if (getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)) dialog.applyMonet()
+        if (getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)) dialog.window?.decorView?.applyMonetRecursively()
         dialog.window?.setDimAmount(0.35f)
         dialog.show()
     }
@@ -839,7 +839,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
             removeBackground(uri)
         }
 
-        if (prefs.getBoolean("material_color_enabled", false)) dialog.applyMonet()
+        if (prefs.getBoolean("material_color_enabled", false)) dialog.window?.decorView?.applyMonetRecursively()
         dialog.window?.setDimAmount(0.35f)
         dialog.show()
     }
