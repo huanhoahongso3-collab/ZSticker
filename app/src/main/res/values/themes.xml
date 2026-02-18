@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Theme.ZSticker" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Custom Orange Colors -->
         <item name="colorPrimary">@color/orange_primary</item>
@@ -29,7 +29,7 @@
     <style name="ShapeAppearance.ZSticker.MediumComponent" parent="ShapeAppearance.Material3.MediumComponent">
         <item name="cornerSize">16dp</item>
     </style>
-
+    
 
 
     <style name="InfoItemStyle">
