@@ -80,6 +80,8 @@ class StickerAdapter(
 
     override fun getItemCount(): Int = items.size
 
+    fun getItems(): List<Any> = items
+
     fun refreshData(context: Context) {
         this.items.clear()
         this.items.addAll(if (isRecents) loadRecents(context) else loadOrdered(context))

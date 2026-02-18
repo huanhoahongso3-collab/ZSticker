@@ -385,7 +385,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
                 private fun deleteAllStickers() {
                     val stickers = adapter.getItems() // Get currently displayed stickers
-                    if (stickers.isEmpty() || (stickers.size == 1 && stickers[0] is StickerAdapter.StickerItem.Header)) {
+                    if (stickers.isEmpty()) {
                         ToastUtils.showToast(this, getString(R.string.no_stickers_found))
                         return
                     }
@@ -946,7 +946,7 @@ class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<
             context.theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, typedValue, true)
             textView.setTextColor(typedValue.data)
             
-            if (item.iconRes != R.drawable.ic_flag_en && item.iconRes != R.drawable.ic_flag_vi) {
+            if (item.iconRes != R.drawable.ic_flag_en && item.iconRes != R.drawable.ic_flag_vi && item.iconRes != R.drawable.ic_flag_ru) {
                  iconView.setColorFilter(primary)
             } else {
                  iconView.clearColorFilter()
@@ -985,7 +985,7 @@ class ThemeAdapter(context: Context, objects: List<OptionItem>, private val sele
         )
         radioButton.buttonTintList = sl
         
-        if (item.iconRes != R.drawable.ic_flag_en && item.iconRes != R.drawable.ic_flag_vi) {
+        if (item.iconRes != R.drawable.ic_flag_en && item.iconRes != R.drawable.ic_flag_vi && item.iconRes != R.drawable.ic_flag_ru) {
              iconView.setColorFilter(primary)
         } else {
              iconView.clearColorFilter()
