@@ -190,7 +190,8 @@ class MoreOptionActivity : BaseActivity() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
-            setBackgroundColor(Color.BLACK)
+            val isDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+            setBackgroundColor(if (isDark) Color.BLACK else Color.WHITE)
         }
         setContentView(rootLayout)
 
@@ -304,13 +305,19 @@ class MoreOptionActivity : BaseActivity() {
                 getColor(R.color.orange_primary)
             }
 
-            // Always black background and white/static colors for vintage look
-            rootLayout.setBackgroundColor(Color.BLACK)
+            val isDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+            val backgroundColor = if (materialColorEnabled) {
+                monet.getBackgroundColor(this@MoreOptionActivity)
+            } else {
+                if (isDark) Color.BLACK else Color.WHITE
+            }
+            
+            rootLayout.setBackgroundColor(backgroundColor)
             
             bgLogo.clearColorFilter()
             txtCounter.setTextColor(accentColor)
             txtMessage.setTextColor(accentColor)
-            (imgLogo.background as? GradientDrawable)?.setColor(Color.WHITE)
+            (imgLogo.background as? GradientDrawable)?.setColor(if (isDark) Color.WHITE else Color.BLACK)
         }
     }
 

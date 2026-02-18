@@ -52,6 +52,8 @@
 
     <string name="lang_en">Tiếng Anh</string>
     <string name="lang_vi">Tiếng Việt</string>
+    <string name="lang_ru">Tiếng Nga</string>
+    <string name="lang_zh">Tiếng Trung (Giản thể)</string>
     <string name="lang_system">Theo hệ thống</string>
 
     <string name="dynamic_color_warning_title">Lưu ý về màu sắc hệ thống</string>
@@ -64,5 +66,4 @@
     <string name="material_color_unsupported">Phiên bản Android này không hỗ trợ màu Material.</string>
     <string name="info_opensource_title">Giấy phép mã nguồn mở</string>
     <string name="info_opensource_note">Các thư viện được sử dụng trong ZSticker</string>
-    <string name="lang_ru">Tiếng Nga</string>
 </resources>

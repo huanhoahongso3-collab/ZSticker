@@ -20,7 +20,7 @@
             android:id="@+id/flowHeader"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:flow_wrapMode="aligned"
+            app:flow_wrapMode="chain"
             app:flow_horizontalStyle="packed"
             app:flow_horizontalBias="0"
             app:flow_horizontalGap="8dp"

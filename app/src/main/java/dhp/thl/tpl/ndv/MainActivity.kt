@@ -155,11 +155,23 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             // Tint all icons in options pane
                             listOf(
                                 binding.imgTheme, binding.imgMaterialColor, binding.imgLanguage,
-                                binding.imgExportAll, binding.imgRemoveRecent, binding.imgRemoveAll,
+                                binding.imgExportAll,
                                 binding.imgVersion, binding.imgRepo, binding.imgLicense, binding.imgOpenSource
                             ).forEach { icon ->
                                 icon.setColorFilter(primary)
                             }
+
+                            // Explicitly set Removal items to red
+                            val red = Color.parseColor("#FF3b30")
+                            val redAlpha = ColorUtils.setAlphaComponent(red, 40)
+                            
+                            binding.imgRemoveRecent.setColorFilter(red)
+                            binding.imgRemoveRecent.backgroundTintList = android.content.res.ColorStateList.valueOf(redAlpha)
+                            binding.txtRemoveRecent.setTextColor(red)
+                            
+                            binding.imgRemoveAll.setColorFilter(red)
+                            binding.imgRemoveAll.backgroundTintList = android.content.res.ColorStateList.valueOf(redAlpha)
+                            binding.txtRemoveAll.setTextColor(red)
                             
                             // Fix Switch tinting
                             val states = arrayOf(
@@ -175,6 +187,18 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                                 if (isDark) monetInstance.getBackgroundColor(this@MainActivity) else Color.WHITE
                             )
                             binding.loadingIndicator.setIndicatorColor(primary)
+                        } else {
+                            // Even if Material Color is off, the removal buttons should be red
+                            val red = Color.parseColor("#FF3b30")
+                            val redAlpha = ColorUtils.setAlphaComponent(red, 40)
+                            
+                            binding.imgRemoveRecent.setColorFilter(red)
+                            binding.imgRemoveRecent.backgroundTintList = android.content.res.ColorStateList.valueOf(redAlpha)
+                            binding.txtRemoveRecent.setTextColor(red)
+                            
+                            binding.imgRemoveAll.setColorFilter(red)
+                            binding.imgRemoveAll.backgroundTintList = android.content.res.ColorStateList.valueOf(redAlpha)
+                            binding.txtRemoveAll.setTextColor(red)
                         }
                     }
 
