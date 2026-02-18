@@ -200,7 +200,11 @@ class MoreOptionActivity : BaseActivity() {
         bgLogo = ImageView(this@MoreOptionActivity).apply {
             val size = (400 * resources.displayMetrics.density).toInt()
             layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
-            setImageResource(R.mipmap.ic_launcher)
+            setImageResource(R.drawable.ic_launcher_foreground)
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                setColor(if (isDark) Color.WHITE else Color.BLACK)
+            }
             alpha = 0.1f
             scaleType = ImageView.ScaleType.FIT_CENTER
         }
@@ -268,14 +272,14 @@ class MoreOptionActivity : BaseActivity() {
             layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
             outlineProvider = object : ViewOutlineProvider() {
                 override fun getOutline(view: View, outline: Outline) {
-                    outline.setRect(0, 0, view.width, view.height)
+                    outline.setOval(0, 0, view.width, view.height)
                 }
             }
             clipToOutline = true
             scaleType = ImageView.ScaleType.CENTER_CROP
             setImageResource(R.drawable.ic_launcher_foreground)
             background = GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
+                shape = GradientDrawable.OVAL
                 setColor(if (isDark) Color.WHITE else Color.BLACK)
             }
             elevation = 100f

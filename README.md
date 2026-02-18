@@ -3,7 +3,9 @@
 
 Warning: I do not own or linked with the removebg branch. I use the BRIA-RMBG-2.0 model at https://huggingface.co/spaces/briaai/BRIA-RMBG-2.0. Also, the URL I use: https://briarmbg20.vercel.app/ is just a proxy to connect Android with HuggingFace API and I don't collect any data or care about who you are through it. If you're not sure, here's the endpoint source code: https://github.com/huanhoahongso3-collab/briarmbg2.0
 
-Support min SDK 26 (Android 8.0). Recommend using SDK 34 (Android 14)
+Support min SDK 27 (Android 8.1). Recommend using SDK 34 (Android 14).
+
+App support English, Vietnamese, Russian and Chinese Simplified.
 
 ZSticker is a vibe-driven coding project focused on how Zalo handles sticker share by Intent in Android.
 
