@@ -24,7 +24,7 @@ import java.util.*
 import kotlin.math.atan2
 import kotlin.math.hypot
 
-class AdvancedSettingsActivity : MonetCompatActivity() {
+class AdvancedSettingsActivity : BaseActivity() {
 
     private lateinit var rootLayout: FrameLayout
     private lateinit var imgLogo: ImageView
@@ -104,6 +104,7 @@ class AdvancedSettingsActivity : MonetCompatActivity() {
                 val isDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
                 val orangeColor = if (isDark) Color.parseColor("#FFB74D") else Color.parseColor("#FF9800")
                 (imgLogo.background as? GradientDrawable)?.setColor(orangeColor)
+                (rotateHandle?.background as? GradientDrawable)?.setColor(ColorUtils.setAlphaComponent(orangeColor, 153))
             }
         }
 
@@ -233,7 +234,7 @@ class AdvancedSettingsActivity : MonetCompatActivity() {
             }
             setImageResource(android.R.drawable.ic_menu_rotate)
             alpha = 0f
-            elevation = 110f
+            scaleType = ImageView.ScaleType.FIT_CENTER
             visibility = View.GONE
         }
         rootLayout.addView(rotateHandle)

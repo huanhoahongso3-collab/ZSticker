@@ -6,7 +6,7 @@ import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import com.kieronquinn.monetcompat.app.MonetCompatActivity
 
-class SystemOptimizationActivity : MonetCompatActivity() {
+class SystemOptimizationActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

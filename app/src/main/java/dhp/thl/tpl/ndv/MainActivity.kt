@@ -58,44 +58,18 @@ import android.widget.LinearLayout
 import androidx.core.graphics.ColorUtils
 import kotlinx.coroutines.launch
 
-class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
-
+class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var adapter: StickerAdapter
     private lateinit var adapterRecents: StickerAdapter
+    private var versionClickCount = 0
+    private var lastClickTime: Long = 0
 
-            private var versionClickCount = 0
-            private var lastClickTime: Long = 0
-
-            private fun getThemeColor(attr: Int): Int {
-                val typedValue = android.util.TypedValue()
-                theme.resolveAttribute(attr, typedValue, true)
-                return typedValue.data
-            }
-
-                override fun attachBaseContext(newBase: Context) {
-                    val prefs = newBase.getSharedPreferences("settings", MODE_PRIVATE)
-                    val langCode = prefs.getString("lang", "system") ?: "system"
-
-                    val config = Configuration(newBase.resources.configuration)
-
-                    // Apply Locale
-                    if (langCode != "system") {
-                        val locale = Locale(langCode)
-                        Locale.setDefault(locale)
-                        config.setLocale(locale)
-                    } else {
-                        // Revert to device system locale
-                        val systemLocale = Configuration(newBase.resources.configuration).locales[0]
-                        config.setLocale(systemLocale)
-                    }
-
-                    // Removed manual config.uiMode override here as it conflicts with DynamicColors 
-                    // initialization in onCreate. AppCompatDelegate handles the switch.
-                    
-                    val context = newBase.createConfigurationContext(config)
-                    super.attachBaseContext(context)
-                }
+    private fun getThemeColor(attr: Int): Int {
+        val typedValue = android.util.TypedValue()
+        theme.resolveAttribute(attr, typedValue, true)
+        return typedValue.data
+    }
 
                 override fun onCreate(savedInstanceState: Bundle?) {
                     val splashScreen = installSplashScreen()
@@ -267,6 +241,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                     binding.txtCurrentLanguage.text = when (currentLang) {
                         "en" -> getString(R.string.lang_en)
                         "vi" -> getString(R.string.lang_vi)
+                        "ru" -> getString(R.string.lang_ru)
                         else -> getString(R.string.lang_system)
                     }
 
@@ -274,6 +249,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                         val langs = listOf(
                             OptionItem(R.drawable.ic_flag_en, getString(R.string.lang_en)),
                             OptionItem(R.drawable.ic_flag_vi, getString(R.string.lang_vi)),
+                            OptionItem(R.drawable.ic_flag_ru, getString(R.string.lang_ru)),
                             OptionItem(R.drawable.ic_settings_system, getString(R.string.lang_system))
                         )
 
@@ -281,7 +257,8 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                         val selectedIndex = when (langSelection) {
                             "en" -> 0
                             "vi" -> 1
-                            else -> 2
+                            "ru" -> 2
+                            else -> 3
                         }
                         
                         showPaneDialog(
@@ -292,6 +269,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                             val langCode = when (which) {
                                 0 -> "en"
                                 1 -> "vi"
+                                2 -> "ru"
                                 else -> "system"
                             }
                             if (currentLang != langCode) {
@@ -386,8 +364,8 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
 
                 private fun removeRecentUsage() {
                     val prefs = getSharedPreferences("recents", MODE_PRIVATE)
-                    val history = prefs.getString("list", "")
-                    if (history.isNullOrEmpty()) {
+                    val history = prefs.getString("list", "") ?: ""
+                    if (history.isEmpty()) {
                         ToastUtils.showToast(this, getString(R.string.no_history_found))
                         return
                     }
@@ -406,11 +384,12 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                 }
 
                 private fun deleteAllStickers() {
-                    val files = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
-                    if (files.isNullOrEmpty()) {
+                    val stickers = adapter.getItems() // Get currently displayed stickers
+                    if (stickers.isEmpty() || (stickers.size == 1 && stickers[0] is StickerAdapter.StickerItem.Header)) {
                         ToastUtils.showToast(this, getString(R.string.no_stickers_found))
                         return
                     }
+                    val files = filesDir.listFiles { f -> f.name.startsWith("zsticker_") } ?: emptyArray()
                     var successCount = 0
                     files.forEach { if (it.delete()) successCount++ }
                     
@@ -433,8 +412,8 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                 // --- STICKER OPERATIONS ---
 
                 private fun exportAllStickers() {
-                    val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") }
-                    if (stickerFiles.isNullOrEmpty()) {
+                    val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") } ?: emptyArray()
+                    if (stickerFiles.isEmpty()) {
                         ToastUtils.showToast(this, getString(R.string.no_stickers_found))
                         return
                     }
@@ -556,7 +535,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                     }
                     val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
                     val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
-                    binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(primary, 180)) // ~70% opacity themed background
+                    binding.progressBar.setBackgroundColor(Color.parseColor("#99000000")) // 60% black neutral overlay
                     binding.loadingIndicator.setIndicatorColor(primary)
                     
                     binding.progressBar.visibility = View.VISIBLE
@@ -793,6 +772,11 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                 adapter.getView(index, null, container)
             }
 
+            val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+            val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
+            val rippleColor = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 40))
+            itemView.background = android.graphics.drawable.RippleDrawable(rippleColor, itemView.background, null)
+
             itemView.setOnClickListener {
                 onItemClick(index)
                 dialog.dismiss()
@@ -847,6 +831,8 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
         val btnContinue = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_continue)
         
         btnCancel.setTextColor(primary)
+        
+        checkBox.buttonTintList = android.content.res.ColorStateList.valueOf(primary)
         
         val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         btnContinue.setTextColor(if (isDark) Color.BLACK else Color.WHITE)

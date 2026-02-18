@@ -27,7 +27,7 @@
     <string name="theme_system">System Default</string>
     
     <string name="info_material_color_title">Material Color</string>
-    <string name="info_material_color_subtitle">Use system colors (Android 12+)</string>
+    <string name="info_material_color_subtitle">Use system colors</string>
     
     <string name="info_license_note">GNU General Public License v3.0</string>
     
@@ -55,7 +55,7 @@
     <string name="lang_system">System Default</string>
 
     <string name="dynamic_color_warning_title">Dynamic Color Notice</string>
-    <string name="dynamic_color_warning_message">Changing to a theme that differs from your system settings may disable Material You dynamic colors on some Android 12+ devices.</string>
+    <string name="dynamic_color_warning_message">Changing to a theme that differs from your system settings may disable Material You dynamic colors on some devices.</string>
     <string name="ok">OK</string>
     <string name="no_internet_access">No internet access</string>
     <string name="no_history_found">No history found</string>
@@ -64,4 +64,5 @@
     <string name="material_color_unsupported">This version of Android doesn\'t support material color.</string>
     <string name="info_opensource_title">Open Source Licenses</string>
     <string name="info_opensource_note">Libraries used in ZSticker</string>
+    <string name="lang_ru">Russian</string>
 </resources>

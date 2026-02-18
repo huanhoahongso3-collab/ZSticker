@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 import android.content.res.Configuration
 import java.util.*
 
-class MoreOptionActivity : MonetCompatActivity() {
+class MoreOptionActivity : BaseActivity() {
 
     private lateinit var rootLayout: FrameLayout
     private lateinit var imgLogo: ImageView
@@ -200,7 +200,7 @@ class MoreOptionActivity : MonetCompatActivity() {
             val size = (400 * resources.displayMetrics.density).toInt()
             layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
             setImageResource(R.drawable.ic_launcher_foreground)
-            alpha = 0.1f
+            alpha = 0.2f
             scaleType = ImageView.ScaleType.FIT_CENTER
         }
         rootLayout.addView(bgLogo)
@@ -235,6 +235,8 @@ class MoreOptionActivity : MonetCompatActivity() {
                     startActivity(android.content.Intent(this@MoreOptionActivity, AdvancedSettingsActivity::class.java))
                     eggClicks.clear()
                     eggFailed = false
+                    clickCount = 0 // Reset counter after successful entry
+                    txtCounter.visibility = View.INVISIBLE
                 }
             }
         }
@@ -304,6 +306,17 @@ class MoreOptionActivity : MonetCompatActivity() {
                 
                 // Logo background circle should contrast with the main background
                 (imgLogo.background as? GradientDrawable)?.setColor(primaryColor)
+            } else {
+                val isDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+                val orangeColor = if (isDark) Color.parseColor("#FFB74D") else Color.parseColor("#FF9800")
+                
+                bgLogo.setColorFilter(orangeColor)
+                txtCounter.setTextColor(orangeColor)
+                txtMessage.setTextColor(orangeColor)
+                (imgLogo.background as? GradientDrawable)?.setColor(orangeColor)
+                
+                // Also set a subtle background for the root when material is off
+                rootLayout.setBackgroundColor(if (isDark) Color.parseColor("#121212") else Color.WHITE)
             }
         }
     }

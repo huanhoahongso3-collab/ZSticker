@@ -21,7 +21,7 @@ import com.kieronquinn.monetcompat.core.MonetCompat
 import com.kieronquinn.monetcompat.extensions.views.applyMonetRecursively
 import kotlinx.coroutines.launch
 
-class LicenseActivity : MonetCompatActivity() {
+class LicenseActivity : BaseActivity() {
 
     data class Library(val name: String, val licenseName: String, val licenseText: String)
 
@@ -45,6 +45,11 @@ class LicenseActivity : MonetCompatActivity() {
             setSupportActionBar(toolbar)
             supportActionBar?.setDisplayHomeAsUpEnabled(true)
             toolbar.setNavigationOnClickListener { finish() }
+
+            // Ensure titles follow localized strings
+            title = getString(R.string.info_opensource_title)
+            findViewById<TextView>(R.id.txtContentTitle)?.text = getString(R.string.info_opensource_title)
+            findViewById<TextView>(R.id.txtContentNote)?.text = getString(R.string.info_opensource_note)
 
             // Handle edge-to-edge
             window.statusBarColor = Color.TRANSPARENT
@@ -77,14 +82,20 @@ class LicenseActivity : MonetCompatActivity() {
                 toolbar.navigationIcon = layered
             }
 
+            val primary = if (materialColorEnabled) {
+                MonetCompat.getInstance().getAccentColor(this@LicenseActivity)
+            } else {
+                androidx.core.content.ContextCompat.getColor(this@LicenseActivity, R.color.orange_primary)
+            }
+            
+            headerIcon.setColorFilter(primary)
+            headerIcon.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 40))
+            
+            // Color the bold title in content
+            findViewById<TextView>(R.id.txtContentTitle)?.setTextColor(primary)
+            
             if (materialColorEnabled) {
                 window.decorView.applyMonetRecursively()
-                val primary = MonetCompat.getInstance().getAccentColor(this@LicenseActivity)
-                headerIcon.setColorFilter(primary)
-                headerIcon.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 40))
-                
-                // Color the bold title in content
-                findViewById<TextView>(R.id.txtContentTitle)?.setTextColor(primary)
             }
 
             val libraries = listOf(
@@ -132,6 +143,9 @@ class LicenseActivity : MonetCompatActivity() {
 
             if (materialColorEnabled) {
                 val primary = MonetCompat.getInstance().getAccentColor(holder.itemView.context)
+                holder.txtLicenseName.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
+            } else {
+                val primary = holder.itemView.context.getColor(R.color.orange_primary)
                 holder.txtLicenseName.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
             }
         }
