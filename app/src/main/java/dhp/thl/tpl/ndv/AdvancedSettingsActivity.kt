@@ -371,7 +371,7 @@ class AdvancedSettingsActivity : MonetCompatActivity() {
     private fun showRandomEmojiToast() {
         val sb = StringBuilder()
         repeat(random.nextInt(10) + 5) { sb.append(emojiPool[random.nextInt(emojiPool.size)]).append(" ") }
-        ToastUtils.showCustomDurationToast(this, sb.toString().trim(), 500L)
+        ToastUtils.showToast(this, sb.toString().trim())
     }
 
     private fun initEmojiPool() {
