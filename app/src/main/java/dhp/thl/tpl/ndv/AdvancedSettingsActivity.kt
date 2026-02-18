@@ -90,17 +90,16 @@ class AdvancedSettingsActivity : MonetCompatActivity() {
             }
         }
 
-            initEmojiPool()
-            setupLogo()
-            setupRotateHandle()
+        initEmojiPool()
+        setupLogo()
+        setupRotateHandle()
 
-            // Initial Shuffle
-            generateNextCycle()
-            
-            rootLayout.post {
-                spawnDenseMosaic(cycle[0])
-                imgLogo.bringToFront()
-            }
+        // Initial Shuffle
+        generateNextCycle()
+
+        rootLayout.post {
+            spawnDenseMosaic(cycle[0])
+            imgLogo.bringToFront()
         }
     }
 
