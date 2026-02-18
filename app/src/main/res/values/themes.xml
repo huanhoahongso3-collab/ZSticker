@@ -17,6 +17,8 @@
         <!-- System Bars -->
         <item name="android:statusBarColor">?android:attr/colorBackground</item>
         <item name="android:navigationBarColor">?attr/colorSurfaceContainer</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
     </style>
 
     <style name="Theme.ZSticker.Splash" parent="Theme.SplashScreen">
@@ -40,9 +42,11 @@
     </style>
 
     <style name="InfoIconStyle">
-        <item name="android:layout_width">24dp</item>
-        <item name="android:layout_height">24dp</item>
+        <item name="android:layout_width">36dp</item>
+        <item name="android:layout_height">36dp</item>
+        <item name="android:padding">6dp</item>
         <item name="android:layout_marginEnd">16dp</item>
-        <item name="tint">?attr/colorPrimary</item> 
+        <item name="android:background">@drawable/bg_circle_icon</item>
+        <item name="app:tint">?attr/colorPrimary</item> 
     </style>
 </resources>

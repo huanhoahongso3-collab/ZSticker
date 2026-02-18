@@ -148,6 +148,22 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                     // Apply Monet colors recursively
                     if (materialColorEnabled) {
                         binding.root.applyMonetRecursively()
+                        // Force apply to some elements that might be missed
+                        binding.bottomNavigation.applyMonet()
+                        
+                        // Force manual coloring for options elements
+                        val monet = MonetCompat.getInstance()
+                        val primary = monet.getAccentColor(this)
+                        val surface = monet.getBackgroundColor(this, true) // md3Style = true
+                        
+                        binding.sectionSettingsHeader.setTextColor(primary)
+                        binding.sectionGeneralHeader.setTextColor(primary)
+                        binding.cardSettings.setCardBackgroundColor(surface)
+                        binding.cardGeneral.setCardBackgroundColor(surface)
+                        
+                        // Force apply to FAB
+                        binding.addButton.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
+                        binding.addButton.imageTintList = android.content.res.ColorStateList.valueOf(monet.getBackgroundColor(this))
                     }
 
                     val lastTab = prefs.getInt("last_tab", R.id.nav_home)
@@ -173,16 +189,12 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                 }
 
                 private fun updateStatusBar() {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        val nightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-                        val isLightMode = nightMode == Configuration.UI_MODE_NIGHT_NO
-                        
-                        window.decorView.systemUiVisibility = if (isLightMode) {
-                            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-                        } else {
-                            0
-                        }
-                    }
+                    val nightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+                    val isLightMode = nightMode == Configuration.UI_MODE_NIGHT_NO
+                    
+                    val windowInsetsController = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
+                    windowInsetsController.isAppearanceLightStatusBars = isLightMode
+                    windowInsetsController.isAppearanceLightNavigationBars = isLightMode
                 }
 
                 override fun onNewIntent(intent: Intent?) {
@@ -639,6 +651,10 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                 }
 
                 private fun handleEdgeToEdge() {
+                    window.statusBarColor = android.graphics.Color.TRANSPARENT
+                    window.navigationBarColor = android.graphics.Color.TRANSPARENT
+                    androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+
                     ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigation) { view, insets ->
                         val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
                         view.updatePadding(bottom = navInsets.bottom)
@@ -647,7 +663,6 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                     ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
                         val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
                         view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                            // Returned to original height (+16dp from previous state)
                             val baseMargin = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) 112 else 104
                             bottomMargin = (baseMargin * resources.displayMetrics.density).toInt() + navInsets.bottom
                         }

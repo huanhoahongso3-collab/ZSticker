@@ -2,6 +2,7 @@ package dhp.thl.tpl.ndv
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Outline
 import android.graphics.drawable.GradientDrawable
@@ -79,8 +80,6 @@ class AdvancedSettingsActivity : MonetCompatActivity() {
 
         val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
         if (materialColorEnabled) {
-            val monet = MonetCompat.getInstance()
-            rootLayout.setBackgroundColor(monet.getBackgroundColor(this))
             rootLayout.applyMonetRecursively()
         }
 
@@ -158,7 +157,8 @@ class AdvancedSettingsActivity : MonetCompatActivity() {
         imgLogo.setImageResource(R.drawable.ic_launcher_foreground)
         imgLogo.background = GradientDrawable().apply {
             shape = GradientDrawable.OVAL
-            setColor(Color.WHITE)
+            val isDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+            setColor(if (isDark) Color.WHITE else Color.BLACK)
         }
         imgLogo.elevation = 100f
 

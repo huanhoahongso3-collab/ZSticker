@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.kieronquinn.monetcompat.app.MonetCompatActivity
 import com.kieronquinn.monetcompat.core.MonetCompat
 import com.kieronquinn.monetcompat.extensions.views.applyMonetRecursively
+import android.content.res.Configuration
 import java.util.*
 
 class MoreOptionActivity : MonetCompatActivity() {
@@ -183,7 +184,6 @@ class MoreOptionActivity : MonetCompatActivity() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
-            setBackgroundColor(Color.BLACK)
         }
         setContentView(rootLayout)
 
@@ -213,7 +213,8 @@ class MoreOptionActivity : MonetCompatActivity() {
                 gravity = Gravity.CENTER_HORIZONTAL or Gravity.CENTER
                 setMargins(0, 0, 0, (150 * resources.displayMetrics.density).toInt())
             }
-            setTextColor(Color.WHITE)
+            val isDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+            setTextColor(if (isDark) Color.WHITE else Color.BLACK)
             textSize = 28f
             setTypeface(null, android.graphics.Typeface.BOLD)
             text = "0"
@@ -248,7 +249,8 @@ class MoreOptionActivity : MonetCompatActivity() {
                 gravity = Gravity.CENTER_HORIZONTAL or Gravity.BOTTOM
                 setMargins(0, 0, 0, (100 * resources.displayMetrics.density).toInt())
             }
-            setTextColor(Color.WHITE)
+            val isDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+            setTextColor(if (isDark) Color.WHITE else Color.BLACK)
             textSize = 20f
             gravity = Gravity.CENTER
             visibility = View.INVISIBLE
