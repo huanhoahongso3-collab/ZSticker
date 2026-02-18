@@ -114,37 +114,27 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                     super.onCreate(savedInstanceState)
                     
                     splashScreen.setOnExitAnimationListener { splashScreenView ->
-                        val zoomX = ObjectAnimator.ofFloat(
-                            splashScreenView.iconView,
-                            View.SCALE_X,
-                            1.0f,
-                            5.0f
-                        )
-                        val zoomY = ObjectAnimator.ofFloat(
-                            splashScreenView.iconView,
-                            View.SCALE_Y,
-                            1.0f,
-                            5.0f
-                        )
-                        val alpha = ObjectAnimator.ofFloat(
-                            splashScreenView.view,
-                            View.ALPHA,
-                            1.0f,
-                            0.0f
-                        )
+                        val iconView = try { splashScreenView.iconView } catch (e: Exception) { null }
+                        if (iconView != null) {
+                            val zoomX = ObjectAnimator.ofFloat(iconView, View.SCALE_X, 1.0f, 5.0f)
+                            val zoomY = ObjectAnimator.ofFloat(iconView, View.SCALE_Y, 1.0f, 5.0f)
+                            val alpha = ObjectAnimator.ofFloat(splashScreenView.view, View.ALPHA, 1.0f, 0.0f)
 
-                        zoomX.duration = 500L
-                        zoomY.duration = 500L
-                        alpha.duration = 500L
-                        
-                        zoomX.interpolator = AnticipateInterpolator()
-                        zoomY.interpolator = AnticipateInterpolator()
-                        
-                        zoomX.doOnEnd { splashScreenView.remove() }
-                        
-                        zoomX.start()
-                        zoomY.start()
-                        alpha.start()
+                            zoomX.duration = 500L
+                            zoomY.duration = 500L
+                            alpha.duration = 500L
+                            
+                            zoomX.interpolator = AnticipateInterpolator()
+                            zoomY.interpolator = AnticipateInterpolator()
+                            
+                            zoomX.doOnEnd { splashScreenView.remove() }
+                            
+                            zoomX.start()
+                            zoomY.start()
+                            alpha.start()
+                        } else {
+                            splashScreenView.remove()
+                        }
                     }
 
                     binding = ActivityMainBinding.inflate(layoutInflater)
@@ -210,6 +200,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                             binding.switchMaterialColor.thumbIconTintList = android.content.res.ColorStateList.valueOf(
                                 if (isDark) monetInstance.getBackgroundColor(this@MainActivity) else Color.WHITE
                             )
+                            binding.loadingIndicator.setIndicatorColor(primary)
                         }
                     }
 
@@ -495,12 +486,29 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                     val uris = mutableListOf<Uri>()
                     when (intent.action) {
                         Intent.ACTION_SEND -> {
-                            @Suppress("DEPRECATION")
-                            intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.let { uris.add(it) }
+                            intent.clipData?.let { clip ->
+                                for (i in 0 until clip.itemCount) {
+                                    clip.getItemAt(i).uri?.let { uris.add(it) }
+                                }
+                            }
+                            if (uris.isEmpty()) {
+                                @Suppress("DEPRECATION")
+                                intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.let { uris.add(it) }
+                                if (uris.isEmpty()) {
+                                    intent.data?.let { uris.add(it) }
+                                }
+                            }
                         }
                         Intent.ACTION_SEND_MULTIPLE -> {
-                            @Suppress("DEPRECATION")
-                            intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)?.let { uris.addAll(it) }
+                            intent.clipData?.let { clip ->
+                                for (i in 0 until clip.itemCount) {
+                                    clip.getItemAt(i).uri?.let { uris.add(it) }
+                                }
+                            }
+                            if (uris.isEmpty()) {
+                                @Suppress("DEPRECATION")
+                                intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)?.let { uris.addAll(it) }
+                            }
                         }
                         Intent.ACTION_VIEW -> {
                             intent.data?.let { uris.add(it) }
@@ -549,6 +557,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                     val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
                     val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
                     binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(primary, 180)) // ~70% opacity themed background
+                    binding.loadingIndicator.setIndicatorColor(primary)
                     
                     binding.progressBar.visibility = View.VISIBLE
                     thread {
