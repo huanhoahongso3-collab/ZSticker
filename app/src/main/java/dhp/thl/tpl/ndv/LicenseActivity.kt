@@ -88,7 +88,7 @@ class LicenseActivity : MonetCompatActivity() {
         }
     }
 
-    private inner class LicenseAdapter(
+    private class LicenseAdapter(
         private val libraries: List<Library>,
         private val onItemClick: (Library) -> Unit
     ) : RecyclerView.Adapter<LicenseAdapter.ViewHolder>() {
