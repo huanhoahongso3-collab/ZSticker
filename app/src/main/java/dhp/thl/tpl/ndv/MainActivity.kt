@@ -258,7 +258,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                                 1 -> AppCompatDelegate.MODE_NIGHT_YES
                                 else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
                             }
-                            handleThemeSelection(prefs, newMode)
+                            applyAndSaveTheme(prefs, newMode)
                         }
                     }
 
