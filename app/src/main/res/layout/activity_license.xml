@@ -18,7 +18,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:navigationIcon="?attr/homeAsUpIndicator"
-            app:titleCentered="true" />
+            app:title="@string/info_opensource_title" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -42,15 +42,6 @@
                 android:background="@drawable/bg_circle_icon"
                 android:layout_marginTop="16dp" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/info_opensource_title"
-                android:textSize="32sp"
-                android:layout_marginTop="24dp"
-                android:gravity="center"
-                style="@style/TextAppearance.Material3.HeadlineMedium"
-                android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"

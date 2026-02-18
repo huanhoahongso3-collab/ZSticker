@@ -32,8 +32,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/rb_warning_title"
-                android:textAppearance="?attr/textAppearanceHeadlineSmall"
-                android:textStyle="bold"
+                android:textAppearance="?attr/textAppearanceTitleLarge"
                 android:gravity="center"
                 android:layout_marginBottom="8dp"/>
 

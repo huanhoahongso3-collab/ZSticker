@@ -18,7 +18,6 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:title="@string/app_name"
-            app:titleCentered="true"
             app:titleTextAppearance="@style/TextAppearance.Material3.HeadlineSmall" />
         </com.google.android.material.appbar.AppBarLayout>
 
@@ -104,7 +103,7 @@
                                     </LinearLayout>
                                 </LinearLayout>
 
-                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" android:layout_marginStart="56dp" />
+                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" />
 
                                 <LinearLayout
                                     android:id="@+id/itemMaterialColor"
@@ -129,7 +128,7 @@
                                     app:trackDecorationTint="@android:color/transparent"/>
                                 </LinearLayout>
 
-                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" android:layout_marginStart="56dp" />
+                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" />
 
                                 <LinearLayout
                                     android:id="@+id/itemLanguage"
@@ -141,7 +140,7 @@
                                     </LinearLayout>
                                 </LinearLayout>
 
-                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" android:layout_marginStart="56dp" />
+                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" />
 
                                 <LinearLayout
                                     android:id="@+id/itemExportAll"
@@ -152,7 +151,7 @@
                                     </LinearLayout>
                                 </LinearLayout>
 
-                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" android:layout_marginStart="56dp" />
+                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" />
 
                                 <LinearLayout
                                     android:id="@+id/itemRemoveRecent"
@@ -163,7 +162,7 @@
                                     </LinearLayout>
                                 </LinearLayout>
 
-                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" android:layout_marginStart="56dp" />
+                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1"  />
 
                                 <LinearLayout
                                     android:id="@+id/itemRemoveAll"
@@ -217,7 +216,7 @@
                                     </LinearLayout>
                                 </LinearLayout>
 
-                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" android:layout_marginStart="56dp" />
+                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" />
 
                                 <LinearLayout
                                     android:id="@+id/itemRepo"
@@ -229,7 +228,7 @@
                                     </LinearLayout>
                                 </LinearLayout>
 
-                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" android:layout_marginStart="56dp" />
+                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" />
 
                                 <LinearLayout
                                     android:id="@+id/itemLicense"
@@ -241,7 +240,7 @@
                                     </LinearLayout>
                                 </LinearLayout>
 
-                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" android:layout_marginStart="56dp" />
+                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1"  />
 
                                 <LinearLayout
                                     android:id="@+id/itemOpenSource"
@@ -275,7 +274,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom|end"
                 android:layout_marginEnd="20dp"
-                android:layout_marginBottom="104dp"
+                android:layout_marginBottom="74dp"
                 app:srcCompat="@drawable/ic_add"
                 app:tint="?attr/colorOnSecondaryContainer"
                 app:backgroundTint="?attr/colorSecondaryContainer"

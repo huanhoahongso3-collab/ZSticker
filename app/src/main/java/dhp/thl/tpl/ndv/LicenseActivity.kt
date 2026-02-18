@@ -43,7 +43,6 @@ class LicenseActivity : MonetCompatActivity() {
 
             setSupportActionBar(toolbar)
             supportActionBar?.setDisplayHomeAsUpEnabled(true)
-            supportActionBar?.title = "" // Centered title is in the scroll view
             toolbar.setNavigationOnClickListener { finish() }
 
             // Handle edge-to-edge
@@ -57,6 +56,26 @@ class LicenseActivity : MonetCompatActivity() {
                 insets
             }
 
+            // Style Navigation Icon
+            toolbar.navigationIcon?.let { icon ->
+                val circleBg = androidx.core.content.ContextCompat.getDrawable(this@LicenseActivity, R.drawable.bg_circle_icon)?.mutate()
+                
+                val primary = if (materialColorEnabled) {
+                    MonetCompat.getInstance().getAccentColor(this@LicenseActivity)
+                } else {
+                    getColor(R.color.orange_primary)
+                }
+                
+                circleBg?.setTint(primary.withAlpha(40))
+                
+                val padding = (8 * resources.displayMetrics.density).toInt()
+                val layered = android.graphics.drawable.LayerDrawable(arrayOf(circleBg, icon))
+                layered.setLayerInset(1, padding, padding, padding, padding)
+                
+                toolbar.navigationIcon = layered
+                toolbar.setNavigationIconTint(primary)
+            }
+
             if (materialColorEnabled) {
                 window.decorView.applyMonetRecursively()
                 val primary = MonetCompat.getInstance().getAccentColor(this@LicenseActivity)
@@ -65,20 +84,29 @@ class LicenseActivity : MonetCompatActivity() {
             }
 
             val libraries = listOf(
-                Library("AndroidX Libraries", "Apache 2.0", "Licensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\nhttp://www.apache.org/licenses/LICENSE-2.0"),
+                Library("AndroidX Activity", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
+                Library("AndroidX AppCompat", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
+                Library("AndroidX ConstraintLayout", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
+                Library("AndroidX Core", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
+                Library("AndroidX Fragment", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
+                Library("AndroidX Lifecycle", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
+                Library("AndroidX Navigation", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
+                Library("AndroidX Splash Screen", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("Glide", "BSD/MIT/Apache", "License information for Glide can be found at: https://github.com/bumptech/glide/blob/master/LICENSE"),
-                Library("Kotlin", "Apache 2.0", "Licensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\nhttp://www.apache.org/licenses/LICENSE-2.0"),
-                Library("Material Components", "Apache 2.0", "Licensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\nhttp://www.apache.org/licenses/LICENSE-2.0"),
+                Library("Kotlin Coroutines", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
+                Library("Kotlin Standard Library", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
+                Library("Material Components", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("MonetCompat", "MIT License", "Copyright (c) 2021 Kieron Quinn\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.")
             ).sortedBy { it.name }
 
             recyclerView.layoutManager = LinearLayoutManager(this@LicenseActivity)
-            recyclerView.adapter = LicenseAdapter(libraries)
+            recyclerView.adapter = LicenseAdapter(libraries, materialColorEnabled)
         }
     }
 
     private class LicenseAdapter(
-        private val libraries: List<Library>
+        private val libraries: List<Library>,
+        private val materialColorEnabled: Boolean
     ) : RecyclerView.Adapter<LicenseAdapter.ViewHolder>() {
 
         class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -97,6 +125,17 @@ class LicenseActivity : MonetCompatActivity() {
             holder.txtName.text = library.name
             holder.txtLicenseName.text = library.licenseName
             holder.txtLicenseText.text = library.licenseText
+
+            if (materialColorEnabled) {
+                val primary = MonetCompat.getInstance().getAccentColor(holder.itemView.context)
+                val primaryContainer = MonetCompat.getInstance().getPrimaryContainerColor(holder.itemView.context)
+                val onPrimaryContainer = MonetCompat.getInstance().getOnPrimaryContainerColor(holder.itemView.context)
+
+                holder.txtLicenseName.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
+                // If using filled container style
+                // holder.txtLicenseName.backgroundTintList = android.content.res.ColorStateList.valueOf(primaryContainer)
+                // holder.txtLicenseName.setTextColor(onPrimaryContainer)
+            }
         }
 
         override fun getItemCount() = libraries.size

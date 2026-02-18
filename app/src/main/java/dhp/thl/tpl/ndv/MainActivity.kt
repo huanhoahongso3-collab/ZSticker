@@ -148,13 +148,14 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                     binding = ActivityMainBinding.inflate(layoutInflater)
                     setContentView(binding.root)
 
-                    val lastTab = prefs.getInt("last_tab", R.id.nav_home)
-                    binding.bottomNavigation.selectedItemId = lastTab
-                    updateLayoutVisibility(lastTab)
-
-                    setupNavigation()
                     setupStickerList()
+                    setupNavigation()
                     setupInfoSection()
+
+                    val startTab = if (savedInstanceState == null) R.id.nav_home else prefs.getInt("last_tab", R.id.nav_home)
+                    binding.bottomNavigation.selectedItemId = startTab
+                    updateLayoutVisibility(startTab)
+
                     handleIncomingShare(intent)
                     handleEdgeToEdge()
                     updateStatusBar()
@@ -202,6 +203,9 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                             
                             binding.switchMaterialColor.thumbTintList = android.content.res.ColorStateList(states, thumbColors)
                             binding.switchMaterialColor.trackTintList = android.content.res.ColorStateList(states, trackColors).withAlpha(128)
+                            binding.switchMaterialColor.thumbIconTint = android.content.res.ColorStateList.valueOf(
+                                if (isDark) monetInstance.getBackgroundColor(this@MainActivity) else Color.WHITE
+                            )
                         }
                     }
 
@@ -249,19 +253,18 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                             else -> 2
                         }
 
-                        val adapter = ThemeAdapter(this, themes, selectedIndex)
-
-                        val dialog = MaterialAlertDialogBuilder(this)
-                        .setTitle(getString(R.string.info_theme_title))
-                        .setAdapter(adapter) { dialog, which ->
+                        showPaneDialog(
+                            getString(R.string.info_theme_title),
+                            themes,
+                            selectedIndex
+                        ) { which ->
                             val newMode = when (which) {
                                 0 -> AppCompatDelegate.MODE_NIGHT_NO
                                 1 -> AppCompatDelegate.MODE_NIGHT_YES
                                 else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
                             }
                             handleThemeSelection(prefs, newMode)
-                            dialog.dismiss()
-                        }.create().showMonetDialog(this)
+                        }
                     }
 
                     // --- LANGUAGE SELECTOR ---
@@ -286,23 +289,21 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                             else -> 2
                         }
                         
-                         val adapter = ThemeAdapter(this, langs, selectedIndex) // Reusing ThemeAdapter as it fits (OptionItem with Radio)
-
-                         val dialog = MaterialAlertDialogBuilder(this)
-                            .setTitle(getString(R.string.info_language_title))
-                            .setAdapter(adapter) { d, which ->
-                                val langCode = when (which) {
-                                    0 -> "en"
-                                    1 -> "vi"
-                                    else -> "system"
-                                }
-                                if (currentLang != langCode) {
-                                    prefs.edit().putString("lang", langCode).apply()
-                                    recreate()
-                                }
-                                d.dismiss()
+                        showPaneDialog(
+                            getString(R.string.info_language_title),
+                            langs,
+                            selectedIndex
+                        ) { which ->
+                            val langCode = when (which) {
+                                0 -> "en"
+                                1 -> "vi"
+                                else -> "system"
                             }
-                            .create().showMonetDialog(this)
+                            if (currentLang != langCode) {
+                                prefs.edit().putString("lang", langCode).apply()
+                                recreate()
+                            }
+                        }
                     }
 
                     // --- MATERIAL COLOR TOGGLE ---
@@ -350,10 +351,13 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
             iconView.setImageResource(R.drawable.ic_palette)
             val isMaterial = prefs.getBoolean("material_color_enabled", false)
             if (!isMaterial) {
-                // Override with orange when Material Color is OFF
                 iconView.setColorFilter(getColor(R.color.orange_primary))
+            } else {
+                val primary = MonetCompat.getInstance().getAccentColor(this)
+                iconView.setColorFilter(primary)
+                btnContinue.setTextColor(primary)
+                (btnCancel as? com.google.android.material.button.MaterialButton)?.setTextColor(primary)
             }
-            // When Material Color is ON, the XML's app:tint="?attr/colorPrimary" handles it
 
             btnContinue.setOnClickListener {
                 if (checkBox.isChecked) {
@@ -759,9 +763,7 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
 
     override fun onStickerLongClick(uri: Uri, isRecent: Boolean, entry: String?) {
         val titleRes = if (isRecent) R.string.recent_options_title else R.string.sticker_options_title
-        val title = SpannableString(getString(titleRes)).apply {
-            setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
-        }
+        val title = getString(titleRes)
 
         val options = mutableListOf<OptionItem>()
         options.add(OptionItem(R.drawable.ic_export, getString(R.string.export)))
@@ -773,22 +775,62 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
             options.add(OptionItem(R.drawable.ic_delete, getString(R.string.delete_history)))
         }
 
-        val adapter = OptionAdapter(this, options)
+        showPaneDialog(title, options) { which ->
+            val selectedOption = options[which].text
+            when {
+                selectedOption == getString(R.string.export) -> exportSingleSticker(uri)
+                selectedOption == getString(R.string.remove_bg) -> checkAndShowBackgroundRemovalWarning(uri)
+                selectedOption == getString(R.string.delete) -> deleteSticker(uri)
+                selectedOption == getString(R.string.delete_history) -> entry?.let { removeFromRecents(it) }
+            }
+        }
+    }
 
+    private fun showPaneDialog(
+        title: String,
+        items: List<OptionItem>,
+        selectedIndex: Int = -1,
+        onItemClick: (Int) -> Unit
+    ) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_list_pane, null)
+        val container = dialogView.findViewById<ViewGroup>(R.id.dialog_item_container)
+        
         val dialog = MaterialAlertDialogBuilder(this)
             .setTitle(title)
-            .setAdapter(adapter) { _, which ->
-                val selectedOption = options[which].text
-                when {
-                    selectedOption == getString(R.string.export) -> exportSingleSticker(uri)
-                    selectedOption == getString(R.string.remove_bg) -> checkAndShowBackgroundRemovalWarning(uri)
-                    selectedOption == getString(R.string.delete) -> deleteSticker(uri)
-                    selectedOption == getString(R.string.delete_history) -> entry?.let { removeFromRecents(it) }
-                }
-            }
+            .setView(dialogView)
             .setNegativeButton(getString(R.string.cancel), null)
             .create()
-        
+
+        items.forEachIndexed { index, item ->
+            val itemView = if (selectedIndex != -1) {
+                val adapter = ThemeAdapter(this, items, selectedIndex)
+                adapter.getView(index, null, container)
+            } else {
+                val adapter = OptionAdapter(this, items)
+                adapter.getView(index, null, container)
+            }
+
+            itemView.setOnClickListener {
+                onItemClick(index)
+                dialog.dismiss()
+            }
+            container.addView(itemView)
+
+            if (index < items.size - 1) {
+                val divider = View(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        1
+                    )
+                    val typedValue = android.util.TypedValue()
+                    theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurfaceVariant, typedValue, true)
+                    setBackgroundColor(typedValue.data)
+                    alpha = 0.1f
+                }
+                container.addView(divider)
+            }
+        }
+
         dialog.showMonetDialog(this)
     }
 
@@ -815,10 +857,13 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
         
         val isMaterial = prefs.getBoolean("material_color_enabled", false)
         if (!isMaterial) {
-            // Override with orange when Material Color is OFF
             iconView.setColorFilter(getColor(R.color.orange_primary))
+        } else {
+            val primary = MonetCompat.getInstance().getAccentColor(this)
+            iconView.setColorFilter(primary)
+            (dialogView.findViewById<View>(R.id.btn_continue) as? com.google.android.material.button.MaterialButton)?.setTextColor(primary)
+            (dialogView.findViewById<View>(R.id.btn_cancel) as? com.google.android.material.button.MaterialButton)?.setTextColor(primary)
         }
-        // When Material Color is ON, the XML's app:tint="?attr/colorPrimary" handles it
 
         dialogView.findViewById<View>(R.id.btn_cancel).setOnClickListener { dialog.dismiss() }
         dialogView.findViewById<View>(R.id.btn_continue).setOnClickListener {
@@ -921,9 +966,23 @@ class ThemeAdapter(context: Context, objects: List<OptionItem>, private val sele
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.item_radio_icon_text, parent, false)
         val item = getItem(position)
-        view.findViewById<ImageView>(R.id.item_icon).setImageResource(item!!.iconRes)
+        val iconView = view.findViewById<ImageView>(R.id.item_icon)
+        val radioButton = view.findViewById<RadioButton>(R.id.item_radio)
+        
+        iconView.setImageResource(item!!.iconRes)
         view.findViewById<TextView>(R.id.item_text).text = item.text
-        view.findViewById<RadioButton>(R.id.item_radio).isChecked = (position == selectedIndex)
+        radioButton.isChecked = (position == selectedIndex)
+        
+        if (context.getSharedPreferences("settings", Context.MODE_PRIVATE).getBoolean("material_color_enabled", false)) {
+            val primary = MonetCompat.getInstance().getAccentColor(context)
+            val sl = android.content.res.ColorStateList(
+                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf(-android.R.attr.state_checked)),
+                intArrayOf(primary, android.graphics.Color.GRAY)
+            )
+            radioButton.buttonTintList = sl
+            iconView.setColorFilter(primary)
+        }
+        
         return view
     }
 }
