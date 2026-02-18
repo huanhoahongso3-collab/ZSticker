@@ -115,7 +115,6 @@
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_material_color_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_material_color_subtitle" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
-                                        <TextView android:id="@+id/txtMaterialColorNotSupported" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="This version of Android doesn't support material color." style="@style/TextAppearance.Material3.BodySmall" android:textColor="@android:color/holo_red_dark" android:visibility="gone"/>
                                     </LinearLayout>
                                 <com.google.android.material.materialswitch.MaterialSwitch
                                     android:id="@+id/switchMaterialColor"
@@ -284,7 +283,7 @@
                 android:id="@+id/progressBar"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="#B3000000"
+                android:background="@android:color/transparent"
                 android:visibility="gone"
                 android:clickable="true"
                 android:focusable="true"

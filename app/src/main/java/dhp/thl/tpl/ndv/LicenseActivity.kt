@@ -60,16 +60,12 @@ class LicenseActivity : MonetCompatActivity() {
             // Style Navigation Icon
             toolbar.navigationIcon?.let { icon ->
                 val circleBg = androidx.core.content.ContextCompat.getDrawable(this@LicenseActivity, R.drawable.bg_circle_icon)?.mutate()
-                
-                val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-                val circleColor = if (isDark) Color.BLACK else Color.WHITE
-                circleBg?.setTint(circleColor)
-                
                 val primary = if (materialColorEnabled) {
                     MonetCompat.getInstance().getAccentColor(this@LicenseActivity)
                 } else {
                     androidx.core.content.ContextCompat.getColor(this@LicenseActivity, R.color.orange_primary)
                 }
+                circleBg?.setTint(ColorUtils.setAlphaComponent(primary, 40))
                 
                 icon.setTint(primary)
                 

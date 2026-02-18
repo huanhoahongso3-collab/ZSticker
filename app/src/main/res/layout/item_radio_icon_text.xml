@@ -4,8 +4,8 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:paddingStart="14dp" 
-    android:paddingEnd="24dp"
+    android:paddingStart="12dp" 
+    android:paddingEnd="12dp"
     android:minHeight="48dp"
     android:background="?attr/selectableItemBackground">
 
@@ -16,20 +16,23 @@
         android:clickable="false"
         android:focusable="false"
         android:focusableInTouchMode="false"
-        android:layout_marginEnd="8dp"/>
+        android:layout_marginEnd="4dp"/>
 
     <ImageView
         android:id="@+id/item_icon"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
         android:padding="6dp"
-        android:layout_marginEnd="16dp"
+        android:layout_marginEnd="12dp"
         android:background="@drawable/bg_circle_icon" />
 
     <TextView
         android:id="@+id/item_text"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:maxLines="1"
+        android:ellipsize="end"
         android:textAppearance="?attr/textAppearanceBodyLarge"
         android:textColor="?attr/colorOnSurface"
         android:text="Option Text" />
