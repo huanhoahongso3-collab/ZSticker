@@ -754,7 +754,6 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                     binding.recyclerRecents.adapter = adapterRecents
 
                     // Enable stretch overscroll if material color is enabled
-                    val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
                     if (materialColorEnabled) {
                         binding.recycler.enableStretchOverscroll()
                         binding.recyclerRecents.enableStretchOverscroll()
@@ -768,6 +767,13 @@ class MainActivity : MonetCompatActivity(), StickerAdapter.StickerListener {
                         getSharedPreferences("settings", MODE_PRIVATE).edit().putInt("last_tab", item.itemId).apply()
                         updateLayoutVisibility(item.itemId)
                         true
+                    }
+                    
+                    // Disable tooltips on long press
+                    val menu = binding.bottomNavigation.menu
+                    for (i in 0 until menu.size()) {
+                        val item = menu.getItem(i)
+                        binding.bottomNavigation.findViewById<View>(item.itemId)?.setOnLongClickListener { true }
                     }
                 }
 
