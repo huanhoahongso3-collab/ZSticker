@@ -2,7 +2,6 @@ package dhp.thl.tpl.ndv
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Outline
 import android.graphics.drawable.GradientDrawable
@@ -14,21 +13,14 @@ import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
-import com.kieronquinn.monetcompat.app.MonetCompatActivity
-import com.kieronquinn.monetcompat.core.MonetCompat
-import com.kieronquinn.monetcompat.extensions.views.applyMonetRecursively
-import androidx.lifecycle.lifecycleScope
-import androidx.core.graphics.ColorUtils
-import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.math.atan2
 import kotlin.math.hypot
 
-class AdvancedSettingsActivity : BaseActivity() {
+class AdvancedSettingsActivity : AppCompatActivity() {
 
     private lateinit var rootLayout: FrameLayout
     private lateinit var imgLogo: ImageView
-    private lateinit var bgLogo: ImageView
     private var rotateHandle: ImageView? = null
     private var activeSticker: View? = null
 
@@ -74,10 +66,7 @@ class AdvancedSettingsActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
-
-        rootLayout = FrameLayout(this@AdvancedSettingsActivity).apply {
+        rootLayout = FrameLayout(this).apply {
             layoutParams = FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
@@ -86,43 +75,12 @@ class AdvancedSettingsActivity : BaseActivity() {
         setContentView(rootLayout)
 
         initEmojiPool()
-        setupBackgroundLogo()
         setupLogo()
         setupRotateHandle()
 
-        lifecycleScope.launch {
-            if (materialColorEnabled) {
-                monet.awaitMonetReady()
-                val monetInstance = MonetCompat.getInstance()
-                val primaryColor = monetInstance.getAccentColor(this@AdvancedSettingsActivity)
-                
-                val backgroundColor = monetInstance.getBackgroundColor(this@AdvancedSettingsActivity)
-                rootLayout.setBackgroundColor(backgroundColor)
-                rootLayout.applyMonetRecursively()
-                
-                // Color the center logo circle background
-                (imgLogo.background as? GradientDrawable)?.setColor(primaryColor)
-                
-                // Color the rotate handle background
-                (rotateHandle?.background as? GradientDrawable)?.setColor(ColorUtils.setAlphaComponent(primaryColor, 153))
-
-                // Tint background logo
-                bgLogo.setColorFilter(primaryColor)
-            } else {
-                // Fallback to orange theme
-                val isDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-                val orangeColor = if (isDark) Color.parseColor("#FFB74D") else Color.parseColor("#FF9800")
-                (imgLogo.background as? GradientDrawable)?.setColor(orangeColor)
-                (rotateHandle?.background as? GradientDrawable)?.setColor(ColorUtils.setAlphaComponent(orangeColor, 153))
-                bgLogo.setColorFilter(orangeColor)
-                
-                rootLayout.setBackgroundColor(if (isDark) Color.parseColor("#121212") else Color.WHITE)
-            }
-        }
-
         // Initial Shuffle
         generateNextCycle()
-
+        
         rootLayout.post {
             spawnDenseMosaic(cycle[0])
             imgLogo.bringToFront()
@@ -175,17 +133,6 @@ class AdvancedSettingsActivity : BaseActivity() {
          window.decorView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
     }
 
-    private fun setupBackgroundLogo() {
-        bgLogo = ImageView(this@AdvancedSettingsActivity).apply {
-            val size = (400 * resources.displayMetrics.density).toInt()
-            layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
-            setImageResource(R.drawable.ic_launcher_foreground)
-            alpha = 0.2f
-            scaleType = ImageView.ScaleType.FIT_CENTER
-        }
-        rootLayout.addView(bgLogo)
-    }
-
     private fun setupLogo() {
         imgLogo = ImageView(this)
         val size = (126 * resources.displayMetrics.density).toInt()
@@ -201,8 +148,7 @@ class AdvancedSettingsActivity : BaseActivity() {
         imgLogo.setImageResource(R.drawable.ic_launcher_foreground)
         imgLogo.background = GradientDrawable().apply {
             shape = GradientDrawable.OVAL
-            val isDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-            setColor(if (isDark) Color.WHITE else Color.BLACK)
+            setColor(Color.WHITE)
         }
         imgLogo.elevation = 100f
 
@@ -257,7 +203,7 @@ class AdvancedSettingsActivity : BaseActivity() {
             }
             setImageResource(android.R.drawable.ic_menu_rotate)
             alpha = 0f
-            scaleType = ImageView.ScaleType.FIT_CENTER
+            elevation = 110f
             visibility = View.GONE
         }
         rootLayout.addView(rotateHandle)

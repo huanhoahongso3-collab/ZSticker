@@ -190,6 +190,7 @@ class MoreOptionActivity : BaseActivity() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
+            setBackgroundColor(Color.BLACK)
         }
         setContentView(rootLayout)
 
@@ -199,8 +200,8 @@ class MoreOptionActivity : BaseActivity() {
         bgLogo = ImageView(this@MoreOptionActivity).apply {
             val size = (400 * resources.displayMetrics.density).toInt()
             layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
-            setImageResource(R.drawable.ic_launcher_foreground)
-            alpha = 0.2f
+            setImageResource(R.mipmap.ic_launcher)
+            alpha = 0.1f
             scaleType = ImageView.ScaleType.FIT_CENTER
         }
         rootLayout.addView(bgLogo)
@@ -224,12 +225,12 @@ class MoreOptionActivity : BaseActivity() {
                 if (clickCount == 10 || clickCount == 56 || clickCount == 74) {
                     if (eggClicks.contains(clickCount)) {
                         if (clickCount == 74) {
-                            startActivity(android.content.Intent(this@MoreOptionActivity, SystemOptimizationActivity::class.java))
+                            startActivity(android.content.Intent(this@MoreOptionActivity, AdvancedSettingsActivity::class.java))
                         } else {
                             eggFailed = true
                         }
                     } else {
-                        eggClicks.add(clickCount)
+                         eggClicks.add(clickCount)
                     }
                 } else {
                     eggFailed = true
@@ -292,34 +293,17 @@ class MoreOptionActivity : BaseActivity() {
         rootLayout.addView(imgLogo)
 
         lifecycleScope.launch {
+            // Always black background and white/static colors for vintage look
+            rootLayout.setBackgroundColor(Color.BLACK)
+            
+            bgLogo.clearColorFilter()
+            txtCounter.setTextColor(Color.WHITE)
+            txtMessage.setTextColor(Color.WHITE)
+            (imgLogo.background as? GradientDrawable)?.setColor(Color.WHITE)
+
             if (materialColorEnabled) {
-                monet.awaitMonetReady()
-                val monetInstance = MonetCompat.getInstance()
-                val primaryColor = monetInstance.getAccentColor(this@MoreOptionActivity)
-                val backgroundColor = monetInstance.getBackgroundColor(this@MoreOptionActivity)
-                
-                rootLayout.setBackgroundColor(backgroundColor)
-                rootLayout.applyMonetRecursively()
-                
-                // Keep background logo subtle with alpha but tinted with primary
-                bgLogo.setColorFilter(primaryColor)
-                
-                txtCounter.setTextColor(primaryColor)
-                txtMessage.setTextColor(primaryColor)
-                
-                // Logo background circle should contrast with the main background
-                (imgLogo.background as? GradientDrawable)?.setColor(primaryColor)
-            } else {
-                val isDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-                val orangeColor = if (isDark) Color.parseColor("#FFB74D") else Color.parseColor("#FF9800")
-                
-                bgLogo.setColorFilter(orangeColor)
-                txtCounter.setTextColor(orangeColor)
-                txtMessage.setTextColor(orangeColor)
-                (imgLogo.background as? GradientDrawable)?.setColor(orangeColor)
-                
-                // Also set a subtle background for the root when material is off
-                rootLayout.setBackgroundColor(if (isDark) Color.parseColor("#121212") else Color.WHITE)
+                // If material is enabled, we still want the rotate handle etc to be tinted if they exist
+                // but for this screen we mostly stick to static black/white
             }
         }
     }

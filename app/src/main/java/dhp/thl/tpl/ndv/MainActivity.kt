@@ -174,6 +174,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             binding.switchMaterialColor.thumbIconTintList = android.content.res.ColorStateList.valueOf(
                                 if (isDark) monetInstance.getBackgroundColor(this@MainActivity) else Color.WHITE
                             )
+                            binding.loadingIndicator.setIndicatorColor(primary)
                         }
                     }
 
@@ -539,6 +540,10 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                     val surfaceColor = getThemeColor(com.google.android.material.R.attr.colorSurface)
                     binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(surfaceColor, 153)) // 60% alpha
                     
+                    val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+                    val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
+                    binding.loadingIndicator.setIndicatorColor(primary)
+
                     binding.progressBar.visibility = View.VISIBLE
                     thread {
                         var isSuccess = false
