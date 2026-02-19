@@ -6,7 +6,7 @@
     
     <color name="orange_primary_light">#F57C00</color>
 
-    <color name="orange_container">#F5F5F5</color> 
+    <color name="orange_container">#FFEFD5</color> 
     <color name="orange_on_container">#F57C00</color>
     
     <color name="light_surface">#FFFBFE</color>
@@ -19,7 +19,7 @@
     <color name="dark_on_surface">#E6E1E5</color>
     <color name="dark_background">#1C1B1F</color>
     
-    <color name="dark_orange_container">#2B2930</color> 
+    <color name="dark_orange_container">#B7410E</color> 
     <color name="dark_orange_on_container">#FFB74D</color>
     
     <color name="black">#FF000000</color>
