@@ -53,7 +53,7 @@
     <string name="lang_en">Английский</string>
     <string name="lang_vi">Вьетнамский</string>
     <string name="lang_ru">Русский</string>
-    <string name="lang_zh">Китайский (упрощенный)</string>
+    <string name="lang_zh">Китайский</string>
     <string name="lang_system">Системный</string>
 
     <string name="dynamic_color_warning_title">Уведомление о динамических цветах</string>
