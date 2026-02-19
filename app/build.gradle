@@ -4,7 +4,7 @@ apply plugin: 'kotlin-kapt'
 
 android {
     namespace 'dhp.thl.tpl.ndv'
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId 'dhp.thl.tpl.ndv'
