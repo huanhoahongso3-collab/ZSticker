@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Custom Orange Theme Colors -->
-    <color name="orange_primary">#F57C00</color>
-    <color name="orange_primary_dark">#FFB74D</color>
-    <color name="orange_primary_light">#FF9800</color>
+    <color name="orange_primary">#FFB74D</color>
+    
+    <color name="orange_primary_dark">#FF9800</color>
+    
+    <color name="orange_primary_light">#F57C00</color>
+    
     <color name="orange_container">#FFF3E0</color>
     <color name="orange_on_container">#5D3A1A</color>
     
-    <!-- Light Theme Colors -->
     <color name="light_surface">#FFFBFE</color>
     <color name="light_surface_container">#F5F5F5</color>
     <color name="light_on_surface">#1C1B1F</color>
     <color name="light_background">#FFFBFE</color>
     
-    <!-- Dark Theme Colors -->
     <color name="dark_surface">#1C1B1F</color>
     <color name="dark_surface_container">#2B2930</color>
     <color name="dark_on_surface">#E6E1E5</color>
@@ -21,7 +21,6 @@
     <color name="dark_orange_container">#4A3422</color>
     <color name="dark_orange_on_container">#FFDDB3</color>
     
-    <!-- Common Colors -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 </resources>
