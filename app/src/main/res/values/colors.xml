@@ -1,26 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="orange_primary">#FF9800</color>
+    <color name="orange_primary">#FFB74D</color>
     
-    <color name="orange_primary_dark">#E65100</color>
+    <color name="orange_primary_dark">#FFB74D</color>
     
-    <color name="orange_primary_light">#FFCC80</color>
+    <color name="orange_primary_light">#F57C00</color>
     
-    <color name="orange_container">#FFE0B2</color> 
-    <color name="orange_on_container">#2B1700</color>
+    <color name="orange_container">#603C1C</color> <color name="orange_on_container">#FFDDB3</color>
     
     <color name="light_surface">#FFFBFE</color>
-    <color name="light_surface_container">#F3F3F3</color>
+    <color name="light_surface_container">#F5F5F5</color>
     <color name="light_on_surface">#1C1B1F</color>
     <color name="light_background">#FFFBFE</color>
     
     <color name="dark_surface">#1C1B1F</color>
-    <color name="dark_surface_container">#252329</color>
+    <color name="dark_surface_container">#2B2930</color>
     <color name="dark_on_surface">#E6E1E5</color>
     <color name="dark_background">#1C1B1F</color>
     
-    <color name="dark_orange_container">#633B00</color> 
-    <color name="dark_orange_on_container">#FFDDB3</color>
+    <color name="dark_orange_container">#FFE0B2</color> <color name="dark_orange_on_container">#5D3A1A</color>
     
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
