@@ -4,8 +4,8 @@
     <color name="orange_primary_dark">#FFB74D</color>
     <color name="orange_primary_light">#F57C00</color>
 
-    <color name="orange_container">#FFF3E0</color> 
-    <color name="orange_on_container">#F57C00</color>
+    <color name="orange_container">#FFB74D</color> 
+    <color name="orange_on_container">#5D3A1A</color>
     
     <color name="light_surface">#FFFBFE</color>
     <color name="light_surface_container">#F5F5F5</color>
