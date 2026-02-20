@@ -45,8 +45,6 @@
     <string name="remove_bg">Удалить фон</string>
     <string name="rb_completed">Фон успешно удален!</string>
     <string name="rb_failed">Не удалось удалить фон</string>
-    <string name="rb_warning_title">Предупреждение об удалении фона</string>
-    <string name="rb_warning_message">Эта функция использует стороннее API (BRIA RMBG 2.0). Продолжая, вы подтверждаете, что мы не имеем доступа к чтению изображения, и всё используется и контролируется Hugging Face и сторонним сервисом.\n\nСсылка на проект: https://huggingface.co/spaces/briaai/BRIA-RMBG-2.0\nИсходный код эндпоинта: http://github.com/huanhoahongso3-collab/briarmbg2.0/</string>
     <string name="dont_show_again">Больше не показывать</string>
     <string name="continue_action">Продолжить</string>
     
