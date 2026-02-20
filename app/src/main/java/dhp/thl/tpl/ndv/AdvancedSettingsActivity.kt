@@ -271,25 +271,30 @@ class AdvancedSettingsActivity : AppCompatActivity() {
                     v.alpha = 1.0f
                 }
                 MotionEvent.ACTION_POINTER_DOWN -> {
-                    if (event.pointerCount == 2) lastFingerDist = calculateDist(event)
+                    if (event.pointerCount == 2) lastFingerDist = calculateDist(event, v)
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    v.translationX += (event.rawX - lastTouchX)
-                    v.translationY += (event.rawY - lastTouchY)
+                    if (event.pointerCount == 1) {
+                        v.translationX += (event.rawX - lastTouchX)
+                        v.translationY += (event.rawY - lastTouchY)
+                    }
                     lastTouchX = event.rawX
                     lastTouchY = event.rawY
-                    updateHandlePosition(v)
 
                     if (event.pointerCount == 2) {
-                        val currentDist = calculateDist(event)
-                        val scaleFactor = currentDist / lastFingerDist
-                        v.scaleX = (v.scaleX * scaleFactor).coerceIn(0.4f, 8.0f)
-                        v.scaleY = (v.scaleY * scaleFactor).coerceIn(0.4f, 8.0f)
+                        val currentDist = calculateDist(event, v)
+                        if (lastFingerDist > 0f) {
+                            val scaleFactor = currentDist / lastFingerDist
+                            v.scaleX = (v.scaleX * scaleFactor).coerceIn(0.4f, 8.0f)
+                            v.scaleY = (v.scaleY * scaleFactor).coerceIn(0.4f, 8.0f)
+                        }
                         lastFingerDist = currentDist
                     }
+                    updateHandlePosition(v)
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     v.alpha = 0.7f
+                    lastFingerDist = 0f
                     startHideTimer()
                 }
             }
@@ -336,7 +341,7 @@ class AdvancedSettingsActivity : AppCompatActivity() {
         handle.y = (centerY + radius * Math.sin(angleRad)).toFloat() - handle.height / 2
     }
 
-    private fun calculateDist(event: MotionEvent): Float = hypot(event.getX(0) - event.getX(1), event.getY(0) - event.getY(1))
+    private fun calculateDist(event: MotionEvent, view: View): Float = hypot(event.getX(0) - event.getX(1), event.getY(0) - event.getY(1)) * view.scaleX
 
     private fun showRandomEmojiToast() {
         val sb = StringBuilder()
