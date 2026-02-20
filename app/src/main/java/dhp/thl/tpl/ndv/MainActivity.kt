@@ -551,36 +551,25 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                     }
                 }
 
-                private fun isNetworkAvailable(): Boolean {
-                    return try {
-                        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
-                        val activeNetwork = connectivityManager.activeNetwork ?: return false
-                        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
-                        capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                    } catch (e: Exception) {
-                        false
-                    }
-                }
-
                 private fun removeBackground(uri: Uri) {
-                    if (!isNetworkAvailable()) {
-                        ToastUtils.showToast(this@MainActivity, getString(R.string.no_internet_access))
-                        return
-                    }
+                    // UI Setup for loading state
                     val surfaceColor = getThemeColor(com.google.android.material.R.attr.colorSurface)
                     binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(surfaceColor, 153)) // 60% alpha
-                    
+
                     val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
                     val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
                     binding.loadingIndicator.setIndicatorColor(primary)
 
                     binding.progressBar.visibility = View.VISIBLE
+
                     thread {
                         var isSuccess = false
                         var resultUri: Uri? = null
                         try {
                             val inputStream = contentResolver.openInputStream(uri) ?: throw Exception()
-                            val url = URL("https://briarmbg20.vercel.app/api/rmbg")
+
+                            // Updated to the stable 1.4 proxy endpoint
+                            val url = URL("https://bria-rmbg-1-4-proxy.vercel.app/api/rmbg")
                             val connection = (url.openConnection() as HttpURLConnection).apply {
                                 requestMethod = "POST"
                                 doOutput = true
@@ -589,8 +578,10 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                                 readTimeout = 30000
                             }
 
+                            // Stream the image data to the proxy
                             connection.outputStream.use { out -> inputStream.copyTo(out) }
 
+                            // Handle successful response (Engine 1.4)
                             if (connection.responseCode == 200) {
                                 val file = File(filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
                                 connection.inputStream.use { input ->
@@ -600,6 +591,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                                 isSuccess = true
                             }
                         } catch (e: Exception) {
+                            // If no internet or API error occurs, isSuccess remains false
                             isSuccess = false
                         }
 
@@ -610,12 +602,12 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                                 binding.recycler.scrollToPosition(0)
                                 ToastUtils.showToast(this@MainActivity, getString(R.string.rb_completed))
                             } else {
+                                // Displays failed message for all errors (including connection issues)
                                 ToastUtils.showToast(this@MainActivity, getString(R.string.rb_failed))
                             }
                         }
                     }
                 }
-
                 private fun handleEdgeToEdge() {
                     window.statusBarColor = android.graphics.Color.TRANSPARENT
                     window.navigationBarColor = android.graphics.Color.TRANSPARENT
