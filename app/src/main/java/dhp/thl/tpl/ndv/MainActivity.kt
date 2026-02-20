@@ -569,7 +569,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             val inputStream = contentResolver.openInputStream(uri) ?: throw Exception()
 
                             // Updated to the stable 1.4 proxy endpoint
-                            val url = URL("https://bria-rmbg-1-4-proxy.vercel.app/api/rmbg")
+                            val url = URL("https://bria14proxy.vercel.app/api/nobg")
                             val connection = (url.openConnection() as HttpURLConnection).apply {
                                 requestMethod = "POST"
                                 doOutput = true
