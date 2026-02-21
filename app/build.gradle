@@ -14,11 +14,21 @@ android {
         versionName '5.6.7'
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Only include resources for supported languages
+        resConfigs "en", "vi", "ru", "zh"
+        
+        // Filter ABIs to exclude x86 (huge size reduction for MediaPipe)
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+        }
     }
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
+            zipAlignEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
