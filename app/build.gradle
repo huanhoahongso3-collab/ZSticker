@@ -19,6 +19,9 @@ android {
         resConfigs "en", "vi", "ru", "zh"
         
         // Filter ABIs to exclude x86 (huge size reduction for MediaPipe)
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+        }
     }
 
     buildTypes {

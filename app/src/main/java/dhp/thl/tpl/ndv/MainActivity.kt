@@ -6,12 +6,14 @@ import android.view.animation.AnticipateInterpolator
 import androidx.core.animation.doOnEnd
 
 import android.Manifest
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Color
+import android.provider.MediaStore
 import android.graphics.Bitmap
 import android.graphics.Typeface
 import android.net.Uri
@@ -461,6 +463,23 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             2 -> "settings"
                             else -> "all"
                         }
+
+                        // Validation
+                        if (type == "image" || type == "all") {
+                            val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") } ?: emptyArray()
+                            if (stickerFiles.isEmpty() && type == "image") {
+                                ToastUtils.showToast(this, getString(R.string.no_stickers_found))
+                                return@showPaneDialog
+                            }
+                        }
+                        if (type == "history" || type == "all") {
+                            val history = getSharedPreferences("recents", MODE_PRIVATE).getString("list", "") ?: ""
+                            if (history.isEmpty() && type == "history") {
+                                ToastUtils.showToast(this, getString(R.string.no_stickers_found))
+                                return@showPaneDialog
+                            }
+                        }
+
                         val fileName = BackupHelper.exportBackup(this, type)
                         if (fileName != null) {
                             ToastUtils.showToast(this, getString(R.string.export_success, fileName))
@@ -868,11 +887,36 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 private fun exportSingleSticker(uri: Uri) {
                     try {
                         val file = File(filesDir, uri.lastPathSegment ?: "")
-                        val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
-                        if (!outDir.exists()) outDir.mkdirs()
-                            File(outDir, file.name).outputStream().use { out -> file.inputStream().use { it.copyTo(out) } }
+                        if (!file.exists()) {
+                            ToastUtils.showToast(this, getString(R.string.failed))
+                            return
+                        }
+
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            val resolver = contentResolver
+                            val contentValues = ContentValues().apply {
+                                put(MediaStore.MediaColumns.DISPLAY_NAME, file.name)
+                                put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/ZSticker")
+                            }
+                            val outputUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                            if (outputUri != null) {
+                                resolver.openOutputStream(outputUri)?.use { out ->
+                                    file.inputStream().use { it.copyTo(out) }
+                                }
+                                ToastUtils.showToast(this, getString(R.string.success))
+                            } else {
+                                ToastUtils.showToast(this, getString(R.string.failed))
+                            }
+                        } else {
+                            val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
+                            if (!outDir.exists()) outDir.mkdirs()
+                            val outFile = File(outDir, file.name)
+                            outFile.outputStream().use { out -> file.inputStream().use { it.copyTo(out) } }
                             ToastUtils.showToast(this, getString(R.string.success))
+                        }
                     } catch (e: Exception) {
+                        e.printStackTrace()
                         ToastUtils.showToast(this, getString(R.string.failed))
                     }
                 }

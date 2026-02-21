@@ -1,12 +1,16 @@
 package dhp.thl.tpl.ndv
 
+import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.OutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -17,11 +21,26 @@ object BackupHelper {
         try {
             val time = System.currentTimeMillis()
             val fileName = "${type}backup_$time.zip"
-            val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
-            if (!outDir.exists()) outDir.mkdirs()
             
-            val zipFile = File(outDir, fileName)
-            val zos = ZipOutputStream(FileOutputStream(zipFile))
+            val outputStream: OutputStream?
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val resolver = context.contentResolver
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                    put(MediaStore.MediaColumns.MIME_TYPE, "application/zip")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/ZSticker")
+                }
+                val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues) ?: return null
+                outputStream = resolver.openOutputStream(uri)
+            } else {
+                val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
+                if (!outDir.exists()) outDir.mkdirs()
+                val zipFile = File(outDir, fileName)
+                outputStream = FileOutputStream(zipFile)
+            }
+
+            if (outputStream == null) return null
+            val zos = ZipOutputStream(outputStream)
 
             if (type == "image" || type == "all") {
                 val stickerFiles = context.filesDir.listFiles { f -> f.name.startsWith("zsticker_") } ?: emptyArray()
