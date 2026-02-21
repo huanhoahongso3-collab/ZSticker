@@ -142,11 +142,22 @@
                                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" />
 
                                 <LinearLayout
-                                    android:id="@+id/itemExportAll"
+                                    android:id="@+id/itemExport"
                                     style="@style/InfoItemStyle">
-                                    <ImageView android:id="@+id/imgExportAll" style="@style/InfoIconStyle" android:src="@drawable/ic_export_all"/>
+                                    <ImageView android:id="@+id/imgExport" style="@style/InfoIconStyle" android:src="@drawable/ic_export"/>
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_export_all_title" style="@style/TextAppearance.Material3.TitleMedium"/>
+                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_export_title" style="@style/TextAppearance.Material3.TitleMedium"/>
+                                    </LinearLayout>
+                                </LinearLayout>
+
+                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" />
+
+                                <LinearLayout
+                                    android:id="@+id/itemImport"
+                                    style="@style/InfoItemStyle">
+                                    <ImageView android:id="@+id/imgImport" style="@style/InfoIconStyle" android:src="@drawable/ic_import"/>
+                                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_import_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                                     </LinearLayout>
                                 </LinearLayout>
 

@@ -14,7 +14,16 @@
     <string name="info_repo_title">Source Code</string>
     <string name="info_repo_note">https://github.com/huanhoahongso3-collab/ZSticker</string>
     <string name="info_license_title">License</string>
-    <string name="info_export_all_title">Export all stickers</string>
+    <string name="info_export_title">Export backup</string>
+    <string name="export_image">Export all image</string>
+    <string name="export_history">Export all history</string>
+    <string name="export_settings">Export all settings</string>
+    <string name="export_all">Export all</string>
+    <string name="info_import_title">Import backup</string>
+    <string name="import_image">Import all image</string>
+    <string name="import_history">Import all history</string>
+    <string name="import_settings">Import all settings</string>
+    <string name="import_all">Import all</string>
     <string name="info_remove_recent_title">Remove all recent stickers</string>
     <string name="info_remove_recent_confirm_title">Delete all history?</string>
     <string name="info_remove_all_title">Remove all stickers</string>

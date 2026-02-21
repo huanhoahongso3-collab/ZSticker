@@ -378,7 +378,8 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                     binding.itemLicense.setOnClickListener {
                         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.gnu.org/licenses/gpl-3.0.html")))
                     }
-                    binding.itemExportAll.setOnClickListener { exportAllStickers() }
+                    binding.itemExport.setOnClickListener { showExportDialog() }
+                    binding.itemImport.setOnClickListener { showImportDialog() }
                     binding.itemRemoveRecent.setOnClickListener { confirmRemoveRecent() }
                     binding.itemRemoveAll.setOnClickListener { confirmDeleteAll() }
                     binding.itemOpenSource.setOnClickListener { showOpenSourceLicenses() }
@@ -445,27 +446,64 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
                 // --- STICKER OPERATIONS ---
 
-                private fun exportAllStickers() {
-                    val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") } ?: emptyArray()
-                    if (stickerFiles.isEmpty()) {
-                        ToastUtils.showToast(this, getString(R.string.no_stickers_found))
-                        return
-                    }
-                    try {
-                        val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
-                        if (!outDir.exists()) outDir.mkdirs()
-                            var successCount = 0
-                            stickerFiles.forEach { src ->
-                                val destFile = File(outDir, src.name)
-                                src.inputStream().use { input ->
-                                    destFile.outputStream().use { output -> if (input.copyTo(output) > 0) successCount++ }
-                                }
-                            }
-                            Toast.makeText(this, if (successCount > 0) getString(R.string.success) else getString(R.string.failed), Toast.LENGTH_SHORT).show()
-                    } catch (e: Exception) {
-                        Toast.makeText(this, getString(R.string.failed), Toast.LENGTH_SHORT).show()
+                private fun showExportDialog() {
+                    val options = listOf(
+                        OptionItem(R.drawable.ic_export, getString(R.string.export_image)),
+                        OptionItem(R.drawable.ic_export, getString(R.string.export_history)),
+                        OptionItem(R.drawable.ic_export, getString(R.string.export_settings)),
+                        OptionItem(R.drawable.ic_export_all, getString(R.string.export_all))
+                    )
+                    showPaneDialog(getString(R.string.info_export_title), options) { which ->
+                        val type = when (which) {
+                            0 -> "image"
+                            1 -> "history"
+                            2 -> "settings"
+                            else -> "all"
+                        }
+                        if (BackupHelper.exportBackup(this, type)) {
+                            ToastUtils.showToast(this, getString(R.string.success))
+                        } else {
+                            ToastUtils.showToast(this, getString(R.string.failed))
+                        }
                     }
                 }
+
+                private val importBackupLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                    if (result.resultCode == RESULT_OK) {
+                        result.data?.data?.let { uri ->
+                            if (BackupHelper.importBackup(this, uri)) {
+                                ToastUtils.showToast(this, getString(R.string.success))
+                                adapter.refreshData(this)
+                                adapterRecents.refreshData(this)
+                            } else {
+                                ToastUtils.showToast(this, getString(R.string.failed))
+                            }
+                        }
+                    }
+                }
+
+                private fun showImportDialog() {
+                    val options = listOf(
+                        OptionItem(R.drawable.ic_export, getString(R.string.import_image)),
+                        OptionItem(R.drawable.ic_export, getString(R.string.import_history)),
+                        OptionItem(R.drawable.ic_export, getString(R.string.import_settings)),
+                        OptionItem(R.drawable.ic_export_all, getString(R.string.import_all))
+                    )
+                    showPaneDialog(getString(R.string.info_import_title), options) { which ->
+                        // The user chooses a type, but the zip itself contains what was exported.
+                        // We can just open the file browser
+                        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                            type = "application/zip"
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                val initialUri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3APictures%2FZSticker")
+                                putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, initialUri)
+                            }
+                        }
+                        importBackupLauncher.launch(intent)
+                    }
+                }
+
 
                 /**
                  * Imports a single URI as a sticker.
