@@ -14,7 +14,6 @@
     <string name="info_repo_title">Mã nguồn</string>
     <string name="info_repo_note">https://github.com/huanhoahongso3-collab/ZSticker</string>
     <string name="info_license_title">Giấy phép</string>
-    <string name="info_export_all_title">Xuất tất cả nhãn dán</string>
     <string name="info_remove_recent_title">Xóa tất cả nhãn dán gần đây</string>
     <string name="info_remove_recent_confirm_title">Xóa tất cả lịch sử?</string>
     <string name="info_remove_all_title">Xóa tất cả nhãn dán</string>
