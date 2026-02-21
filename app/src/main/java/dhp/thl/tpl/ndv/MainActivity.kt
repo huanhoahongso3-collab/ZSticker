@@ -155,7 +155,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             // Tint all icons in options pane
                             listOf(
                                 binding.imgTheme, binding.imgMaterialColor, binding.imgLanguage,
-                                binding.imgExportAll,
+                                binding.imgExport, binding.imgImport,
                                 binding.imgVersion, binding.imgRepo, binding.imgLicense, binding.imgOpenSource
                             ).forEach { icon ->
                                 icon.setColorFilter(primary)
@@ -490,8 +490,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                         OptionItem(R.drawable.ic_export_all, getString(R.string.import_all))
                     )
                     showPaneDialog(getString(R.string.info_import_title), options) { which ->
-                        // The user chooses a type, but the zip itself contains what was exported.
-                        // We can just open the file browser
                         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                             addCategory(Intent.CATEGORY_OPENABLE)
                             type = "application/zip"
@@ -503,7 +501,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                         importBackupLauncher.launch(intent)
                     }
                 }
-
 
                 /**
                  * Imports a single URI as a sticker.
@@ -604,32 +601,32 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                         var isSuccess = false
                         var resultUri: Uri? = null
                         try {
-                            val inputStream = contentResolver.openInputStream(uri) ?: throw Exception()
-
-                            // Updated to the stable 1.4 proxy endpoint
-                            val url = URL("https://bria14proxy.vercel.app/api/nobg")
-                            val connection = (url.openConnection() as HttpURLConnection).apply {
-                                requestMethod = "POST"
-                                doOutput = true
-                                setRequestProperty("Content-Type", "application/octet-stream")
-                                connectTimeout = 30000
-                                readTimeout = 30000
+                            val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                                val source = android.graphics.ImageDecoder.createSource(contentResolver, uri)
+                                android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
+                                    decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
+                                    decoder.isMutableRequired = true
+                                }
+                            } else {
+                                @Suppress("DEPRECATION")
+                                android.provider.MediaStore.Images.Media.getBitmap(contentResolver, uri)
                             }
+                            
+                            val argbBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
 
-                            // Stream the image data to the proxy
-                            connection.outputStream.use { out -> inputStream.copyTo(out) }
-
-                            // Handle successful response (Engine 1.4)
-                            if (connection.responseCode == 200) {
+                            val remover = MediaPipeBackgroundRemover(this@MainActivity)
+                            val outBitmap = remover.removeBackground(argbBitmap)
+                            
+                            if (outBitmap != null) {
                                 val file = File(filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
-                                connection.inputStream.use { input ->
-                                    FileOutputStream(file).use { out -> input.copyTo(out) }
+                                FileOutputStream(file).use { out ->
+                                    outBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
                                 }
                                 resultUri = Uri.fromFile(file)
                                 isSuccess = true
                             }
                         } catch (e: Exception) {
-                            // If no internet or API error occurs, isSuccess remains false
+                            e.printStackTrace()
                             isSuccess = false
                         }
 
@@ -640,7 +637,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                                 binding.recycler.scrollToPosition(0)
                                 ToastUtils.showToast(this@MainActivity, getString(R.string.rb_completed))
                             } else {
-                                // Displays failed message for all errors (including connection issues)
                                 ToastUtils.showToast(this@MainActivity, getString(R.string.rb_failed))
                             }
                         }
@@ -807,7 +803,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             val selectedOption = options[which].text
             when {
                 selectedOption == getString(R.string.export) -> exportSingleSticker(uri)
-                selectedOption == getString(R.string.remove_bg) -> checkAndShowBackgroundRemovalWarning(uri)
+                selectedOption == getString(R.string.remove_bg) -> removeBackground(uri)
                 selectedOption == getString(R.string.delete) -> deleteSticker(uri)
                 selectedOption == getString(R.string.delete_history) -> entry?.let { removeFromRecents(it) }
             }
@@ -862,55 +858,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 }
                 container.addView(divider)
             }
-        }
-
-        dialog.showMonetDialog(this)
-    }
-
-    private fun checkAndShowBackgroundRemovalWarning(uri: Uri) {
-        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
-        if (prefs.getBoolean("dont_show_rb_warning", false)) {
-            removeBackground(uri)
-            return
-        }
-
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_warning, null)
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setView(dialogView)
-            .create()
-
-        val titleView = dialogView.findViewById<TextView>(R.id.dialog_title)
-        val messageView = dialogView.findViewById<TextView>(R.id.dialog_message)
-        val iconView = dialogView.findViewById<ImageView>(R.id.icon_warning)
-        val checkBox = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cb_dont_show_again)
-
-        titleView.text = boldTitle(getString(R.string.rb_warning_title))
-        messageView.text = getString(R.string.rb_warning_message)
-        iconView.setImageResource(R.drawable.ic_remove_bg)
-        
-        val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
-        val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
-        iconView.setColorFilter(primary)
-        messageView.setLinkTextColor(primary)
-
-        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_cancel)
-        val btnContinue = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_continue)
-        
-        btnCancel.setTextColor(primary)
-        
-        checkBox.buttonTintList = android.content.res.ColorStateList.valueOf(primary)
-        
-        val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-        btnContinue.setTextColor(if (isDark) Color.BLACK else Color.WHITE)
-        btnContinue.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
-
-        btnCancel.setOnClickListener { dialog.dismiss() }
-        btnContinue.setOnClickListener {
-            if (checkBox.isChecked) {
-                prefs.edit().putBoolean("dont_show_rb_warning", true).apply()
-            }
-            dialog.dismiss()
-            removeBackground(uri)
         }
 
         dialog.showMonetDialog(this)
