@@ -45,10 +45,7 @@
     <string name="remove_bg">Xóa phông nền</string>
     <string name="rb_completed">Xóa phông nền hoàn tất</string>
     <string name="rb_failed">Xóa phông nền thất bại</string>
-    <string name="rb_warning_title">Cảnh báo xóa phông nền</string>
-    <string name="rb_warning_message">Tính năng này sử dụng API của bên thứ ba (BRIA RMBG 1.4). Bằng cách tiếp tục, bạn chấp nhận rằng chúng tôi không có quyền đọc hình ảnh và mọi thứ được sử dụng và kiểm soát bởi Hugging Face và dịch vụ của bên thứ ba.\n\nLiên kết dự án: https://huggingface.co/spaces/briaai/BRIA-RMBG-1.4\nMã nguồn Endpoint: https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY</string>
-    <string name="dont_show_again">Không hiện lại</string>
-    <string name="continue_action">Tiếp tục</string>
+
 
     <string name="lang_en">Tiếng Anh</string>
     <string name="lang_vi">Tiếng Việt</string>
