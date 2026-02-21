@@ -14,6 +14,17 @@
     <string name="info_repo_title">Исходный код</string>
     <string name="info_repo_note">https://github.com/huanhoahongso3-collab/ZSticker</string>
     <string name="info_license_title">Лицензия</string>
+    <string name="info_export_title">Экспорт бэкапа</string>
+    <string name="export_image">Экспортировать все изображения</string>
+    <string name="export_history">Экспортировать всю историю</string>
+    <string name="export_settings">Экспортировать все настройки</string>
+    <string name="export_all">Экспортировать всё</string>
+    <string name="info_import_title">Импорт бэкапа</string>
+    <string name="import_image">Импортировать все изображения</string>
+    <string name="import_history">Импортировать всю историю</string>
+    <string name="import_settings">Импортировать все настройки</string>
+    <string name="import_all">Импортировать всё</string>
+    <string name="export_success">Экспортировано во внутреннюю память/Pictures/ZSticker/%s</string>
     <string name="info_remove_recent_title">Удалить все недавние стикеры</string>
     <string name="info_remove_recent_confirm_title">Очистить историю?</string>
     <string name="info_remove_all_title">Удалить все стикеры</string>

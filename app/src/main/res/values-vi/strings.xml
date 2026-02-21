@@ -14,6 +14,17 @@
     <string name="info_repo_title">Mã nguồn</string>
     <string name="info_repo_note">https://github.com/huanhoahongso3-collab/ZSticker</string>
     <string name="info_license_title">Giấy phép</string>
+    <string name="info_export_title">Xuất bản sao lưu</string>
+    <string name="export_image">Xuất tất cả hình ảnh</string>
+    <string name="export_history">Xuất tất cả lịch sử</string>
+    <string name="export_settings">Xuất tất cả cài đặt</string>
+    <string name="export_all">Xuất tất cả</string>
+    <string name="info_import_title">Nhập bản sao lưu</string>
+    <string name="import_image">Nhập tất cả hình ảnh</string>
+    <string name="import_history">Nhập tất cả lịch sử</string>
+    <string name="import_settings">Nhập tất cả cài đặt</string>
+    <string name="import_all">Nhập tất cả</string>
+    <string name="export_success">Đã xuất ra Bộ nhớ trong/Pictures/ZSticker/%s</string>
     <string name="info_remove_recent_title">Xóa tất cả nhãn dán gần đây</string>
     <string name="info_remove_recent_confirm_title">Xóa tất cả lịch sử?</string>
     <string name="info_remove_all_title">Xóa tất cả nhãn dán</string>

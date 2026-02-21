@@ -13,11 +13,11 @@ import java.util.zip.ZipOutputStream
 
 object BackupHelper {
 
-    fun exportBackup(context: Context, type: String): Boolean {
+    fun exportBackup(context: Context, type: String): String? {
         try {
             val time = System.currentTimeMillis()
             val fileName = "${type}backup_$time.zip"
-            val outDir = File(Environment.getExternalStorageDirectory(), "ZSticker")
+            val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
             if (!outDir.exists()) outDir.mkdirs()
             
             val zipFile = File(outDir, fileName)
@@ -45,10 +45,10 @@ object BackupHelper {
             }
 
             zos.close()
-            return true
+            return fileName
         } catch (e: Exception) {
             e.printStackTrace()
-            return false
+            return null
         }
     }
 

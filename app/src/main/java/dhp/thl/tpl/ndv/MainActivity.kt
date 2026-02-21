@@ -449,9 +449,9 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
                 private fun showExportDialog() {
                     val options = listOf(
-                        OptionItem(R.drawable.ic_export, getString(R.string.export_image)),
-                        OptionItem(R.drawable.ic_export, getString(R.string.export_history)),
-                        OptionItem(R.drawable.ic_export, getString(R.string.export_settings)),
+                        OptionItem(R.drawable.ic_export_image, getString(R.string.export_image)),
+                        OptionItem(R.drawable.ic_export_history, getString(R.string.export_history)),
+                        OptionItem(R.drawable.ic_export_settings, getString(R.string.export_settings)),
                         OptionItem(R.drawable.ic_export_all, getString(R.string.export_all))
                     )
                     showPaneDialog(getString(R.string.info_export_title), options) { which ->
@@ -461,8 +461,9 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             2 -> "settings"
                             else -> "all"
                         }
-                        if (BackupHelper.exportBackup(this, type)) {
-                            ToastUtils.showToast(this, getString(R.string.success))
+                        val fileName = BackupHelper.exportBackup(this, type)
+                        if (fileName != null) {
+                            ToastUtils.showToast(this, getString(R.string.export_success, fileName))
                         } else {
                             ToastUtils.showToast(this, getString(R.string.failed))
                         }
@@ -485,10 +486,10 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
                 private fun showImportDialog() {
                     val options = listOf(
-                        OptionItem(R.drawable.ic_export, getString(R.string.import_image)),
-                        OptionItem(R.drawable.ic_export, getString(R.string.import_history)),
-                        OptionItem(R.drawable.ic_export, getString(R.string.import_settings)),
-                        OptionItem(R.drawable.ic_export_all, getString(R.string.import_all))
+                        OptionItem(R.drawable.ic_import_image, getString(R.string.import_image)),
+                        OptionItem(R.drawable.ic_import_history, getString(R.string.import_history)),
+                        OptionItem(R.drawable.ic_import_settings, getString(R.string.import_settings)),
+                        OptionItem(R.drawable.ic_import_all, getString(R.string.import_all))
                     )
                     showPaneDialog(getString(R.string.info_import_title), options) { which ->
                         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {

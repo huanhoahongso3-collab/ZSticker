@@ -14,6 +14,17 @@
     <string name="info_repo_title">源代码</string>
     <string name="info_repo_note">https://github.com/huanhoahongso3-collab/ZSticker</string>
     <string name="info_license_title">许可证</string>
+    <string name="info_export_title">导出备份</string>
+    <string name="export_image">导出所有图片</string>
+    <string name="export_history">导出所有历史</string>
+    <string name="export_settings">导出所有设置</string>
+    <string name="export_all">导出所有</string>
+    <string name="info_import_title">导入备份</string>
+    <string name="import_image">导入所有图片</string>
+    <string name="import_history">导入所有历史</string>
+    <string name="import_settings">导入所有设置</string>
+    <string name="import_all">导入所有</string>
+    <string name="export_success">已导出至 内部存储/Pictures/ZSticker/%s</string>
     <string name="info_remove_recent_title">清除所有最近贴纸</string>
     <string name="info_remove_recent_confirm_title">删除所有历史记录？</string>
     <string name="info_remove_all_title">删除所有贴纸</string>

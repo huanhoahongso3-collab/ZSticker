@@ -47,8 +47,8 @@ class MediaPipeBackgroundRemover(private val context: Context) {
         
         for (i in 0 until (w * h)) {
             val category = byteBuffer.get().toInt()
-            // 0 is background, 1 is person/foreground
-            if (category == 0) {
+            // Invert the mapping to fix the mask where subject was being removed
+            if (category != 0) {
                 origPixels[i] = Color.TRANSPARENT
             }
         }

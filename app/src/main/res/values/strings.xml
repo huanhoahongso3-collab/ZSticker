@@ -24,6 +24,7 @@
     <string name="import_history">Import all history</string>
     <string name="import_settings">Import all settings</string>
     <string name="import_all">Import all</string>
+    <string name="export_success">Exported to Internal storage/Pictures/ZSticker/%s</string>
     <string name="info_remove_recent_title">Remove all recent stickers</string>
     <string name="info_remove_recent_confirm_title">Delete all history?</string>
     <string name="info_remove_all_title">Remove all stickers</string>
