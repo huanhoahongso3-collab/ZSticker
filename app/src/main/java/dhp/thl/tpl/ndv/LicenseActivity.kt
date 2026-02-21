@@ -107,7 +107,7 @@ class LicenseActivity : BaseActivity() {
                 Library("AndroidX Lifecycle", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("AndroidX Navigation", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("AndroidX Splash Screen", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
-                Library("Auto Background Remover", "MIT License", "Copyright (c) 2022 Ghayas Ahmad\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software."),
+                Library("Auto Background Remover", "MIT License", "Licensed under the MIT License."),
                 Library("Glide", "BSD/MIT/Apache", "License information for Glide can be found at: https://github.com/bumptech/glide/blob/master/LICENSE"),
                 Library("Kotlin Coroutines", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("Kotlin Standard Library", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),

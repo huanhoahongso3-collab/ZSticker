@@ -45,8 +45,7 @@
     <string name="remove_bg">Remove background</string>
     <string name="rb_completed">Remove background completed!</string>
     <string name="rb_failed">Failed to remove background</string>
-    <string name="dont_show_again">Don\'t show again</string>
-    <string name="continue_action">Continue</string>
+
     
     <string name="lang_en">English</string>
     <string name="lang_vi">Vietnamese</string>

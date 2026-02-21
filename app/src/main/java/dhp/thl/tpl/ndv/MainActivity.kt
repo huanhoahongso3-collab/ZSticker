@@ -57,6 +57,11 @@ import androidx.lifecycle.lifecycleScope
 import android.widget.LinearLayout
 import androidx.core.graphics.ColorUtils
 import kotlinx.coroutines.launch
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
+import android.provider.MediaStore
+import com.slowmac.autobackgroundremover.BackgroundRemover
+import com.slowmac.autobackgroundremover.OnBackgroundChangeListener
 
 class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private lateinit var binding: ActivityMainBinding
@@ -551,69 +556,278 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                     }
                 }
 
-                private fun isNetworkAvailable(): Boolean {
-                    return try {
-                        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
-                        val activeNetwork = connectivityManager.activeNetwork ?: return false
-                        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
-                        capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                private fun removeBackground(uri: Uri) {
+                    // UI Setup for loading state
+                    val surfaceColor = getThemeColor(com.google.android.material.R.attr.colorSurface)
+                    binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(surfaceColor, 153)) // 60% alpha
+
+                    val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+                    val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
+                    binding.loadingIndicator.setIndicatorColor(primary)
+
+                    binding.progressBar.visibility = View.VISIBLE
+
+                    try {
+                        val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            ImageDecoder.decodeBitmap(ImageDecoder.createSource(contentResolver, uri)) { decoder, _, _ ->
+                                decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+                                decoder.isMutableRequired = true
+                            }
+                        } else {
+                            @Suppress("DEPRECATION")
+                            MediaStore.Images.Media.getBitmap(contentResolver, uri)
+                        }
+
+                        BackgroundRemover.bitmapForProcessing(
+                            bitmap,
+                            true,
+                            object: OnBackgroundChangeListener {
+                                override fun onSuccess(bitmap: Bitmap) {
+                                    val file = File(filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
+                                    FileOutputStream(file).use { out -> 
+                                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, out) 
+                                    }
+                                    runOnUiThread {
+                                        binding.progressBar.visibility = View.GONE
+                                        adapter.refreshData(this@MainActivity)
+                                        binding.recycler.scrollToPosition(0)
+                                        ToastUtils.showToast(this@MainActivity, getString(R.string.rb_completed))
+                                    }
+                                }
+                                override fun onFailed(exception: Exception) {
+                                    runOnUiThread {
+                                        binding.progressBar.visibility = View.GONE
+                                        ToastUtils.showToast(this@MainActivity, getString(R.string.rb_failed))
+                                    }
+                                }
+                            }
+                        )
                     } catch (e: Exception) {
-                        false
+                        runOnUiThread {
+                            binding.progressBar.visibility = View.GONE
+                            ToastUtils.showToast(this@MainActivity, getString(R.string.rb_failed))
+                        }
+                    }
+                }
+                private fun handleEdgeToEdge() {
+                    window.statusBarColor = android.graphics.Color.TRANSPARENT
+                    window.navigationBarColor = android.graphics.Color.TRANSPARENT
+                    androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+
+                    ViewCompat.setOnApplyWindowInsetsListener(binding.appBarLayout) { view, insets ->
+                        val statusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+                        view.updatePadding(top = statusBarInsets.top)
+                        insets
+                    }
+                    ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigation) { view, insets ->
+                        val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+                        view.updatePadding(bottom = navInsets.bottom)
+                        insets
+                    }
+                    ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { view, insets ->
+                        val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+                        view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                            val baseMargin = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) 112 else 104
+                            bottomMargin = (baseMargin * resources.displayMetrics.density).toInt() + navInsets.bottom
+                        }
+                        insets
                     }
                 }
 
-    private fun removeBackground(uri: Uri) {
-        val surfaceColor = getThemeColor(com.google.android.material.R.attr.colorSurface)
-        binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(surfaceColor, 153)) // 60% alpha
-        
-        val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
-        val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
-        binding.loadingIndicator.setIndicatorColor(primary)
-
-        binding.progressBar.visibility = View.VISIBLE
-
-        androidx.lifecycle.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            try {
-                // Decode bitmap robustly
-                val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    val source = android.graphics.ImageDecoder.createSource(contentResolver, uri)
-                    android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
-                        decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
-                        decoder.isMutableRequired = true
+                private fun updateLayoutVisibility(itemId: Int) {
+                    when (itemId) {
+                        R.id.nav_home -> {
+                            binding.toolbar.title = SpannableString(getString(R.string.nav_home)).apply {
+                                setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
+                            }
+                            binding.recycler.visibility = View.VISIBLE
+                            binding.recyclerRecents.visibility = View.GONE
+                            binding.infoLayout.visibility = View.GONE
+                            binding.addButton.show()
+                        }
+                        R.id.nav_recents -> {
+                            binding.toolbar.title = SpannableString(getString(R.string.nav_recents)).apply {
+                                setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
+                            }
+                            binding.recycler.visibility = View.GONE
+                            binding.recyclerRecents.visibility = View.VISIBLE
+                            binding.infoLayout.visibility = View.GONE
+                            binding.addButton.hide()
+                            adapterRecents.refreshData(this)
+                        }
+                        R.id.nav_options -> {
+                            binding.toolbar.title = SpannableString(getString(R.string.nav_options)).apply {
+                                setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
+                            }
+                            binding.recycler.visibility = View.GONE
+                            binding.recyclerRecents.visibility = View.GONE
+                            binding.infoLayout.visibility = View.VISIBLE
+                            binding.addButton.hide()
+                        }
                     }
-                } else {
-                    @Suppress("DEPRECATION")
-                    MediaStore.Images.Media.getBitmap(contentResolver, uri).copy(Bitmap.Config.ARGB_8888, true)
                 }
 
-                // Perform background removal
-                val resultBitmap = bitmap.removeBackground(
-                    context = applicationContext,
-                    trimEmptyPart = true
-                )
-                
-                if (resultBitmap != null) {
-                    val file = File(filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
-                    FileOutputStream(file).use { out ->
-                        resultBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                private fun setupStickerList() {
+                    val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+                    
+                    // Home adapter
+                    val items = StickerAdapter.loadOrdered(this)
+                    adapter = StickerAdapter(items, this, materialColorEnabled = materialColorEnabled)
+                    val layoutManager = GridLayoutManager(this, 3)
+                    layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+                        override fun getSpanSize(pos: Int): Int = if (adapter.getItemViewType(pos) == 0) 3 else 1
+                    }
+                    binding.recycler.layoutManager = layoutManager
+                    binding.recycler.adapter = adapter
+
+                    // Recents adapter
+                    val recentItems = StickerAdapter.loadRecents(this)
+                    adapterRecents = StickerAdapter(recentItems, this, isRecents = true, materialColorEnabled = materialColorEnabled)
+                    val layoutManagerRecents = GridLayoutManager(this, 3)
+                    layoutManagerRecents.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+                        override fun getSpanSize(pos: Int): Int = if (adapterRecents.getItemViewType(pos) == 0) 3 else 1
+                    }
+                    binding.recyclerRecents.layoutManager = layoutManagerRecents
+                    binding.recyclerRecents.adapter = adapterRecents
+
+                    // Enable stretch overscroll if material color is enabled
+                    if (materialColorEnabled) {
+                        binding.recycler.enableStretchOverscroll()
+                        binding.recyclerRecents.enableStretchOverscroll()
+                        // info_layout is a ScrollView, enableStretchOverscroll supports NestedScrollView/RecyclerView
+                        // binding.infoLayout.enableStretchOverscroll() 
+                    }
+                }
+
+                private fun setupNavigation() {
+                    binding.bottomNavigation.setOnItemSelectedListener { item ->
+                        getSharedPreferences("settings", MODE_PRIVATE).edit().putInt("last_tab", item.itemId).apply()
+                        updateLayoutVisibility(item.itemId)
+                        true
                     }
                     
-                    runOnUiThread {
-                        binding.progressBar.visibility = View.GONE
-                        adapter.refreshData(this@MainActivity)
-                        binding.recycler.scrollToPosition(0)
-                        ToastUtils.showToast(this@MainActivity, getString(R.string.rb_completed))
+                    // Disable tooltips on long press
+                    val menu = binding.bottomNavigation.menu
+                    for (i in 0 until menu.size()) {
+                        val item = menu.getItem(i)
+                        binding.bottomNavigation.findViewById<View>(item.itemId)?.setOnLongClickListener { true }
                     }
-                } else {
-                    throw Exception("Failed to remove background")
                 }
-            } catch (e: Exception) {
-                runOnUiThread {
-                    binding.progressBar.visibility = View.GONE
-                    ToastUtils.showToast(this@MainActivity, getString(R.string.rb_failed))
+
+                override fun onStickerClick(uri: Uri) {
+                    try {
+                        val file = File(filesDir, uri.lastPathSegment ?: "")
+                        if (!file.exists()) return
+
+                        val contentUri = FileProvider.getUriForFile(this, "$packageName.provider", file)
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "image/png"
+                            putExtra(Intent.EXTRA_STREAM, contentUri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            putExtra("is_sticker", true)
+                            putExtra("type", 3)
+                            setClassName("com.zing.zalo", "com.zing.zalo.ui.TempShareViaActivity")
+                        }
+                        startActivity(intent)
+                        
+                        // Only add to recents if sharing didn't fail (no exception occurred)
+                        addToRecents(file.name)
+                    } catch (e: Exception) {
+                        ToastUtils.showToast(this, getString(R.string.zalo_share_failed))
+                    }
                 }
+
+                private fun addToRecents(fileName: String) {
+                    val prefs = getSharedPreferences("recents", MODE_PRIVATE)
+                    val list = prefs.getString("list", "")?.split(",")?.filter { it.isNotEmpty() }?.toMutableList() ?: mutableListOf()
+                    val timestamp = System.currentTimeMillis()
+                    
+                    list.add(0, "$fileName:$timestamp")
+                    if (list.size > 100) list.removeAt(100) // History limit
+                    prefs.edit().putString("list", list.joinToString(",")).apply()
+                    
+                    // Refresh recents adapter if it's currently showing
+                    if (binding.bottomNavigation.selectedItemId == R.id.nav_recents) {
+                        adapterRecents.refreshData(this)
+                    }
+                }
+
+    override fun onStickerLongClick(uri: Uri, isRecent: Boolean, entry: String?) {
+        val titleRes = if (isRecent) R.string.recent_options_title else R.string.sticker_options_title
+        val title = getString(titleRes)
+
+        val options = mutableListOf<OptionItem>()
+        options.add(OptionItem(R.drawable.ic_export, getString(R.string.export)))
+        
+        if (!isRecent) {
+            options.add(OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg)))
+            options.add(OptionItem(R.drawable.ic_delete, getString(R.string.delete)))
+        } else {
+            options.add(OptionItem(R.drawable.ic_delete, getString(R.string.delete_history)))
+        }
+
+        showPaneDialog(title, options) { which ->
+            val selectedOption = options[which].text
+            when {
+                selectedOption == getString(R.string.export) -> exportSingleSticker(uri)
+                selectedOption == getString(R.string.remove_bg) -> removeBackground(uri)
+                selectedOption == getString(R.string.delete) -> deleteSticker(uri)
+                selectedOption == getString(R.string.delete_history) -> entry?.let { removeFromRecents(it) }
             }
         }
+    }
+
+    private fun showPaneDialog(
+        title: String,
+        items: List<OptionItem>,
+        selectedIndex: Int = -1,
+        onItemClick: (Int) -> Unit
+    ) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_list_pane, null)
+        val container = dialogView.findViewById<ViewGroup>(R.id.dialog_item_container)
+        
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(boldTitle(title))
+            .setView(dialogView)
+            .setNegativeButton(getString(R.string.cancel), null)
+            .create()
+
+        items.forEachIndexed { index, item ->
+            val itemView = if (selectedIndex != -1) {
+                val adapter = ThemeAdapter(this, items, selectedIndex)
+                adapter.getView(index, null, container)
+            } else {
+                val adapter = OptionAdapter(this, items)
+                adapter.getView(index, null, container)
+            }
+
+            val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+            val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
+            val rippleColor = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 40))
+            itemView.background = android.graphics.drawable.RippleDrawable(rippleColor, itemView.background, null)
+
+            itemView.setOnClickListener {
+                onItemClick(index)
+                dialog.dismiss()
+            }
+            container.addView(itemView)
+
+            if (index < items.size - 1) {
+                val divider = View(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        1
+                    )
+                    val typedValue = android.util.TypedValue()
+                    theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurfaceVariant, typedValue, true)
+                    setBackgroundColor(typedValue.data)
+                    alpha = 0.1f
+                }
+                container.addView(divider)
+            }
+        }
+
+        dialog.showMonetDialog(this)
     }
 
                 private fun exportSingleSticker(uri: Uri) {
