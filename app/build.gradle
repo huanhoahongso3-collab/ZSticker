@@ -10,8 +10,8 @@ android {
         applicationId 'dhp.thl.tpl.ndv'
         minSdk 27
         targetSdk 35
-        versionCode 5670
-        versionName '5.6.7'
+        versionCode 5674
+        versionName '5.6.7.4'
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         
@@ -19,9 +19,6 @@ android {
         resConfigs "en", "vi", "ru", "zh"
         
         // Filter ABIs to exclude x86 (huge size reduction for MediaPipe)
-        ndk {
-            abiFilters 'armeabi-v7a', 'arm64-v8a'
-        }
     }
 
     buildTypes {
