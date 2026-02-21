@@ -62,5 +62,5 @@ dependencies {
     implementation 'com.github.KieronQuinn:MonetCompat:0.4.1'
 
     // Auto Background Remover
-    implementation 'com.github.GhayasAhmad:auto-background-remover:1.0.3'
+    implementation 'com.github.GhayasAhmad:auto-background-remover:1.0.7'
 }
