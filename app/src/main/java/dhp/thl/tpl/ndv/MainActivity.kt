@@ -792,7 +792,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         val title = getString(titleRes)
 
         val options = mutableListOf<OptionItem>()
-        options.add(OptionItem(R.drawable.ic_export, getString(R.string.export)))
+        options.add(OptionItem(R.drawable.ic_export_gallery, getString(R.string.export)))
         
         if (!isRecent) {
             options.add(OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg)))
