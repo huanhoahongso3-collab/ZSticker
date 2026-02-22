@@ -104,45 +104,32 @@ class FileActivity : BaseActivity() {
 
     private fun applyMonetIfEnabled() {
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
-        if (prefs.getBoolean("material_color_enabled", false)) {
-            val primary = monet.getAccentColor(this)
-            val alphaPrimary = ColorUtils.setAlphaComponent(primary, 40)
-            
-            val iconItems = listOf(
-                binding.imgImport, binding.imgExportHeader, binding.imgExportGallery,
-                binding.imgExportImage, binding.imgExportHistory, binding.imgExportSettings, binding.imgExportAll
-            )
-            
-            iconItems.forEach { icon ->
-                icon.setColorFilter(primary)
-                icon.backgroundTintList = android.content.res.ColorStateList.valueOf(alphaPrimary)
-            }
-            
-            binding.btnBack.setCardBackgroundColor(alphaPrimary)
-            binding.imgExpand.setColorFilter(primary)
-            
-            // Fix back button icon tint inside common circle
-            val backIcon = binding.btnBack.getChildAt(0) as? android.widget.ImageView
-            backIcon?.setColorFilter(primary)
-        } else {
-            val orange = getColor(R.color.orange_primary)
-            val alphaOrange = ColorUtils.setAlphaComponent(orange, 40)
-            
-            val iconItems = listOf(
-                binding.imgImport, binding.imgExportHeader, binding.imgExportGallery,
-                binding.imgExportImage, binding.imgExportHistory, binding.imgExportSettings, binding.imgExportAll
-            )
-            
-            iconItems.forEach { icon ->
-                icon.setColorFilter(orange)
-                icon.backgroundTintList = android.content.res.ColorStateList.valueOf(alphaOrange)
-            }
-            
-            binding.btnBack.setCardBackgroundColor(alphaOrange)
-            val backIcon = binding.btnBack.getChildAt(0) as? android.widget.ImageView
-            backIcon?.setColorFilter(orange)
-            binding.imgExpand.setColorFilter(orange)
+        val isMaterialColor = prefs.getBoolean("material_color_enabled", false)
+        
+        val primary = if (isMaterialColor) monet.getAccentColor(this) else getColor(R.color.orange_primary)
+        val alphaPrimary = ColorUtils.setAlphaComponent(primary, 30) // Subtle M3 alpha
+        
+        val iconItems = listOf(
+            binding.imgImport, binding.imgExportHeader, binding.imgExportGallery,
+            binding.imgExportImage, binding.imgExportHistory, binding.imgExportSettings, binding.imgExportAll
+        )
+        
+        iconItems.forEach { icon ->
+            icon.setColorFilter(primary)
+            icon.backgroundTintList = android.content.res.ColorStateList.valueOf(alphaPrimary)
         }
+        
+        // Match LicenseActivity's back button style (circular tinted background, no card outline)
+        binding.btnBack.setCardBackgroundColor(alphaPrimary)
+        binding.btnBack.strokeWidth = 0
+        binding.btnBack.cardElevation = 0f
+        
+        val backIcon = binding.btnBack.getChildAt(0) as? android.widget.ImageView
+        backIcon?.setColorFilter(primary)
+        
+        // Expand icon circle background and tint
+        binding.imgExpand.setColorFilter(primary)
+        binding.imgExpand.backgroundTintList = android.content.res.ColorStateList.valueOf(alphaPrimary)
     }
 
     private fun startFilePicker(type: String) {

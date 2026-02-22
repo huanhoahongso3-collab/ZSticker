@@ -64,8 +64,7 @@
                         android:id="@+id/imgEmpty"
                         android:layout_width="120dp"
                         android:layout_height="120dp"
-                        android:src="@drawable/ic_empty_state"
-                        app:tint="?attr/colorPrimary" />
+                        android:src="@drawable/ic_empty_state" />
 
                     <TextView
                         android:id="@+id/txtEmpty"

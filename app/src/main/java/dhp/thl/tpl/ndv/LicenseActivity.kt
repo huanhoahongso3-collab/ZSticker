@@ -71,7 +71,7 @@ class LicenseActivity : BaseActivity() {
                 } else {
                     androidx.core.content.ContextCompat.getColor(this@LicenseActivity, R.color.orange_primary)
                 }
-                circleBg?.setTint(ColorUtils.setAlphaComponent(primary, 40))
+                circleBg?.setTint(ColorUtils.setAlphaComponent(primary, 30))
                 
                 icon.setTint(primary)
                 
@@ -89,7 +89,7 @@ class LicenseActivity : BaseActivity() {
             }
             
             headerIcon.setColorFilter(primary)
-            headerIcon.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 40))
+            headerIcon.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 30))
             
             // Color the bold title in content
             findViewById<TextView>(R.id.txtContentTitle)?.setTextColor(primary)

@@ -60,6 +60,8 @@ import androidx.lifecycle.lifecycleScope
 import android.widget.LinearLayout
 import androidx.core.graphics.ColorUtils
 import kotlinx.coroutines.launch
+import androidx.graphics.shapes.RoundedPolygon
+import androidx.graphics.shapes.CornerRounding
 
 class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private lateinit var binding: ActivityMainBinding
@@ -67,6 +69,12 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private lateinit var adapterRecents: StickerAdapter
     private var versionClickCount = 0
     private var lastClickTime: Long = 0
+    
+    private val Cookie9Sided = RoundedPolygon.star(
+        numVerticesPerRadius = 9,
+        innerRadius = 0.92f,
+        rounding = CornerRounding(0.15f)
+    )
 
     private val startFileActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK && result.data?.getBooleanExtra("did_import", false) == true) {
@@ -205,9 +213,9 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             binding.cardSettings.setCardBackgroundColor(if (isDark) Color.parseColor("#1C1C1E") else Color.parseColor("#F5F5F5"))
                             binding.cardGeneral.setCardBackgroundColor(if (isDark) Color.parseColor("#1C1C1E") else Color.parseColor("#F5F5F5"))
                             
-                            // Let theme handle FAB colors when Material Color is disabled
-                            binding.addButton.backgroundTintList = null
-                            binding.addButton.imageTintList = null
+                            // Force apply classic FAB look when Material Color is off
+                            binding.addButton.backgroundTintList = android.content.res.ColorStateList.valueOf(orange)
+                            binding.addButton.imageTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
                             
                             listOf(
                                 binding.imgTheme, binding.imgMaterialColor, binding.imgLanguage,
@@ -683,6 +691,27 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 private fun updateEmptyState(isEmpty: Boolean, message: String) {
                     binding.emptyLayout.visibility = if (isEmpty) View.VISIBLE else View.GONE
                     binding.txtEmpty.text = message
+                    
+                    if (isEmpty) {
+                        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+                        val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
+                        val primary = if (materialColorEnabled) {
+                            MonetCompat.getInstance().getAccentColor(this)
+                        } else {
+                            getColor(R.color.orange_primary)
+                        }
+                        
+                        // Follow Material Design 3 color logic for empty state
+                        binding.imgEmpty.setColorFilter(primary)
+                        
+                        // Apply 9-sided cookie shape background
+                        val cookieColor = ColorUtils.setAlphaComponent(primary, 38) // ~15% alpha
+                        binding.imgEmpty.background = PolygonDrawable(Cookie9Sided, cookieColor)
+                        
+                        // Add padding so icon is inside the shape
+                        val padding = (24 * resources.displayMetrics.density).toInt()
+                        binding.imgEmpty.setPadding(padding, padding, padding, padding)
+                    }
                 }
 
                 private fun setupStickerList() {
@@ -825,7 +854,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
             val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
             val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
-            val rippleColor = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 40))
+            val rippleColor = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 30))
             itemView.background = android.graphics.drawable.RippleDrawable(rippleColor, itemView.background, null)
 
             itemView.setOnClickListener {
@@ -973,7 +1002,7 @@ class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<
                  iconView.clearColorFilter()
             }
             iconView.background = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.bg_circle_icon)
-            iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 40))
+            iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 30))
         }
         
         return view
@@ -1012,7 +1041,7 @@ class ThemeAdapter(context: Context, objects: List<OptionItem>, private val sele
              iconView.clearColorFilter()
         }
         iconView.background = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.bg_circle_icon)
-        iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 40))
+        iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 30))
         
         return view
     }

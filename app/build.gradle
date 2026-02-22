@@ -76,4 +76,7 @@ dependencies {
 
     // Zip4j for encrypted backups
     implementation 'net.lingala.zip4j:zip4j:2.11.5'
+
+    // Graphics Shapes for the 9-side cookie shape
+    implementation 'androidx.graphics:graphics-shapes:1.1.0'
 }

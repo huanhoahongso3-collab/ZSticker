@@ -17,15 +17,16 @@ abstract class BaseActivity : MonetCompatActivity() {
             Locale.setDefault(locale)
             config.setLocale(locale)
         } else {
-            val systemLocale = Configuration(newBase.resources.configuration).locales[0]
+            val systemLocale = newBase.resources.configuration.locales[0]
+            val lang = systemLocale.language
             val supportedLangs = listOf("en", "vi", "ru", "zh")
-            if (supportedLangs.contains(systemLocale.language)) {
-                config.setLocale(systemLocale)
+            
+            // Check if any supported language is a prefix of the system language
+            val matchedLang = supportedLangs.find { lang.startsWith(it) }
+            if (matchedLang != null) {
+                config.setLocale(Locale(matchedLang))
             } else {
-                // Fallback to English if system language not supported
-                val fallbackLocale = Locale("en")
-                Locale.setDefault(fallbackLocale)
-                config.setLocale(fallbackLocale)
+                config.setLocale(Locale("en"))
             }
         }
 
@@ -41,9 +42,8 @@ abstract class BaseActivity : MonetCompatActivity() {
 
     protected fun restartApp() {
         val intent = packageManager.getLaunchIntentForPackage(packageName)
-        intent?.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        intent?.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        intent?.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK)
         startActivity(intent)
-        Runtime.getRuntime().exit(0)
+        finishAffinity()
     }
 }
