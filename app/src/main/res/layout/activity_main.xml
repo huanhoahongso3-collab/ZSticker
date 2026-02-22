@@ -51,6 +51,33 @@
                     android:scrollbarStyle="outsideOverlay"
                     android:visibility="gone" />
 
+                <LinearLayout
+                    android:id="@+id/emptyLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    android:padding="32dp">
+
+                    <ImageView
+                        android:id="@+id/imgEmpty"
+                        android:layout_width="120dp"
+                        android:layout_height="120dp"
+                        android:src="@drawable/ic_empty_state"
+                        app:tint="?attr/colorPrimary" />
+
+                    <TextView
+                        android:id="@+id/txtEmpty"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="@string/no_stickers_found"
+                        android:textAlignment="center"
+                        style="@style/TextAppearance.Material3.TitleMedium"
+                        android:alpha="0.7" />
+                </LinearLayout>
+
                 <ScrollView
                     android:id="@+id/info_layout"
                     android:layout_width="match_parent"
@@ -142,22 +169,11 @@
                                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" />
 
                                 <LinearLayout
-                                    android:id="@+id/itemExport"
+                                    android:id="@+id/itemFiles"
                                     style="@style/InfoItemStyle">
-                                    <ImageView android:id="@+id/imgExport" style="@style/InfoIconStyle" android:src="@drawable/ic_export"/>
+                                    <ImageView android:id="@+id/imgFiles" style="@style/InfoIconStyle" android:src="@drawable/ic_export"/>
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_export_title" style="@style/TextAppearance.Material3.TitleMedium"/>
-                                    </LinearLayout>
-                                </LinearLayout>
-
-                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" />
-
-                                <LinearLayout
-                                    android:id="@+id/itemImport"
-                                    style="@style/InfoItemStyle">
-                                    <ImageView android:id="@+id/imgImport" style="@style/InfoIconStyle" android:src="@drawable/ic_import"/>
-                                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_import_title" style="@style/TextAppearance.Material3.TitleMedium"/>
+                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_files_title" style="@style/TextAppearance.Material3.TitleMedium"/>
                                     </LinearLayout>
                                 </LinearLayout>
 

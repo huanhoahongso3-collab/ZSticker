@@ -158,7 +158,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             // Tint all icons in options pane
                             listOf(
                                 binding.imgTheme, binding.imgMaterialColor, binding.imgLanguage,
-                                binding.imgExport, binding.imgImport,
+                                binding.imgFiles,
                                 binding.imgVersion, binding.imgRepo, binding.imgLicense, binding.imgOpenSource
                             ).forEach { icon ->
                                 icon.setColorFilter(primary)
@@ -310,21 +310,8 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                         }
                     }
 
-                    // --- MATERIAL COLOR TOGGLE ---
-                    val materialColorIcon = binding.imgMaterialColor
-                    // No programmatic tinting here - let XML/Theme handle it like other icons
-
-                    binding.switchMaterialColor.isChecked = materialColorEnabled
-                    binding.switchMaterialColor.setOnCheckedChangeListener { buttonView, isChecked ->
-                        if (isChecked) {
-                            prefs.edit().putBoolean("material_color_enabled", true).apply()
-                            recreate()
-                        } else {
-                            if (prefs.getBoolean("material_color_enabled", false)) {
-                                prefs.edit().putBoolean("material_color_enabled", false).apply()
-                                recreate()
-                            }
-                        }
+                    binding.itemFiles.setOnClickListener {
+                        startActivity(Intent(this, FileActivity::class.java))
                     }
 
                     setupSecondaryInfo()
@@ -381,8 +368,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                     binding.itemLicense.setOnClickListener {
                         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.gnu.org/licenses/gpl-3.0.html")))
                     }
-                    binding.itemExport.setOnClickListener { showExportDialog() }
-                    binding.itemImport.setOnClickListener { showImportDialog() }
                     binding.itemRemoveRecent.setOnClickListener { confirmRemoveRecent() }
                     binding.itemRemoveAll.setOnClickListener { confirmDeleteAll() }
                     binding.itemOpenSource.setOnClickListener { showOpenSourceLicenses() }
@@ -450,77 +435,11 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 // --- STICKER OPERATIONS ---
 
                 private fun showExportDialog() {
-                    val options = listOf(
-                        OptionItem(R.drawable.ic_export_image, getString(R.string.export_image)),
-                        OptionItem(R.drawable.ic_export_history, getString(R.string.export_history)),
-                        OptionItem(R.drawable.ic_export_settings, getString(R.string.export_settings)),
-                        OptionItem(R.drawable.ic_export_all, getString(R.string.export_all))
-                    )
-                    showPaneDialog(getString(R.string.info_export_title), options) { which ->
-                        val type = when (which) {
-                            0 -> "image"
-                            1 -> "history"
-                            2 -> "settings"
-                            else -> "all"
-                        }
-
-                        // Validation
-                        if (type == "image" || type == "all") {
-                            val stickerFiles = filesDir.listFiles { f -> f.name.startsWith("zsticker_") } ?: emptyArray()
-                            if (stickerFiles.isEmpty() && type == "image") {
-                                ToastUtils.showToast(this, getString(R.string.no_stickers_found))
-                                return@showPaneDialog
-                            }
-                        }
-                        if (type == "history" || type == "all") {
-                            val history = getSharedPreferences("recents", MODE_PRIVATE).getString("list", "") ?: ""
-                            if (history.isEmpty() && type == "history") {
-                                ToastUtils.showToast(this, getString(R.string.no_stickers_found))
-                                return@showPaneDialog
-                            }
-                        }
-
-                        val fileName = BackupHelper.exportBackup(this, type)
-                        if (fileName != null) {
-                            ToastUtils.showToast(this, getString(R.string.export_success, fileName))
-                        } else {
-                            ToastUtils.showToast(this, getString(R.string.failed))
-                        }
-                    }
-                }
-
-                private val importBackupLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-                    if (result.resultCode == RESULT_OK) {
-                        result.data?.data?.let { uri ->
-                            if (BackupHelper.importBackup(this, uri)) {
-                                ToastUtils.showToast(this, getString(R.string.success))
-                                adapter.refreshData(this)
-                                adapterRecents.refreshData(this)
-                            } else {
-                                ToastUtils.showToast(this, getString(R.string.failed))
-                            }
-                        }
-                    }
+                    // Removed - functionality moved to FileActivity
                 }
 
                 private fun showImportDialog() {
-                    val options = listOf(
-                        OptionItem(R.drawable.ic_import_image, getString(R.string.import_image)),
-                        OptionItem(R.drawable.ic_import_history, getString(R.string.import_history)),
-                        OptionItem(R.drawable.ic_import_settings, getString(R.string.import_settings)),
-                        OptionItem(R.drawable.ic_import_all, getString(R.string.import_all))
-                    )
-                    showPaneDialog(getString(R.string.info_import_title), options) { which ->
-                        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                            addCategory(Intent.CATEGORY_OPENABLE)
-                            type = "application/zip"
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                val initialUri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3APictures%2FZSticker")
-                                putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, initialUri)
-                            }
-                        }
-                        importBackupLauncher.launch(intent)
-                    }
+                    // Removed - functionality moved to FileActivity
                 }
 
                 /**
@@ -690,14 +609,11 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
                 private fun updateLayoutVisibility(itemId: Int) {
                     when (itemId) {
-                        R.id.nav_home -> {
-                            binding.toolbar.title = SpannableString(getString(R.string.nav_home)).apply {
-                                setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
-                            }
                             binding.recycler.visibility = View.VISIBLE
                             binding.recyclerRecents.visibility = View.GONE
                             binding.infoLayout.visibility = View.GONE
                             binding.addButton.show()
+                            updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
                         }
                         R.id.nav_recents -> {
                             binding.toolbar.title = SpannableString(getString(R.string.nav_recents)).apply {
@@ -708,6 +624,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             binding.infoLayout.visibility = View.GONE
                             binding.addButton.hide()
                             adapterRecents.refreshData(this)
+                            updateEmptyState(adapterRecents.itemCount == 0, getString(R.string.no_history_found))
                         }
                         R.id.nav_options -> {
                             binding.toolbar.title = SpannableString(getString(R.string.nav_options)).apply {
@@ -717,19 +634,29 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             binding.recyclerRecents.visibility = View.GONE
                             binding.infoLayout.visibility = View.VISIBLE
                             binding.addButton.hide()
+                            binding.emptyLayout.visibility = View.GONE
                         }
                     }
+                }
+
+                private fun updateEmptyState(isEmpty: Boolean, message: String) {
+                    binding.emptyLayout.visibility = if (isEmpty) View.VISIBLE else View.GONE
+                    binding.txtEmpty.text = message
                 }
 
                 private fun setupStickerList() {
                     val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
                     
+                    val displayMetrics = resources.displayMetrics
+                    val screenWidthDp = displayMetrics.widthPixels / displayMetrics.density
+                    val columns = (screenWidthDp / 120).toInt().coerceAtLeast(3)
+
                     // Home adapter
                     val items = StickerAdapter.loadOrdered(this)
                     adapter = StickerAdapter(items, this, materialColorEnabled = materialColorEnabled)
-                    val layoutManager = GridLayoutManager(this, 3)
+                    val layoutManager = GridLayoutManager(this, columns)
                     layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-                        override fun getSpanSize(pos: Int): Int = if (adapter.getItemViewType(pos) == 0) 3 else 1
+                        override fun getSpanSize(pos: Int): Int = if (adapter.getItemViewType(pos) == 0) columns else 1
                     }
                     binding.recycler.layoutManager = layoutManager
                     binding.recycler.adapter = adapter
@@ -737,9 +664,9 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                     // Recents adapter
                     val recentItems = StickerAdapter.loadRecents(this)
                     adapterRecents = StickerAdapter(recentItems, this, isRecents = true, materialColorEnabled = materialColorEnabled)
-                    val layoutManagerRecents = GridLayoutManager(this, 3)
+                    val layoutManagerRecents = GridLayoutManager(this, columns)
                     layoutManagerRecents.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-                        override fun getSpanSize(pos: Int): Int = if (adapterRecents.getItemViewType(pos) == 0) 3 else 1
+                        override fun getSpanSize(pos: Int): Int = if (adapterRecents.getItemViewType(pos) == 0) columns else 1
                     }
                     binding.recyclerRecents.layoutManager = layoutManagerRecents
                     binding.recyclerRecents.adapter = adapterRecents
@@ -974,7 +901,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 }
 }
 
-data class OptionItem(val iconRes: Int, val text: String)
+
 
 class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<OptionItem>(context, 0, objects) {
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {

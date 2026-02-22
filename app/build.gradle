@@ -73,4 +73,7 @@ dependencies {
 
     // MediaPipe Image Segmenter
     implementation 'com.google.mediapipe:tasks-vision:0.10.14'
+
+    // Zip4j for encrypted backups
+    implementation 'net.lingala.zip4j:zip4j:2.11.5'
 }

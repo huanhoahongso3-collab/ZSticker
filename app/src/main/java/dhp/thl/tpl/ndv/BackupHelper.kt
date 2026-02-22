@@ -7,122 +7,200 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import net.lingala.zip4j.ZipFile
+import net.lingala.zip4j.model.ZipParameters
+import net.lingala.zip4j.model.enums.AesKeyStrength
+import net.lingala.zip4j.model.enums.EncryptionMethod
+import org.json.JSONObject
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.OutputStream
-import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
-import java.util.zip.ZipOutputStream
+import java.text.SimpleDateFormat
+import java.util.*
 
 object BackupHelper {
 
-    fun exportBackup(context: Context, type: String): String? {
+    private const val PASSWORD = "zalonotfound"
+
+    fun exportBackup(context: Context, outStream: OutputStream, type: String): Boolean {
+        val tempFile = File(context.cacheDir, "export_temp.zip")
+        if (tempFile.exists()) tempFile.delete()
+
         try {
-            val time = System.currentTimeMillis()
-            val fileName = "${type}backup_$time.zip"
-            
-            val outputStream: OutputStream?
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val resolver = context.contentResolver
-                val contentValues = ContentValues().apply {
-                    put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                    put(MediaStore.MediaColumns.MIME_TYPE, "application/zip")
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/ZSticker")
-                }
-                val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues) ?: return null
-                outputStream = resolver.openOutputStream(uri)
-            } else {
-                val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
-                if (!outDir.exists()) outDir.mkdirs()
-                val zipFile = File(outDir, fileName)
-                outputStream = FileOutputStream(zipFile)
+            val zipFile = ZipFile(tempFile, PASSWORD.toCharArray())
+            val params = ZipParameters().apply {
+                isEncryptFiles = true
+                encryptionMethod = EncryptionMethod.AES
+                aesKeyStrength = AesKeyStrength.KEY_STRENGTH_256
             }
 
-            if (outputStream == null) return null
-            val zos = ZipOutputStream(outputStream)
+            val metadata = JSONObject()
+            metadata.put("version", 2)
+            metadata.put("type", type)
+            metadata.put("export_date", SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()))
+            
+            val contents = mutableListOf<String>()
 
             if (type == "image" || type == "all") {
                 val stickerFiles = context.filesDir.listFiles { f -> f.name.startsWith("zsticker_") } ?: emptyArray()
+                // Sort by name (which includes timestamp) to keep order
+                stickerFiles.sortBy { it.name }
                 for (file in stickerFiles) {
-                    addToZipFile(file, "images/${file.name}", zos)
+                    val p = ZipParameters(params)
+                    p.fileNameInZip = "images/${file.name}"
+                    zipFile.addFile(file, p)
                 }
+                contents.add("images")
             }
 
             if (type == "history" || type == "all") {
                 val prefsFile = File(context.applicationInfo.dataDir, "shared_prefs/recents.xml")
                 if (prefsFile.exists()) {
-                    addToZipFile(prefsFile, "prefs/recents.xml", zos)
+                    val p = ZipParameters(params)
+                    p.fileNameInZip = "prefs/recents.xml"
+                    zipFile.addFile(prefsFile, p)
+                    contents.add("history")
                 }
             }
 
             if (type == "settings" || type == "all") {
                 val prefsFile = File(context.applicationInfo.dataDir, "shared_prefs/settings.xml")
                 if (prefsFile.exists()) {
-                    addToZipFile(prefsFile, "prefs/settings.xml", zos)
+                    val p = ZipParameters(params)
+                    p.fileNameInZip = "prefs/settings.xml"
+                    zipFile.addFile(prefsFile, p)
+                    contents.add("settings")
                 }
             }
 
-            zos.close()
-            return fileName
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return null
-        }
-    }
+            metadata.put("contents", JSONObject().apply { 
+                contents.forEach { put(it, true) }
+            })
 
-    private fun addToZipFile(file: File, relativePath: String, zos: ZipOutputStream) {
-        val fis = FileInputStream(file)
-        val zipEntry = ZipEntry(relativePath)
-        zos.putNextEntry(zipEntry)
-        val bytes = ByteArray(1024)
-        var length: Int
-        while (fis.read(bytes).also { length = it } >= 0) {
-            zos.write(bytes, 0, length)
-        }
-        zos.closeEntry()
-        fis.close()
-    }
+            // Add metadata.json
+            val metaFile = File(context.cacheDir, "metadata.json")
+            metaFile.writeText(metadata.toString(4))
+            val metaParams = ZipParameters(params)
+            metaParams.fileNameInZip = "metadata.json"
+            zipFile.addFile(metaFile, metaParams)
 
-    fun importBackup(context: Context, uri: Uri): Boolean {
-        try {
-            val contentResolver = context.contentResolver
-            val inputStream = contentResolver.openInputStream(uri) ?: return false
-            val zis = ZipInputStream(inputStream)
-
-            var entry = zis.nextEntry
-            while (entry != null) {
-                val fileName = entry.name
-                if (fileName.startsWith("images/")) {
-                    val name = fileName.substringAfter("images/")
-                    val file = File(context.filesDir, name)
-                    val fos = FileOutputStream(file)
-                    val bytes = ByteArray(1024)
-                    var length: Int
-                    while (zis.read(bytes).also { length = it } >= 0) {
-                        fos.write(bytes, 0, length)
-                    }
-                    fos.close()
-                } else if (fileName.startsWith("prefs/")) {
-                    val name = fileName.substringAfter("prefs/")
-                    val file = File(context.applicationInfo.dataDir, "shared_prefs/$name")
-                    if (!file.parentFile.exists()) file.parentFile.mkdirs()
-                    val fos = FileOutputStream(file)
-                    val bytes = ByteArray(1024)
-                    var length: Int
-                    while (zis.read(bytes).also { length = it } >= 0) {
-                        fos.write(bytes, 0, length)
-                    }
-                    fos.close()
-                }
-                zis.closeEntry()
-                entry = zis.nextEntry
-            }
-            zis.close()
+            // Copy static result to output stream
+            tempFile.inputStream().use { it.copyTo(outStream) }
+            outStream.flush()
+            
+            tempFile.delete()
+            metaFile.delete()
             return true
         } catch (e: Exception) {
             e.printStackTrace()
+            if (tempFile.exists()) tempFile.delete()
             return false
         }
+    }
+
+    fun importBackup(context: Context, uri: Uri): Boolean {
+        val tempFile = File(context.cacheDir, "import_temp.zip")
+        if (tempFile.exists()) tempFile.delete()
+
+        try {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                tempFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            } ?: return false
+
+            val zipFile = ZipFile(tempFile)
+            
+            // Check if encrypted
+            if (zipFile.isEncrypted) {
+                zipFile.setPassword(PASSWORD.toCharArray())
+            }
+
+            // Extract to temp folder first to detect content
+            val extractDir = File(context.cacheDir, "extract_temp")
+            if (extractDir.exists()) extractDir.deleteRecursively()
+            extractDir.mkdirs()
+            
+            zipFile.extractAll(extractDir.absolutePath)
+
+            // Auto-discovery
+            val metaFile = File(extractDir, "metadata.json")
+            val imagesDir = File(extractDir, "images")
+            val prefsDir = File(extractDir, "prefs")
+
+            // Restore images
+            if (imagesDir.exists() && imagesDir.isDirectory) {
+                imagesDir.listFiles()?.forEach { file ->
+                    file.copyTo(File(context.filesDir, file.name), overwrite = true)
+                }
+            }
+
+            // Restore prefs
+            if (prefsDir.exists() && prefsDir.isDirectory) {
+                prefsDir.listFiles()?.forEach { file ->
+                    val target = File(context.applicationInfo.dataDir, "shared_prefs/${file.name}")
+                    if (!target.parentFile.exists()) target.parentFile.mkdirs()
+                    file.copyTo(target, overwrite = true)
+                }
+            }
+
+            extractDir.deleteRecursively()
+            tempFile.delete()
+            return true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            if (tempFile.exists()) tempFile.delete()
+            return false
+        }
+    }
+
+    fun exportAllStickersToGallery(context: Context): Int {
+        val stickerFiles = context.filesDir.listFiles { f -> f.name.startsWith("zsticker_") } ?: emptyArray()
+        if (stickerFiles.isEmpty()) return 0
+        
+        var count = 0
+        val outDir = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            null // Handle via MediaStore below
+        } else {
+            val dir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
+            if (!dir.exists()) dir.mkdirs()
+            dir
+        }
+
+        for (file in stickerFiles) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    val resolver = context.contentResolver
+                    val contentValues = ContentValues().apply {
+                        put(MediaStore.MediaColumns.DISPLAY_NAME, "sticker_${file.name}")
+                        put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/ZSticker")
+                        put(MediaStore.MediaColumns.IS_PENDING, 1)
+                    }
+                    val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                    if (uri != null) {
+                        resolver.openOutputStream(uri)?.use { out ->
+                            file.inputStream().use { it.copyTo(out) }
+                        }
+                        contentValues.clear()
+                        contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                        resolver.update(uri, contentValues, null, null)
+                        count++
+                    }
+                } else {
+                    val outFile = File(outDir, "sticker_${file.name}")
+                    file.inputStream().use { input ->
+                        outFile.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    count++
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        return count
     }
 }

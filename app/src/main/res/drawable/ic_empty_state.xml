@@ -1,0 +1,23 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- Nonagon background -->
+    <path
+        android:fillColor="?attr/colorPrimary"
+        android:fillAlpha="0.1"
+        android:pathData="M60,10 L94,22 L110,55 L102,88 L75,110 L45,110 L18,88 L10,55 L26,22 Z" />
+    <!-- Outer Cross / Icon -->
+    <path
+        android:fillColor="?attr/colorPrimary"
+        android:pathData="M40,40 L80,80 M80,40 L40,80"
+        android:strokeColor="?attr/colorPrimary"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+    <!-- Inner folder-ish or box-ish shape to represent "stickers" -->
+    <path
+        android:fillColor="?attr/colorPrimary"
+        android:pathData="M45,35 H75 Q80,35 80,40 V75 Q80,80 75,80 H45 Q40,80 40,75 V40 Q40,35 45,35 Z"
+        android:fillAlpha="0.2"/>
+</vector>

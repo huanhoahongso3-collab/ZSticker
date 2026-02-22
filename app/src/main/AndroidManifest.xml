@@ -58,6 +58,12 @@
             android:theme="@style/Theme.ZSticker" />
 
         <activity
+            android:name=".FileActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.ZSticker" />
+
+        <activity
             android:name=".LicenseActivity"
             android:exported="false"
             android:screenOrientation="portrait"
