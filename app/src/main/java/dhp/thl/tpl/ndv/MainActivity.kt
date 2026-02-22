@@ -160,7 +160,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 binding.cardGeneral.setCardBackgroundColor(cardColor)
                 
                 // Match FAB to content/bottom nav theme in dark mode
-                val fabBg = if (isDark) getThemeColor(com.google.android.material.R.attr.colorSurfaceContainer) else primary
+                val fabBg = primary
                 val fabIcon = if (isDark) Color.BLACK else monetInstance.getBackgroundColor(this@MainActivity)
                 
                 binding.addButton.backgroundTintList = android.content.res.ColorStateList.valueOf(fabBg)
@@ -222,10 +222,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 binding.imgRemoveAll.backgroundTintList = android.content.res.ColorStateList.valueOf(redAlpha)
                 binding.txtRemoveAll.setTextColor(red)
                 
-                // Ensure FAB looks good without material color
-                val orange = getColor(R.color.orange_primary)
-                binding.addButton.backgroundTintList = android.content.res.ColorStateList.valueOf(orange)
-                binding.addButton.imageTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
+                // Allow FAB to use standard XML theme colors (colorSecondaryContainer) in dark/light mode
             }
         }
 
@@ -641,11 +638,11 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             if (materialColorEnabled) {
                 val monetInstance = MonetCompat.getInstance()
                 val primary = monetInstance.getAccentColor(this)
-                cookieBg = if (isDark) getThemeColor(com.google.android.material.R.attr.colorSurfaceContainer) else primary
+                cookieBg = primary
                 iconTint = if (isDark) Color.BLACK else monetInstance.getBackgroundColor(this)
             } else {
-                cookieBg = getColor(R.color.orange_primary)
-                iconTint = Color.WHITE
+                cookieBg = getThemeColor(com.google.android.material.R.attr.colorSecondaryContainer)
+                iconTint = getThemeColor(com.google.android.material.R.attr.colorOnSecondaryContainer)
             }
             
             // 9-sided cookie background follows material/fallback color exactly like FAB
