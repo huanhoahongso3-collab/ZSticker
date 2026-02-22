@@ -26,43 +26,48 @@ class MediaPipeBackgroundRemover(private val context: Context) {
         imageSegmenter = ImageSegmenter.createFromOptions(context, options)
     }
 
+    /**
+     * Removes the background from a bitmap.
+     * Fixes: Android 12 compatibility and reversed mask logic.
+     */
     fun removeBackground(bitmap: Bitmap): Bitmap? {
         val segmenter = imageSegmenter ?: return null
         
-        // 1. Convert Bitmap to MediaPipe Image
+        // 1. Prepare MediaPipe Image
         val mpImage = BitmapImageBuilder(bitmap).build()
         val result = segmenter.segment(mpImage)
         
-        // 2. Extract Category Mask safely
+        // 2. Get the Category Mask
         val categoryMask = result.categoryMask().orElse(null) ?: return null
         
         val w = bitmap.width
         val h = bitmap.height
         
-        // 3. Prepare Pixel Arrays
+        // 3. Extract pixels into a mutable array
         val pixels = IntArray(w * h)
         bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
         
-        // 4. Extract ByteBuffer
+        // 4. Extract the mask buffer
         val byteBuffer: ByteBuffer = ByteBufferExtractor.extract(categoryMask)
         byteBuffer.rewind()
         
-        /**
-         * FIX FOR ANDROID 12:
-         * In Android 12, bytes are strictly signed. A value of 255 (often used for the person mask) 
-         * reads as -1 in a signed Byte. We must use 'and 0xFF' to get the unsigned value.
-         */
+        // 5. Process the mask
         for (i in 0 until (w * h)) {
-            // Use absolute positioning byteBuffer.get(i) for stability
+            // Android 12 Fix: 'and 0xFF' ensures we treat the byte as unsigned (0-255)
+            // Absolute 'get(i)' prevents buffer position issues
             val maskValue = byteBuffer.get(i).toInt() and 0xFF
             
-            // Usually, 0 is background, and > 0 (often 1 or 255) is the person.
-            if (maskValue == 0) {
+            /**
+             * LOGIC FIX:
+             * Based on your results, the model identifies the PERSON as Category 0.
+             * Therefore, if the mask value is NOT 0, it's background -> make it transparent.
+             */
+            if (maskValue != 0) {
                 pixels[i] = Color.TRANSPARENT
             }
         }
         
-        // 5. Create Result Bitmap
+        // 6. Output the processed bitmap
         val outBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         outBitmap.setPixels(pixels, 0, w, 0, 0, w, h)
         
