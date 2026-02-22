@@ -71,7 +71,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private var versionClickCount = 0
     private var lastClickTime: Long = 0
     
-    private val Cookie9Sided = star(
+    private val Cookie9Sided = RoundedPolygon.star(
         numVerticesPerRadius = 9,
         innerRadius = 0.92f,
         rounding = CornerRounding(0.15f)
