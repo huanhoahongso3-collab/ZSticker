@@ -76,4 +76,9 @@
     <string name="material_color_unsupported">Эта версия Android не поддерживает material color.</string>
     <string name="info_opensource_title">Лицензии открытого ПО</string>
     <string name="info_opensource_note">Библиотеки, используемые в ZSticker</string>
+    <string name="info_files_title">Файловые операции</string>
+    <string name="import_auto_note">Автоопределение содержимого из ZIP</string>
+    <string name="export_choose_note">Выберите папку и содержимое для сохранения</string>
+    <string name="export_to_gallery_title">Сохранить всё в Галерею</string>
+    <string name="export_to_gallery_note">Извлечь все стикеры как PNG файлы</string>
 </resources>

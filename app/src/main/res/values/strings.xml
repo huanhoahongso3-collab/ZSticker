@@ -81,5 +81,4 @@
     <string name="export_choose_note">Choose folder and content to save</string>
     <string name="export_to_gallery_title">Save all to Gallery</string>
     <string name="export_to_gallery_note">Extract all stickers as PNG files</string>
-    <string name="no_history_found">No history found</string>
 </resources>

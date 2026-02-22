@@ -76,4 +76,9 @@
     <string name="material_color_unsupported">此 Android 版本不支持 Material 配色。</string>
     <string name="info_opensource_title">开源许可</string>
     <string name="info_opensource_note">ZSticker 使用的库</string>
+    <string name="info_files_title">文件操作</string>
+    <string name="import_auto_note">从 ZIP 自动检测内容</string>
+    <string name="export_choose_note">选择保存文件夹和内容</string>
+    <string name="export_to_gallery_title">保存全部到图库</string>
+    <string name="export_to_gallery_note">将所有贴纸导出为 PNG 文件</string>
 </resources>
