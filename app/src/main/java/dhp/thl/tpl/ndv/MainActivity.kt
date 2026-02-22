@@ -549,7 +549,16 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 }
                 
                 // Copy bitmap to ARGB_8888 if it's not
-                val argbBitmap = bitmap.copy(android.graphics.Bitmap.Config.ARGB_8888, true)
+                var argbBitmap = bitmap.copy(android.graphics.Bitmap.Config.ARGB_8888, true)
+                val maxDim = 1024
+                if (argbBitmap.width > maxDim || argbBitmap.height > maxDim) {
+                    val ratio = maxDim.toFloat() / kotlin.math.max(argbBitmap.width, argbBitmap.height)
+                    val scaled = android.graphics.Bitmap.createScaledBitmap(argbBitmap, (argbBitmap.width * ratio).toInt(), (argbBitmap.height * ratio).toInt(), true)
+                    if (scaled != argbBitmap) {
+                        argbBitmap.recycle()
+                        argbBitmap = scaled
+                    }
+                }
                 val outBitmap = backgroundRemover.removeBackground(argbBitmap)
                 
                 if (outBitmap != null) {
@@ -560,7 +569,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                     resultUri = Uri.fromFile(file)
                     isSuccess = true
                 }
-            } catch (e: Exception) { isSuccess = false }
+            } catch (t: Throwable) { isSuccess = false }
 
             runOnUiThread {
                 binding.progressBar.visibility = View.GONE
@@ -742,6 +751,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         // Regular single export/share
         options.add(OptionItem(R.drawable.ic_export_gallery, getString(R.string.export)))
         options.add(OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg)))
+        options.add(OptionItem(R.drawable.ic_view_full, getString(R.string.view_full_sticker)))
         
         if (!isRecent) {
             options.add(OptionItem(R.drawable.ic_delete, getString(R.string.delete)))
@@ -753,6 +763,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             when (options[which].text) {
                 getString(R.string.export) -> exportSingleSticker(uri)
                 getString(R.string.remove_bg) -> removeBackground(uri)
+                getString(R.string.view_full_sticker) -> viewFullSticker(uri)
                 getString(R.string.delete) -> deleteSticker(uri)
                 getString(R.string.delete_history) -> entry?.let { removeFromRecents(it) }
             }
@@ -832,6 +843,18 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         val prefs = getSharedPreferences("recents", MODE_PRIVATE)
         val list = prefs.getString("list", "")?.split(",")?.toMutableList() ?: mutableListOf()
         if (list.remove(entry)) { prefs.edit().putString("list", list.joinToString(",")).apply(); adapterRecents.refreshData(this); ToastUtils.showToast(this, getString(R.string.success)) }
+    }
+
+    private fun viewFullSticker(uri: Uri) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_view_full, null)
+        val imageView = dialogView.findViewById<ImageView>(R.id.img_full_sticker)
+        imageView.setImageURI(uri)
+        
+        MaterialAlertDialogBuilder(this)
+            .setView(dialogView)
+            .setPositiveButton(getString(android.R.string.ok), null)
+            .create()
+            .showMonetDialog(this)
     }
 
     private val pickImages = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->

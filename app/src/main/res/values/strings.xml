@@ -44,6 +44,7 @@
     <string name="sticker_options_title">Sticker Options</string>
     <string name="export">Export to Gallery</string>
     <string name="delete">Delete Sticker</string>
+    <string name="view_full_sticker">View full sticker</string>
     <string name="delete_history">Delete History</string>
     <string name="recent_options_title">Recent Options</string>
     <string name="cancel">Cancel</string>

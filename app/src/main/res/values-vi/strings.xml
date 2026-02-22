@@ -44,6 +44,7 @@
     <string name="sticker_options_title">Tùy chọn nhãn dán</string>
     <string name="export">Xuất vào bộ sưu tập</string>
     <string name="delete">Xóa nhãn dán</string>
+    <string name="view_full_sticker">Xem hình dán đầy đủ</string>
     <string name="delete_history">Xóa lịch sử</string>
     <string name="recent_options_title">Tùy chọn gần đây</string>
     <string name="cancel">Hủy bỏ</string>

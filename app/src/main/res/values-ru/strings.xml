@@ -44,6 +44,7 @@
     <string name="sticker_options_title">Опции стикера</string>
     <string name="export">Экспорт в галерею</string>
     <string name="delete">Удалить стикер</string>
+    <string name="view_full_sticker">Просмотреть полный стикер</string>
     <string name="delete_history">Удалить из истории</string>
     <string name="recent_options_title">Опции недавних</string>
     <string name="cancel">Отмена</string>
