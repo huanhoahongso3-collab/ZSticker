@@ -6,6 +6,7 @@ import android.graphics.Color
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.framework.image.ByteBufferExtractor
 import com.google.mediapipe.tasks.core.BaseOptions
+import com.google.mediapipe.tasks.core.Delegate
 import com.google.mediapipe.tasks.vision.imagesegmenter.ImageSegmenter
 import com.google.mediapipe.tasks.vision.imagesegmenter.ImageSegmenter.ImageSegmenterOptions
 import java.nio.ByteBuffer
@@ -15,28 +16,35 @@ class MediaPipeBackgroundRemover(private val context: Context) {
 
     init {
         try {
-            val baseOptions = BaseOptions.builder()
+            val baseOptionsBuilder = BaseOptions.builder()
                 .setModelAssetPath("selfie_segmenter.tflite")
-                .build()
+            
+            // FIX: Force CPU to avoid the OpenGL crashes shown in your logs
+            baseOptionsBuilder.setDelegate(Delegate.CPU)
+            
             val options = ImageSegmenterOptions.builder()
-                .setBaseOptions(baseOptions)
+                .setBaseOptions(baseOptionsBuilder.build())
                 .setOutputCategoryMask(true)
                 .setOutputConfidenceMasks(false)
                 .build()
             
             imageSegmenter = ImageSegmenter.createFromOptions(context, options)
         } catch (e: Exception) {
-            // Handle initialization failure (e.g., missing model file)
+            e.printStackTrace()
         }
     }
 
     fun removeBackground(bitmap: Bitmap): Bitmap? {
         val segmenter = imageSegmenter ?: return null
         
-        // 1. Force Software Bitmap to avoid HardwareBuffer issues on Android 11/12
-        val softwareBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, false) ?: return null
+        // Android 12 Fix: Ensure we are using a Software-backed bitmap
+        val softwareBitmap = if (bitmap.config != Bitmap.Config.ARGB_8888) {
+            bitmap.copy(Bitmap.Config.ARGB_8888, true)
+        } else {
+            bitmap
+        }
 
-        try {
+        return try {
             val mpImage = BitmapImageBuilder(softwareBitmap).build()
             val result = segmenter.segment(mpImage)
             val categoryMask = result.categoryMask()
@@ -53,19 +61,13 @@ class MediaPipeBackgroundRemover(private val context: Context) {
             val byteBuffer: ByteBuffer = ByteBufferExtractor.extract(mask)
             byteBuffer.rewind()
             
-            // 2. CRITICAL FIX: Some devices return a buffer larger/smaller than W*H 
-            // due to row padding. We must use the buffer's actual limit.
+            // Safety: Use remaining() to prevent BufferUnderflow on different CPUs
             val bufferLimit = byteBuffer.remaining()
-            val totalPixels = w * h
-            
-            for (i in 0 until totalPixels) {
-                // Safety check to prevent crashes on specific Android 9/11 devices
+            for (i in 0 until (w * h)) {
                 if (i < bufferLimit) {
                     val maskValue = byteBuffer.get().toInt() and 0xFF
-                    
-                    // Logic: If maskValue is 0, it's typically background in Selfie Segmenter
-                    // Adjust this if your subject is the one being removed
-                    if (maskValue != 0) { 
+                    // If maskValue is NOT 0, it's the background -> make transparent
+                    if (maskValue != 0) {
                         pixels[i] = Color.TRANSPARENT
                     }
                 }
@@ -73,18 +75,18 @@ class MediaPipeBackgroundRemover(private val context: Context) {
             
             val outBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
             outBitmap.setPixels(pixels, 0, w, 0, 0, w, h)
-            
-            return outBitmap
+            outBitmap
         } catch (e: Exception) {
             e.printStackTrace()
-            return null
+            null
         } finally {
-            softwareBitmap.recycle()
+            if (softwareBitmap != bitmap) {
+                softwareBitmap.recycle()
+            }
         }
     }
 
     fun close() {
         imageSegmenter?.close()
-        imageSegmenter = null
     }
 }
