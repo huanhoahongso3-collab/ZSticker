@@ -33,7 +33,7 @@ class FileActivity : BaseActivity() {
                     setResult(RESULT_OK, Intent().putExtra("did_import", true))
                     restartApp() // Apply settings instantly by restarting
                 } else {
-                    ToastUtils.showToast(this, getString(R.string.failed))
+                    ToastUtils.showToast(this, getString(R.string.not_a_backup_file))
                 }
             }
         }

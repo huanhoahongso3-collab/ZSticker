@@ -201,6 +201,12 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                     if (isDark) monetInstance.getBackgroundColor(this@MainActivity) else Color.WHITE
                 )
                 binding.loadingIndicator.setIndicatorColor(primary)
+
+                // Refresh empty state once Monet colors are settled
+                updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
+                if (binding.recyclerRecents.visibility == View.VISIBLE) {
+                    updateEmptyState(adapterRecents.itemCount == 0, getString(R.string.no_history_found))
+                }
             } else {
                 // Even if Material Color is off, the removal buttons should be red
                 val red = Color.parseColor("#FF3b30")
@@ -402,7 +408,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             .setMessage(getString(R.string.info_remove_recent_confirm_message))
             .setPositiveButton(getString(R.string.delete)) { _, _ -> removeRecentUsage() }
             .setNegativeButton(getString(R.string.cancel), null)
-            .create().showMonetDialog(this)
+            .create().showDestructiveDialog(this)
     }
 
     private fun removeRecentUsage() {
@@ -423,7 +429,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             .setMessage(getString(R.string.info_remove_all_confirm_message))
             .setPositiveButton(getString(R.string.delete)) { _, _ -> deleteAllStickers() }
             .setNegativeButton(getString(R.string.cancel), null)
-            .create().showMonetDialog(this)
+            .create().showDestructiveDialog(this)
     }
 
     private fun deleteAllStickers() {
@@ -437,6 +443,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         
         adapter.refreshData(this)
         syncRecentsAfterDeletion()
+        updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
         ToastUtils.showToast(this, if (successCount > 0) getString(R.string.success) else getString(R.string.failed))
     }
 
@@ -505,7 +512,10 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 }
             }
 
-            if (hasSuccess) adapter.refreshData(this)
+            if (hasSuccess) {
+                adapter.refreshData(this)
+                updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
+            }
             
             if (hasUnsupported) ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
             else if (hasFailed) ToastUtils.showToast(this, getString(R.string.failed))
@@ -549,6 +559,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 binding.progressBar.visibility = View.GONE
                 if (isSuccess && resultUri != null) {
                     adapter.refreshData(this@MainActivity)
+                    updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
                     binding.recycler.scrollToPosition(0)
                     ToastUtils.showToast(this@MainActivity, getString(R.string.rb_completed))
                 } else {
@@ -710,8 +721,8 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     override fun onStickerLongClick(uri: Uri, isRecent: Boolean, entry: String?) {
         val title = getString(if (isRecent) R.string.recent_options_title else R.string.sticker_options_title)
         val options = mutableListOf<OptionItem>()
+        // Regular single export/share
         options.add(OptionItem(R.drawable.ic_export, getString(R.string.export)))
-        options.add(OptionItem(R.drawable.ic_export_gallery, getString(R.string.export_to_gallery_title)))
         options.add(OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg)))
         
         if (!isRecent) {
@@ -721,15 +732,8 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         }
 
         showPaneDialog(title, options) { which ->
-            val file = File(filesDir, uri.lastPathSegment ?: "")
             when (options[which].text) {
-                getString(R.string.export) -> {
-                    if (BackupHelper.exportSingleStickerToGallery(this, file)) {
-                        ToastUtils.showToast(this, getString(R.string.success))
-                    } else {
-                        ToastUtils.showToast(this, getString(R.string.failed))
-                    }
-                }
+                getString(R.string.export) -> exportSingleSticker(uri)
                 getString(R.string.remove_bg) -> removeBackground(uri)
                 getString(R.string.delete) -> deleteSticker(uri)
                 getString(R.string.delete_history) -> entry?.let { removeFromRecents(it) }
@@ -796,9 +800,14 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         } catch (e: Exception) { ToastUtils.showToast(this, getString(R.string.failed)) }
     }
 
-    private fun deleteSticker(uri: Uri) {
+    override fun deleteSticker(uri: Uri) {
         val file = File(filesDir, uri.lastPathSegment ?: "")
-        if (file.exists() && file.delete()) { adapter.refreshData(this); syncRecentsAfterDeletion(); ToastUtils.showToast(this, getString(R.string.success)) }
+        if (file.exists() && file.delete()) { 
+            adapter.refreshData(this)
+            syncRecentsAfterDeletion()
+            updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
+            ToastUtils.showToast(this, getString(R.string.success)) 
+        }
     }
 
     private fun removeFromRecents(entry: String) {
@@ -837,9 +846,11 @@ class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<
         if (item.text == context.getString(R.string.delete) || item.text == context.getString(R.string.delete_history)) {
             val red = android.graphics.Color.parseColor("#FF3b30")
             textView.setTextColor(red); iconView.setColorFilter(red)
+            textView.setTypeface(null, android.graphics.Typeface.BOLD)
             iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(red, 30))
         } else {
             // Use the attribute color directly from the layout for best compatibility
+            textView.setTypeface(null, android.graphics.Typeface.BOLD)
             if (item.iconRes != R.drawable.ic_flag_en && item.iconRes != R.drawable.ic_flag_vi && item.iconRes != R.drawable.ic_flag_ru && item.iconRes != R.drawable.ic_flag_zh) iconView.setColorFilter(primary) else iconView.clearColorFilter()
             iconView.background = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.bg_circle_icon)
             iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 30))
@@ -854,7 +865,9 @@ class ThemeAdapter(context: Context, objects: List<OptionItem>, private val sele
         val item = getItem(position)!!
         val iconView = view.findViewById<ImageView>(R.id.item_icon)
         val radioButton = view.findViewById<RadioButton>(R.id.item_radio)
-        iconView.setImageResource(item.iconRes); view.findViewById<TextView>(R.id.item_text).text = item.text; radioButton.isChecked = (position == selectedIndex)
+        val textView = view.findViewById<TextView>(R.id.item_text)
+        iconView.setImageResource(item.iconRes); textView.text = item.text; radioButton.isChecked = (position == selectedIndex)
+        textView.setTypeface(null, android.graphics.Typeface.BOLD)
         val materialColorEnabled = context.getSharedPreferences("settings", Context.MODE_PRIVATE).getBoolean("material_color_enabled", false)
         val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(context) else androidx.core.content.ContextCompat.getColor(context, R.color.orange_primary)
         radioButton.buttonTintList = android.content.res.ColorStateList(arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf(-android.R.attr.state_checked)), intArrayOf(primary, android.graphics.Color.GRAY))
@@ -873,5 +886,16 @@ private fun androidx.appcompat.app.AlertDialog.showMonetDialog(context: android.
     getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(primary)
     getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(primary)
     getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL)?.setTextColor(primary)
+    window?.setDimAmount(0.35f)
+}
+
+private fun androidx.appcompat.app.AlertDialog.showDestructiveDialog(context: android.content.Context) {
+    val materialColorEnabled = context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE).getBoolean("material_color_enabled", false)
+    if (materialColorEnabled) window?.decorView?.applyMonetRecursively()
+    show()
+    val red = android.graphics.Color.parseColor("#FF3b30")
+    val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(context) else androidx.core.content.ContextCompat.getColor(context, R.color.orange_primary)
+    getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(red)
+    getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(primary)
     window?.setDimAmount(0.35f)
 }
