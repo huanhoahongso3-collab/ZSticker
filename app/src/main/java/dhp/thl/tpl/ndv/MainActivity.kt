@@ -646,7 +646,11 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 getColor(R.color.orange_primary)
             }
             
-            val iconTint = if (isDark) Color.BLACK else Color.WHITE
+            val iconTint = if (materialColorEnabled) {
+                if (isDark) Color.BLACK else Color.WHITE
+            } else {
+                if (isDark) Color.WHITE else Color.BLACK
+            }
             
             // 9-sided cookie background follows material/fallback color exactly like FAB
             binding.imgEmpty.background = PolygonDrawable(Cookie9Sided, cookieBg)
