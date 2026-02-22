@@ -14,7 +14,17 @@
     <string name="info_repo_title">Source Code</string>
     <string name="info_repo_note">https://github.com/huanhoahongso3-collab/ZSticker</string>
     <string name="info_license_title">License</string>
-    <string name="info_export_all_title">Export all stickers</string>
+    <string name="info_export_title">Export backup</string>
+    <string name="export_image">Export all image</string>
+    <string name="export_history">Export all history</string>
+    <string name="export_settings">Export all settings</string>
+    <string name="export_all">Export all</string>
+    <string name="info_import_title">Import backup</string>
+    <string name="import_image">Import all image</string>
+    <string name="import_history">Import all history</string>
+    <string name="import_settings">Import all settings</string>
+    <string name="import_all">Import all</string>
+    <string name="export_success">Exported to Internal storage/Pictures/ZSticker/%s</string>
     <string name="info_remove_recent_title">Remove all recent stickers</string>
     <string name="info_remove_recent_confirm_title">Delete all history?</string>
     <string name="info_remove_all_title">Remove all stickers</string>
@@ -34,6 +44,7 @@
     <string name="sticker_options_title">Sticker Options</string>
     <string name="export">Export to Gallery</string>
     <string name="delete">Delete Sticker</string>
+    <string name="view_full_sticker">View full sticker</string>
     <string name="delete_history">Delete History</string>
     <string name="recent_options_title">Recent Options</string>
     <string name="cancel">Cancel</string>
@@ -66,4 +77,11 @@
     <string name="material_color_unsupported">This version of Android doesn\'t support material color.</string>
     <string name="info_opensource_title">Open Source Licenses</string>
     <string name="info_opensource_note">Libraries used in ZSticker</string>
+    <string name="info_files_title">Import/Export</string>
+    <string name="import_auto_note">Auto-detect content from ZIP</string>
+    <string name="export_choose_note">Choose folder and content to save</string>
+    <string name="export_to_gallery_title">Save all stickers to Gallery</string>
+    <string name="export_to_gallery_note">Export all stickers to your gallery app</string>
+    <string name="export_gallery_success">Exported %d stickers to Gallery</string>
+    <string name="not_a_backup_file">Not a backup file</string>
 </resources>

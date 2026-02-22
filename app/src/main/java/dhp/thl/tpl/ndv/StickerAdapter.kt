@@ -103,7 +103,9 @@ class StickerAdapter(
             
             val files = folder.listFiles { file ->
                 file.name.startsWith("zsticker_") && file.name.endsWith(".png")
-            }?.sortedByDescending { it.lastModified() } ?: emptyList()
+            }?.sortedByDescending { file ->
+                file.name.removePrefix("zsticker_").removePrefix("rb_").substringBefore(".").toLongOrNull() ?: 0L
+            } ?: emptyList()
 
             list.addAll(files)
             return list
