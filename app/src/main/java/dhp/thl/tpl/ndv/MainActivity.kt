@@ -62,6 +62,7 @@ import androidx.core.graphics.ColorUtils
 import kotlinx.coroutines.launch
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.CornerRounding
+import androidx.graphics.shapes.star
 
 class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private lateinit var binding: ActivityMainBinding
@@ -70,7 +71,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private var versionClickCount = 0
     private var lastClickTime: Long = 0
     
-    private val Cookie9Sided = RoundedPolygon.star(
+    private val Cookie9Sided = star(
         numVerticesPerRadius = 9,
         innerRadius = 0.92f,
         rounding = CornerRounding(0.15f)
