@@ -15,7 +15,6 @@
     <string name="info_repo_note">https://github.com/huanhoahongso3-collab/ZSticker</string>
     <string name="info_license_title">Giấy phép</string>
     <string name="info_export_title">Xuất bản sao lưu</string>
-    <string name="info_files_title">Nhập/Xuất</string>
     <string name="export_image">Xuất tất cả hình ảnh</string>
     <string name="export_history">Xuất tất cả lịch sử</string>
     <string name="export_settings">Xuất tất cả cài đặt</string>
