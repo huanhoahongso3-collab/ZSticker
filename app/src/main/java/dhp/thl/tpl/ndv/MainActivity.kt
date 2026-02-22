@@ -2,6 +2,7 @@ package dhp.thl.tpl.ndv
 
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import android.animation.ObjectAnimator
+import android.animation.AnimatorInflater
 import android.view.animation.AnticipateInterpolator
 import androidx.core.animation.doOnEnd
 
