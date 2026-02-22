@@ -703,7 +703,9 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         }
         val menu = binding.bottomNavigation.menu
         for (i in 0 until menu.size()) {
-            binding.bottomNavigation.findViewById<View>(menu.getItem(i).itemId)?.setOnLongClickListener { true }
+            val view = binding.bottomNavigation.findViewById<View>(menu.getItem(i).itemId)
+            view?.setOnLongClickListener { true }
+            view?.let { androidx.appcompat.widget.TooltipCompat.setTooltipText(it, null) }
         }
     }
 
