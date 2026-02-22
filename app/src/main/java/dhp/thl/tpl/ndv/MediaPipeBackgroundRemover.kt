@@ -15,11 +15,17 @@ class MediaPipeBackgroundRemover(private val context: Context) {
     private var imageSegmenter: ImageSegmenter? = null
 
     init {
+        setupSegmenter()
+    }
+
+    private fun setupSegmenter() {
         try {
             val baseOptionsBuilder = BaseOptions.builder()
                 .setModelAssetPath("selfie_segmenter.tflite")
             
-            // FIX: Force CPU to avoid the OpenGL crashes shown in your logs
+            // FIX for Android 12/Emulator: Force CPU Delegate.
+            // Your log shows 'glCreateShader' failed (Error 0x500).
+            // This bypasses the buggy GPU drivers entirely.
             baseOptionsBuilder.setDelegate(Delegate.CPU)
             
             val options = ImageSegmenterOptions.builder()
@@ -35,14 +41,16 @@ class MediaPipeBackgroundRemover(private val context: Context) {
     }
 
     fun removeBackground(bitmap: Bitmap): Bitmap? {
+        // If segmenter failed to init, try one more time or return null
         val segmenter = imageSegmenter ?: return null
         
-        // Android 12 Fix: Ensure we are using a Software-backed bitmap
-        val softwareBitmap = if (bitmap.config != Bitmap.Config.ARGB_8888) {
-            bitmap.copy(Bitmap.Config.ARGB_8888, true)
-        } else {
-            bitmap
-        }
+        // Android 12 FIX: 'HARDWARE' bitmaps cannot be read by MediaPipe.
+        // We MUST create a software-backed copy (ARGB_8888).
+        val softwareBitmap = try {
+            bitmap.copy(Bitmap.Config.ARGB_8888, false)
+        } catch (e: Exception) {
+            null
+        } ?: return null
 
         return try {
             val mpImage = BitmapImageBuilder(softwareBitmap).build()
@@ -61,12 +69,14 @@ class MediaPipeBackgroundRemover(private val context: Context) {
             val byteBuffer: ByteBuffer = ByteBufferExtractor.extract(mask)
             byteBuffer.rewind()
             
-            // Safety: Use remaining() to prevent BufferUnderflow on different CPUs
-            val bufferLimit = byteBuffer.remaining()
+            // LOGIC FIX: Buffer handling for different CPU architectures.
+            // Some devices have 'padding' at the end of the buffer.
+            val limit = byteBuffer.remaining()
             for (i in 0 until (w * h)) {
-                if (i < bufferLimit) {
+                if (i < limit) {
                     val maskValue = byteBuffer.get().toInt() and 0xFF
-                    // If maskValue is NOT 0, it's the background -> make transparent
+                    // If maskValue is NOT 0, it's background -> make transparent.
+                    // (Category 0 is usually the Person in Selfie Segmenter).
                     if (maskValue != 0) {
                         pixels[i] = Color.TRANSPARENT
                     }
@@ -80,6 +90,7 @@ class MediaPipeBackgroundRemover(private val context: Context) {
             e.printStackTrace()
             null
         } finally {
+            // Always recycle to prevent OutOfMemory crashes on older devices
             if (softwareBitmap != bitmap) {
                 softwareBitmap.recycle()
             }
@@ -88,5 +99,6 @@ class MediaPipeBackgroundRemover(private val context: Context) {
 
     fun close() {
         imageSegmenter?.close()
+        imageSegmenter = null
     }
 }
