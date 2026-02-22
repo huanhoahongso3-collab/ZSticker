@@ -136,15 +136,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                     }
                     handleEdgeToEdge()
                     updateStatusBar()
-                }
-
-                override fun onResume() {
-                    super.onResume()
-                    // Refresh data in case something was imported in FileActivity
-                    if (::adapter.isInitialized) adapter.refreshData(this)
-                    if (::adapterRecents.isInitialized) adapterRecents.refreshData(this)
-                    updateLayoutVisibility(binding.bottomNavigation.selectedItemId)
-                }
 
                     lifecycleScope.launch {
                         if (materialColorEnabled) {
@@ -244,6 +235,14 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                     binding.addButton.setOnClickListener {
                         pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                     }
+                }
+
+                override fun onResume() {
+                    super.onResume()
+                    // Refresh data in case something was imported in FileActivity
+                    if (::adapter.isInitialized) adapter.refreshData(this)
+                    if (::adapterRecents.isInitialized) adapterRecents.refreshData(this)
+                    updateLayoutVisibility(binding.bottomNavigation.selectedItemId)
                 }
 
                 private fun updateStatusBar() {
