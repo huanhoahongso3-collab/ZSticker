@@ -609,6 +609,10 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
                 private fun updateLayoutVisibility(itemId: Int) {
                     when (itemId) {
+                        R.id.nav_home -> {
+                            binding.toolbar.title = SpannableString(getString(R.string.nav_home)).apply {
+                                setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
+                            }
                             binding.recycler.visibility = View.VISIBLE
                             binding.recyclerRecents.visibility = View.GONE
                             binding.infoLayout.visibility = View.GONE
@@ -884,9 +888,9 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
                         } else if (hasFailed) {
                             ToastUtils.showToast(this, getString(R.string.failed))
-                        }
                     }
                 }
+
 
                 private fun requestLegacyPermissions() {
                     if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
