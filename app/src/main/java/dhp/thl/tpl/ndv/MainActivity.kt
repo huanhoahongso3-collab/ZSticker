@@ -662,17 +662,25 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             }
             
             // 9-sided cookie background follows material/fallback color exactly like FAB
-            binding.imgEmpty.background = PolygonDrawable(Cookie9Sided, cookieBg)
-            binding.imgEmpty.setColorFilter(iconTint)
+            // Set background and tint on the outer ImageView (rotating part)
+            binding.imgEmptyOuter.background = PolygonDrawable(Cookie9Sided, cookieBg)
+            binding.imgEmptyOuter.setColorFilter(iconTint)
 
+            // Set the inner static icon on the inner ImageView
             if (message == getString(R.string.no_history_found)) {
-                binding.imgEmpty.setImageResource(R.drawable.ic_empty_history)
+                binding.imgEmptyInner.setImageResource(R.drawable.ic_empty_history)
             } else {
-                binding.imgEmpty.setImageResource(R.drawable.ic_empty_state)
+                binding.imgEmptyInner.setImageResource(R.drawable.ic_empty_state)
             }
 
+            // Apply padding to the container (or outer view) to keep layout consistent
             val padding = (28 * resources.displayMetrics.density).toInt()
-            binding.imgEmpty.setPadding(padding, padding, padding, padding)
+            binding.imgEmptyOuter.setPadding(padding, padding, padding, padding)
+
+            // Start infinite rotation animation on the outer ImageView
+            val rotateAnim = AnimatorInflater.loadAnimator(this, R.animator.rotate_forever)
+            rotateAnim.setTarget(binding.imgEmptyOuter)
+            rotateAnim.start()
         }
     }
 
