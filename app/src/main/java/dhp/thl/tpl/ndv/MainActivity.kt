@@ -640,22 +640,23 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
             val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
             
-            val cookieBg: Int
-            val iconTint: Int
-            
-            if (materialColorEnabled) {
-                val monetInstance = MonetCompat.getInstance()
-                val primary = monetInstance.getAccentColor(this)
-                cookieBg = primary
-                iconTint = getThemeColor(com.google.android.material.R.attr.colorSecondary)
+            val cookieBg = if (materialColorEnabled) {
+                MonetCompat.getInstance().getAccentColor(this)
             } else {
-                cookieBg = getThemeColor(com.google.android.material.R.attr.colorSecondaryContainer)
-                iconTint = getThemeColor(com.google.android.material.R.attr.colorOnSecondaryContainer)
+                getColor(R.color.orange_primary)
             }
+            
+            val iconTint = getThemeColor(com.google.android.material.R.attr.colorSecondary)
             
             // 9-sided cookie background follows material/fallback color exactly like FAB
             binding.imgEmpty.background = PolygonDrawable(Cookie9Sided, cookieBg)
             binding.imgEmpty.setColorFilter(iconTint)
+
+            if (message == getString(R.string.no_history_found)) {
+                binding.imgEmpty.setImageResource(R.drawable.ic_empty_history)
+            } else {
+                binding.imgEmpty.setImageResource(R.drawable.ic_empty_state)
+            }
 
             val padding = (28 * resources.displayMetrics.density).toInt()
             binding.imgEmpty.setPadding(padding, padding, padding, padding)
