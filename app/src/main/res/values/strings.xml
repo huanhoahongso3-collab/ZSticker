@@ -76,7 +76,7 @@
     <string name="material_color_unsupported">This version of Android doesn\'t support material color.</string>
     <string name="info_opensource_title">Open Source Licenses</string>
     <string name="info_opensource_note">Libraries used in ZSticker</string>
-    <string name="info_files_title">File Operations</string>
+    <string name="info_files_title">Import/Export</string>
     <string name="import_auto_note">Auto-detect content from ZIP</string>
     <string name="export_choose_note">Choose folder and content to save</string>
     <string name="export_to_gallery_title">Save all to Gallery</string>

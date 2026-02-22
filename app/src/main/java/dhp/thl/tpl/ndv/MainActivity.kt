@@ -68,6 +68,12 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private var versionClickCount = 0
     private var lastClickTime: Long = 0
 
+    private val startFileActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK && result.data?.getBooleanExtra("did_import", false) == true) {
+            recreate()
+        }
+    }
+
     private fun getThemeColor(attr: Int): Int {
         val typedValue = android.util.TypedValue()
         theme.resolveAttribute(attr, typedValue, true)
@@ -130,6 +136,15 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                     }
                     handleEdgeToEdge()
                     updateStatusBar()
+                }
+
+                override fun onResume() {
+                    super.onResume()
+                    // Refresh data in case something was imported in FileActivity
+                    if (::adapter.isInitialized) adapter.refreshData(this)
+                    if (::adapterRecents.isInitialized) adapterRecents.refreshData(this)
+                    updateLayoutVisibility(binding.bottomNavigation.selectedItemId)
+                }
 
                     lifecycleScope.launch {
                         if (materialColorEnabled) {
@@ -191,6 +206,23 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             )
                             binding.loadingIndicator.setIndicatorColor(primary)
                         } else {
+                            val orange = getColor(R.color.orange_primary)
+                            val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+                            
+                            binding.sectionSettingsHeader.setTextColor(orange)
+                            binding.sectionGeneralHeader.setTextColor(orange)
+                            binding.cardSettings.setCardBackgroundColor(if (isDark) Color.parseColor("#1C1C1E") else Color.parseColor("#F5F5F5"))
+                            binding.cardGeneral.setCardBackgroundColor(if (isDark) Color.parseColor("#1C1C1E") else Color.parseColor("#F5F5F5"))
+                            
+                            binding.addButton.backgroundTintList = android.content.res.ColorStateList.valueOf(orange)
+                            binding.addButton.imageTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
+                            
+                            listOf(
+                                binding.imgTheme, binding.imgMaterialColor, binding.imgLanguage,
+                                binding.imgFiles,
+                                binding.imgVersion, binding.imgRepo, binding.imgLicense, binding.imgOpenSource
+                            ).forEach { icon -> icon.setColorFilter(orange) }
+
                             // Even if Material Color is off, the removal buttons should be red
                             val red = Color.parseColor("#FF3b30")
                             val redAlpha = ColorUtils.setAlphaComponent(red, 40)
@@ -235,6 +267,17 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
                     // --- THEME SELECTOR ---
                     updateThemeText(prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM))
+                    
+                    // --- MATERIAL COLOR TOGGLE ---
+                    binding.switchMaterialColor.isChecked = materialColorEnabled
+                    binding.itemMaterialColor.setOnClickListener {
+                        binding.switchMaterialColor.isChecked = !binding.switchMaterialColor.isChecked
+                    }
+                    binding.switchMaterialColor.setOnCheckedChangeListener { _, isChecked ->
+                        prefs.edit().putBoolean("material_color_enabled", isChecked).apply()
+                        recreate()
+                    }
+
                     binding.itemTheme.setOnClickListener {
                         val themes = listOf(
                             OptionItem(R.drawable.ic_theme_light, getString(R.string.theme_light)),
@@ -311,7 +354,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                     }
 
                     binding.itemFiles.setOnClickListener {
-                        startActivity(Intent(this, FileActivity::class.java))
+                        startFileActivity.launch(Intent(this, FileActivity::class.java))
                     }
 
                     setupSecondaryInfo()

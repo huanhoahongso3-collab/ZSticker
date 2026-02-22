@@ -76,7 +76,7 @@
     <string name="material_color_unsupported">Phiên bản Android này không hỗ trợ màu Material.</string>
     <string name="info_opensource_title">Giấy phép mã nguồn mở</string>
     <string name="info_opensource_note">Các thư viện được sử dụng trong ZSticker</string>
-    <string name="info_files_title">Thao tác tệp</string>
+    <string name="info_files_title">Import/Export</string>
     <string name="import_auto_note">Tự động phát hiện nội dung từ ZIP</string>
     <string name="export_choose_note">Chọn thư mục và nội dung để lưu</string>
     <string name="export_to_gallery_title">Lưu tất cả vào Bộ sưu tập</string>
