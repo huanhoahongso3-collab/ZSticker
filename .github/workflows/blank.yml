@@ -2,9 +2,9 @@ name: Android ZSticker
 
 on:
   push:
-    branches: [ opensourcermbg ]
+    branches: [ main ]
   pull_request:
-    branches: [ opensourcermbg ]
+    branches: [ main ]
 
 jobs:
   build:
