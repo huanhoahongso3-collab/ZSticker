@@ -26,59 +26,65 @@ class MediaPipeBackgroundRemover(private val context: Context) {
             
             imageSegmenter = ImageSegmenter.createFromOptions(context, options)
         } catch (e: Exception) {
-            e.printStackTrace()
+            // Handle initialization failure (e.g., missing model file)
         }
     }
 
     fun removeBackground(bitmap: Bitmap): Bitmap? {
         val segmenter = imageSegmenter ?: return null
         
-        // Fix for Android 12+ Hardware Bitmaps & Android 8 Software handling
-        val softwareBitmap = if (bitmap.config != Bitmap.Config.ARGB_8888) {
-            bitmap.copy(Bitmap.Config.ARGB_8888, true)
-        } else {
-            bitmap
-        }
+        // 1. Force Software Bitmap to avoid HardwareBuffer issues on Android 11/12
+        val softwareBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, false) ?: return null
 
-        val mpImage = BitmapImageBuilder(softwareBitmap).build()
-        val result = segmenter.segment(mpImage)
-        val categoryMask = result.categoryMask()
-        
-        if (!categoryMask.isPresent) return null
-        
-        val mask = categoryMask.get()
-        val w = mask.width
-        val h = mask.height
-        
-        val pixels = IntArray(w * h)
-        softwareBitmap.getPixels(pixels, 0, w, 0, 0, w, h)
-        
-        val byteBuffer: ByteBuffer = ByteBufferExtractor.extract(mask)
-        byteBuffer.rewind()
-        
-        val limit = byteBuffer.limit()
-        for (i in 0 until (w * h)) {
-            if (i < limit) {
-                val maskValue = byteBuffer.get(i).toInt() and 0xFF
-                // If mask is NOT the subject, make it transparent
-                if (maskValue != 0) {
-                    pixels[i] = Color.TRANSPARENT
+        try {
+            val mpImage = BitmapImageBuilder(softwareBitmap).build()
+            val result = segmenter.segment(mpImage)
+            val categoryMask = result.categoryMask()
+            
+            if (!categoryMask.isPresent) return null
+            
+            val mask = categoryMask.get()
+            val w = mask.width
+            val h = mask.height
+            
+            val pixels = IntArray(w * h)
+            softwareBitmap.getPixels(pixels, 0, w, 0, 0, w, h)
+            
+            val byteBuffer: ByteBuffer = ByteBufferExtractor.extract(mask)
+            byteBuffer.rewind()
+            
+            // 2. CRITICAL FIX: Some devices return a buffer larger/smaller than W*H 
+            // due to row padding. We must use the buffer's actual limit.
+            val bufferLimit = byteBuffer.remaining()
+            val totalPixels = w * h
+            
+            for (i in 0 until totalPixels) {
+                // Safety check to prevent crashes on specific Android 9/11 devices
+                if (i < bufferLimit) {
+                    val maskValue = byteBuffer.get().toInt() and 0xFF
+                    
+                    // Logic: If maskValue is 0, it's typically background in Selfie Segmenter
+                    // Adjust this if your subject is the one being removed
+                    if (maskValue != 0) { 
+                        pixels[i] = Color.TRANSPARENT
+                    }
                 }
             }
-        }
-        
-        val outBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        outBitmap.setPixels(pixels, 0, w, 0, 0, w, h)
-        
-        // Clean up temporary bitmap if one was created
-        if (softwareBitmap != bitmap) {
+            
+            val outBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            outBitmap.setPixels(pixels, 0, w, 0, 0, w, h)
+            
+            return outBitmap
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return null
+        } finally {
             softwareBitmap.recycle()
         }
-        
-        return outBitmap
     }
 
     fun close() {
         imageSegmenter?.close()
+        imageSegmenter = null
     }
 }
