@@ -32,4 +32,18 @@ abstract class BaseActivity : MonetCompatActivity() {
         val context = newBase.createConfigurationContext(config)
         super.attachBaseContext(context)
     }
+
+    protected fun boldTitle(text: String): android.text.SpannableString {
+        val ss = android.text.SpannableString(text)
+        ss.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, text.length, 0)
+        return ss
+    }
+
+    protected fun restartApp() {
+        val intent = packageManager.getLaunchIntentForPackage(packageName)
+        intent?.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        intent?.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        startActivity(intent)
+        Runtime.getRuntime().exit(0)
+    }
 }

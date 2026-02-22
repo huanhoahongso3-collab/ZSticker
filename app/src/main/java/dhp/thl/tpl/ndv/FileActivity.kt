@@ -31,7 +31,7 @@ class FileActivity : BaseActivity() {
                 if (BackupHelper.importBackup(this, uri)) {
                     ToastUtils.showToast(this, getString(R.string.success))
                     setResult(RESULT_OK, Intent().putExtra("did_import", true))
-                    recreate() // Apply settings instantly
+                    restartApp() // Apply settings instantly by restarting
                 } else {
                     ToastUtils.showToast(this, getString(R.string.failed))
                 }
@@ -66,7 +66,7 @@ class FileActivity : BaseActivity() {
         binding.itemExportGallery.setOnClickListener {
             val count = BackupHelper.exportAllStickersToGallery(this)
             if (count > 0) {
-                ToastUtils.showToast(this, "Exported $count stickers to Gallery")
+                ToastUtils.showToast(this, getString(R.string.export_gallery_success, count))
             } else {
                 ToastUtils.showToast(this, getString(R.string.no_stickers_found))
             }
@@ -120,6 +120,28 @@ class FileActivity : BaseActivity() {
             
             binding.btnBack.setCardBackgroundColor(alphaPrimary)
             binding.imgExpand.setColorFilter(primary)
+            
+            // Fix back button icon tint inside common circle
+            val backIcon = binding.btnBack.getChildAt(0) as? android.widget.ImageView
+            backIcon?.setColorFilter(primary)
+        } else {
+            val orange = getColor(R.color.orange_primary)
+            val alphaOrange = ColorUtils.setAlphaComponent(orange, 40)
+            
+            val iconItems = listOf(
+                binding.imgImport, binding.imgExportHeader, binding.imgExportGallery,
+                binding.imgExportImage, binding.imgExportHistory, binding.imgExportSettings, binding.imgExportAll
+            )
+            
+            iconItems.forEach { icon ->
+                icon.setColorFilter(orange)
+                icon.backgroundTintList = android.content.res.ColorStateList.valueOf(alphaOrange)
+            }
+            
+            binding.btnBack.setCardBackgroundColor(alphaOrange)
+            val backIcon = binding.btnBack.getChildAt(0) as? android.widget.ImageView
+            backIcon?.setColorFilter(orange)
+            binding.imgExpand.setColorFilter(orange)
         }
     }
 

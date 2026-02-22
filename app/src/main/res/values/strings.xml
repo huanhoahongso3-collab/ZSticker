@@ -79,6 +79,7 @@
     <string name="info_files_title">Import/Export</string>
     <string name="import_auto_note">Auto-detect content from ZIP</string>
     <string name="export_choose_note">Choose folder and content to save</string>
-    <string name="export_to_gallery_title">Save all to Gallery</string>
-    <string name="export_to_gallery_note">Extract all stickers as PNG files</string>
+    <string name="export_to_gallery_title">Save all stickers to Gallery</string>
+    <string name="export_to_gallery_note">Export all stickers to your gallery app</string>
+    <string name="export_gallery_success">Exported %d stickers to Gallery</string>
 </resources>

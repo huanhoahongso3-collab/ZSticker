@@ -47,8 +47,8 @@ class LicenseActivity : BaseActivity() {
             toolbar.setNavigationOnClickListener { finish() }
 
             // Ensure titles follow localized strings
-            title = getString(R.string.info_opensource_title)
-            findViewById<TextView>(R.id.txtContentTitle)?.text = getString(R.string.info_opensource_title)
+            title = boldTitle(getString(R.string.info_opensource_title))
+            findViewById<TextView>(R.id.txtContentTitle)?.text = boldTitle(getString(R.string.info_opensource_title))
             findViewById<TextView>(R.id.txtContentNote)?.text = getString(R.string.info_opensource_note)
 
             // Handle edge-to-edge

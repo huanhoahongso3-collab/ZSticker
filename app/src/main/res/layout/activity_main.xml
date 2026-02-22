@@ -18,7 +18,7 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:title="@string/app_name"
-            app:titleTextAppearance="@style/TextAppearance.Material3.HeadlineSmall" />
+            app:titleTextAppearance="@style/ToolbarBoldTitle" />
         </com.google.android.material.appbar.AppBarLayout>
 
         <LinearLayout
@@ -125,7 +125,7 @@
                                     style="@style/InfoItemStyle">
                                     <ImageView android:id="@+id/imgTheme" style="@style/InfoIconStyle" android:src="@drawable/ic_palette"/>
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_theme_title" style="@style/TextAppearance.Material3.TitleMedium"/>
+                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_theme_title" style="@style/TextAppearance.Material3.TitleMedium" android:textStyle="bold"/>
                                         <TextView android:id="@+id/txtCurrentTheme" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/theme_light" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
                                     </LinearLayout>
                                 </LinearLayout>
@@ -140,7 +140,7 @@
                                         style="@style/InfoIconStyle"
                                         android:src="@drawable/ic_water_drop"/>
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_material_color_title" style="@style/TextAppearance.Material3.TitleMedium"/>
+                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_material_color_title" style="@style/TextAppearance.Material3.TitleMedium" android:textStyle="bold"/>
                                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_material_color_subtitle" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
                                     </LinearLayout>
                                 <com.google.android.material.materialswitch.MaterialSwitch
@@ -161,8 +161,8 @@
                                     style="@style/InfoItemStyle">
                                     <ImageView android:id="@+id/imgLanguage" style="@style/InfoIconStyle" android:src="@drawable/ic_language"/>
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_language_title" style="@style/TextAppearance.Material3.TitleMedium"/>
-                                        <TextView android:id="@+id/txtCurrentLanguage" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="English" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
+                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_language_title" style="@style/TextAppearance.Material3.TitleMedium" android:textStyle="bold"/>
+                                        <TextView android:id="@+id/txtCurrentLanguage" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/lang_en" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
                                     </LinearLayout>
                                 </LinearLayout>
 
@@ -171,9 +171,9 @@
                                 <LinearLayout
                                     android:id="@+id/itemFiles"
                                     style="@style/InfoItemStyle">
-                                    <ImageView android:id="@+id/imgFiles" style="@style/InfoIconStyle" android:src="@drawable/ic_export"/>
+                                    <ImageView android:id="@+id/imgFiles" style="@style/InfoIconStyle" android:src="@drawable/ic_import_export"/>
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_files_title" style="@style/TextAppearance.Material3.TitleMedium"/>
+                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_files_title" style="@style/TextAppearance.Material3.TitleMedium" android:textStyle="bold"/>
                                     </LinearLayout>
                                 </LinearLayout>
 
@@ -237,7 +237,7 @@
                                     android:focusable="true">
                                     <ImageView android:id="@+id/imgVersion" style="@style/InfoIconStyle" android:src="@drawable/ic_info"/>
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_version_title" style="@style/TextAppearance.Material3.TitleMedium"/>
+                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_version_title" style="@style/TextAppearance.Material3.TitleMedium" android:textStyle="bold"/>
                                         <TextView android:id="@+id/txtVersion" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1.0.0" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
                                     </LinearLayout>
                                 </LinearLayout>
@@ -249,7 +249,7 @@
                                     style="@style/InfoItemStyle">
                                     <ImageView android:id="@+id/imgRepo" style="@style/InfoIconStyle" android:src="@drawable/ic_code"/>
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_repo_title" style="@style/TextAppearance.Material3.TitleMedium"/>
+                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_repo_title" style="@style/TextAppearance.Material3.TitleMedium" android:textStyle="bold"/>
                                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_repo_note" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
                                     </LinearLayout>
                                 </LinearLayout>
@@ -261,7 +261,7 @@
                                     style="@style/InfoItemStyle">
                                     <ImageView android:id="@+id/imgLicense" style="@style/InfoIconStyle" android:src="@drawable/ic_description"/>
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_license_title" style="@style/TextAppearance.Material3.TitleMedium"/>
+                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_license_title" style="@style/TextAppearance.Material3.TitleMedium" android:textStyle="bold"/>
                                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_license_note" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
                                     </LinearLayout>
                                 </LinearLayout>
@@ -273,7 +273,7 @@
                                     style="@style/InfoItemStyle">
                                     <ImageView android:id="@+id/imgOpenSource" style="@style/InfoIconStyle" android:src="@drawable/ic_opensource"/>
                                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_opensource_title" style="@style/TextAppearance.Material3.TitleMedium"/>
+                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_opensource_title" style="@style/TextAppearance.Material3.TitleMedium" android:textStyle="bold"/>
                                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_opensource_note" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
                                     </LinearLayout>
                                 </LinearLayout>

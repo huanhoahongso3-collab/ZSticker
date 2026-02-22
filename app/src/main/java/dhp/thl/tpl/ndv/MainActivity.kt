@@ -205,8 +205,9 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             binding.cardSettings.setCardBackgroundColor(if (isDark) Color.parseColor("#1C1C1E") else Color.parseColor("#F5F5F5"))
                             binding.cardGeneral.setCardBackgroundColor(if (isDark) Color.parseColor("#1C1C1E") else Color.parseColor("#F5F5F5"))
                             
-                            binding.addButton.backgroundTintList = android.content.res.ColorStateList.valueOf(orange)
-                            binding.addButton.imageTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
+                            // Let theme handle FAB colors when Material Color is disabled
+                            binding.addButton.backgroundTintList = null
+                            binding.addButton.imageTintList = null
                             
                             listOf(
                                 binding.imgTheme, binding.imgMaterialColor, binding.imgLanguage,
@@ -347,7 +348,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             }
                             if (currentLang != langCode) {
                                 prefs.edit().putString("lang", langCode).apply()
-                                recreate()
+                                restartApp()
                             }
                         }
                     }
@@ -652,9 +653,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 private fun updateLayoutVisibility(itemId: Int) {
                     when (itemId) {
                         R.id.nav_home -> {
-                            binding.toolbar.title = SpannableString(getString(R.string.nav_home)).apply {
-                                setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
-                            }
+                            binding.toolbar.title = boldTitle(getString(R.string.nav_home))
                             binding.recycler.visibility = View.VISIBLE
                             binding.recyclerRecents.visibility = View.GONE
                             binding.infoLayout.visibility = View.GONE
@@ -662,9 +661,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
                         }
                         R.id.nav_recents -> {
-                            binding.toolbar.title = SpannableString(getString(R.string.nav_recents)).apply {
-                                setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
-                            }
+                            binding.toolbar.title = boldTitle(getString(R.string.nav_recents))
                             binding.recycler.visibility = View.GONE
                             binding.recyclerRecents.visibility = View.VISIBLE
                             binding.infoLayout.visibility = View.GONE
@@ -673,9 +670,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             updateEmptyState(adapterRecents.itemCount == 0, getString(R.string.no_history_found))
                         }
                         R.id.nav_options -> {
-                            binding.toolbar.title = SpannableString(getString(R.string.nav_options)).apply {
-                                setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
-                            }
+                            binding.toolbar.title = boldTitle(getString(R.string.nav_options))
                             binding.recycler.visibility = View.GONE
                             binding.recyclerRecents.visibility = View.GONE
                             binding.infoLayout.visibility = View.VISIBLE
@@ -941,11 +936,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                     }
                 }
 
-                private fun boldTitle(title: String): android.text.SpannableString {
-                    return android.text.SpannableString(title).apply {
-                        setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, length, 0)
-                    }
-                }
 }
 
 class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<OptionItem>(context, 0, objects) {
