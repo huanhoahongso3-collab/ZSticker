@@ -166,7 +166,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 // Tint all icons in options pane
                 listOf(
                     binding.imgTheme, binding.imgMaterialColor, binding.imgLanguage,
-                    binding.imgExportAll,
+                    binding.imgFiles,
                     binding.imgVersion, binding.imgRepo, binding.imgLicense, binding.imgOpenSource
                 ).forEach { icon ->
                     icon.setColorFilter(primary)
@@ -381,7 +381,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         binding.itemLicense.setOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.gnu.org/licenses/gpl-3.0.html")))
         }
-        binding.itemExportAll.setOnClickListener {
+        binding.itemFiles.setOnClickListener {
             startActivity(Intent(this, FileActivity::class.java))
         }
         binding.itemRemoveRecent.setOnClickListener { confirmRemoveRecent() }
@@ -814,15 +814,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 999)
         }
     }
-
-    private fun boldTitle(title: String): android.text.SpannableString {
-        return android.text.SpannableString(title).apply {
-            setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, length, 0)
-        }
-    }
 }
-
-data class OptionItem(val iconRes: Int, val text: String)
 
 class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<OptionItem>(context, 0, objects) {
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
