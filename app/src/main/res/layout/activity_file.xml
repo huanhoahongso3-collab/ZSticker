@@ -138,7 +138,7 @@
 
                         <LinearLayout android:id="@+id/exportAll" style="@style/InfoItemStyle">
                             <ImageView style="@style/InfoIconStyle" android:src="@drawable/ic_export_all" android:id="@+id/imgExportAll" android:layout_width="32dp" android:layout_height="32dp"/>
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/export_all" style="@style/TextAppearance.Material3.BodyLarge" android:textStyle="bold"/>
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/export_all" style="@style/TextAppearance.Material3.BodyLarge"/>
                         </LinearLayout>
 
                     </LinearLayout>
