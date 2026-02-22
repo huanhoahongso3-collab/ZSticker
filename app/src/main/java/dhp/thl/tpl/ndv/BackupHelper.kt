@@ -44,13 +44,14 @@ object BackupHelper {
 
             if (type == "image" || type == "all") {
                 val stickerFiles = context.filesDir.listFiles { f -> f.name.startsWith("zsticker_") } ?: emptyArray()
-                // Sort by name (which includes timestamp) to keep order
-                stickerFiles.sortBy { it.name }
+                val timestamps = JSONObject()
                 for (file in stickerFiles) {
                     val p = ZipParameters(params)
                     p.fileNameInZip = "images/${file.name}"
                     zipFile.addFile(file, p)
+                    timestamps.put(file.name, file.lastModified())
                 }
+                metadata.put("timestamps", timestamps)
                 contents.add("images")
             }
 
@@ -138,8 +139,17 @@ object BackupHelper {
 
             // Restore images
             if (imagesDir.exists() && imagesDir.isDirectory) {
+                val metadataJson = JSONObject(metaFile.readText())
+                val timestamps = metadataJson.optJSONObject("timestamps")
+                
                 imagesDir.listFiles()?.forEach { file ->
-                    file.copyTo(File(context.filesDir, file.name), overwrite = true)
+                    val targetFile = File(context.filesDir, file.name)
+                    file.copyTo(targetFile, overwrite = true)
+                    
+                    // Restore original timestamp for chronological sorting
+                    timestamps?.optLong(file.name, 0L)?.let { timestamp ->
+                        if (timestamp > 0) targetFile.setLastModified(timestamp)
+                    }
                 }
             }
 

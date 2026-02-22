@@ -202,9 +202,11 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 )
                 binding.loadingIndicator.setIndicatorColor(primary)
 
-                // Refresh empty state once Monet colors are settled
-                updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
-                if (binding.recyclerRecents.visibility == View.VISIBLE) {
+                // Refresh empty state with correct localized colors and data
+                val currentTab = binding.bottomNavigation.selectedItemId
+                if (currentTab == R.id.nav_home) {
+                    updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
+                } else if (currentTab == R.id.nav_recents) {
                     updateEmptyState(adapterRecents.itemCount == 0, getString(R.string.no_history_found))
                 }
             } else {
@@ -800,7 +802,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         } catch (e: Exception) { ToastUtils.showToast(this, getString(R.string.failed)) }
     }
 
-    override fun deleteSticker(uri: Uri) {
+    private fun deleteSticker(uri: Uri) {
         val file = File(filesDir, uri.lastPathSegment ?: "")
         if (file.exists() && file.delete()) { 
             adapter.refreshData(this)
