@@ -650,22 +650,18 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
             val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
             
-            val cookieBg = if (materialColorEnabled) {
-                MonetCompat.getInstance().getAccentColor(this)
+            val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+            val (cookieBg, iconTint) = if (materialColorEnabled) {
+                val primary = MonetCompat.getInstance().getAccentColor(this)
+                ColorUtils.setAlphaComponent(primary, 40) to primary
             } else {
-                getColor(R.color.orange_primary)
+                val iconColor = if (isDark) Color.WHITE else Color.BLACK
+                val bgBase = if (isDark) Color.WHITE else Color.BLACK
+                ColorUtils.setAlphaComponent(bgBase, 20) to iconColor
             }
-            
-            val iconTint = if (materialColorEnabled) {
-                if (isDark) Color.BLACK else Color.WHITE
-            } else {
-                if (isDark) Color.WHITE else Color.BLACK
-            }
-            
-            // 9-sided cookie background follows material/fallback color exactly like FAB
-            // Set background and tint on the outer ImageView (rotating part)
+
             binding.imgEmptyOuter.background = PolygonDrawable(Cookie9Sided, cookieBg)
-            binding.imgEmptyOuter.setColorFilter(iconTint)
+            binding.imgEmptyOuter.clearColorFilter()
 
             // Set the inner static icon on the inner ImageView
             if (message == getString(R.string.no_history_found)) {
