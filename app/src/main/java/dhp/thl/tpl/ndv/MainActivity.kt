@@ -521,6 +521,8 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         }
     }
 
+    private val backgroundRemover by lazy { MediaPipeBackgroundRemover(this) }
+
     private fun removeBackground(uri: Uri) {
         val surfaceColor = getThemeColor(com.google.android.material.R.attr.colorSurface)
         binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(surfaceColor, 153))
@@ -535,20 +537,26 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             var isSuccess = false
             var resultUri: Uri? = null
             try {
-                val inputStream = contentResolver.openInputStream(uri) ?: throw Exception()
-                val url = URL("https://bria14proxy.vercel.app/api/nobg")
-                val connection = (url.openConnection() as HttpURLConnection).apply {
-                    requestMethod = "POST"
-                    doOutput = true
-                    setRequestProperty("Content-Type", "application/octet-stream")
-                    connectTimeout = 30000
-                    readTimeout = 30000
+                val bitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    val source = android.graphics.ImageDecoder.createSource(contentResolver, uri)
+                    android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
+                        decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
+                        decoder.isMutableRequired = true
+                    }
+                } else {
+                    @Suppress("DEPRECATION")
+                    android.provider.MediaStore.Images.Media.getBitmap(contentResolver, uri)
                 }
-                connection.outputStream.use { out -> inputStream.copyTo(out) }
-
-                if (connection.responseCode == 200) {
+                
+                // Copy bitmap to ARGB_8888 if it's not
+                val argbBitmap = bitmap.copy(android.graphics.Bitmap.Config.ARGB_8888, true)
+                val outBitmap = backgroundRemover.removeBackground(argbBitmap)
+                
+                if (outBitmap != null) {
                     val file = File(filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
-                    connection.inputStream.use { input -> FileOutputStream(file).use { out -> input.copyTo(out) } }
+                    FileOutputStream(file).use { out ->
+                        outBitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+                    }
                     resultUri = Uri.fromFile(file)
                     isSuccess = true
                 }
@@ -639,7 +647,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 val monetInstance = MonetCompat.getInstance()
                 val primary = monetInstance.getAccentColor(this)
                 cookieBg = primary
-                iconTint = if (isDark) Color.BLACK else monetInstance.getBackgroundColor(this)
+                iconTint = getThemeColor(com.google.android.material.R.attr.colorSecondary)
             } else {
                 cookieBg = getThemeColor(com.google.android.material.R.attr.colorSecondaryContainer)
                 iconTint = getThemeColor(com.google.android.material.R.attr.colorOnSecondaryContainer)
@@ -725,7 +733,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         val title = getString(if (isRecent) R.string.recent_options_title else R.string.sticker_options_title)
         val options = mutableListOf<OptionItem>()
         // Regular single export/share
-        options.add(OptionItem(R.drawable.ic_export, getString(R.string.export)))
+        options.add(OptionItem(R.drawable.ic_export_gallery, getString(R.string.export)))
         options.add(OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg)))
         
         if (!isRecent) {
@@ -823,7 +831,10 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         if (uris.isNotEmpty()) {
             var hasSuccess = false; var hasUnsupported = false; var hasFailed = false
             uris.forEach { when (importToApp(it)) { 0 -> hasSuccess = true; 1 -> hasUnsupported = true; 2 -> hasFailed = true } }
-            if (hasSuccess) adapter.refreshData(this)
+            if (hasSuccess) {
+                adapter.refreshData(this)
+                updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
+            }
             if (hasUnsupported) ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
             else if (hasFailed) ToastUtils.showToast(this, getString(R.string.failed))
         }
@@ -849,11 +860,9 @@ class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<
         if (item.text == context.getString(R.string.delete) || item.text == context.getString(R.string.delete_history)) {
             val red = android.graphics.Color.parseColor("#FF3b30")
             textView.setTextColor(red); iconView.setColorFilter(red)
-            textView.setTypeface(null, android.graphics.Typeface.BOLD)
             iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(red, 30))
         } else {
             // Use the attribute color directly from the layout for best compatibility
-            textView.setTypeface(null, android.graphics.Typeface.BOLD)
             if (item.iconRes != R.drawable.ic_flag_en && item.iconRes != R.drawable.ic_flag_vi && item.iconRes != R.drawable.ic_flag_ru && item.iconRes != R.drawable.ic_flag_zh) iconView.setColorFilter(primary) else iconView.clearColorFilter()
             iconView.background = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.bg_circle_icon)
             iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 30))
@@ -870,7 +879,6 @@ class ThemeAdapter(context: Context, objects: List<OptionItem>, private val sele
         val radioButton = view.findViewById<RadioButton>(R.id.item_radio)
         val textView = view.findViewById<TextView>(R.id.item_text)
         iconView.setImageResource(item.iconRes); textView.text = item.text; radioButton.isChecked = (position == selectedIndex)
-        textView.setTypeface(null, android.graphics.Typeface.BOLD)
         val materialColorEnabled = context.getSharedPreferences("settings", Context.MODE_PRIVATE).getBoolean("material_color_enabled", false)
         val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(context) else androidx.core.content.ContextCompat.getColor(context, R.color.orange_primary)
         radioButton.buttonTintList = android.content.res.ColorStateList(arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf(-android.R.attr.state_checked)), intArrayOf(primary, android.graphics.Color.GRAY))
