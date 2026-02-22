@@ -10,7 +10,7 @@ class PolygonDrawable(
     private val color: Int
 ) : Drawable() {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        this.color = color
+        this.color = this@PolygonDrawable.color
         style = Paint.Style.FILL
     }
     private val path = Path()
