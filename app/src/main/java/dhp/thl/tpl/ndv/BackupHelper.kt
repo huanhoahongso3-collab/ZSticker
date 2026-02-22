@@ -123,9 +123,16 @@ object BackupHelper {
             extractDir.mkdirs()
             
             zipFile.extractAll(extractDir.absolutePath)
+            
+            // Validation: Check if it's a valid ZSticker backup
+            val metaFile = File(extractDir, "metadata.json")
+            if (!metaFile.exists()) {
+                extractDir.deleteRecursively()
+                tempFile.delete()
+                return false
+            }
 
             // Auto-discovery
-            val metaFile = File(extractDir, "metadata.json")
             val imagesDir = File(extractDir, "images")
             val prefsDir = File(extractDir, "prefs")
 
@@ -202,5 +209,42 @@ object BackupHelper {
             }
         }
         return count
+    }
+
+    fun exportSingleStickerToGallery(context: Context, file: File): Boolean {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val resolver = context.contentResolver
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, "sticker_${file.name}")
+                    put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/ZSticker")
+                    put(MediaStore.MediaColumns.IS_PENDING, 1)
+                }
+                val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                if (uri != null) {
+                    resolver.openOutputStream(uri)?.use { out ->
+                        file.inputStream().use { it.copyTo(out) }
+                    }
+                    contentValues.clear()
+                    contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                    resolver.update(uri, contentValues, null, null)
+                    return true
+                }
+            } else {
+                val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
+                if (!outDir.exists()) outDir.mkdirs()
+                val outFile = File(outDir, "sticker_${file.name}")
+                file.inputStream().use { input ->
+                    outFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                return true
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return false
     }
 }

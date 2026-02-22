@@ -120,15 +120,21 @@
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/export_image" style="@style/TextAppearance.Material3.BodyLarge"/>
                         </LinearLayout>
 
+                        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" android:layout_marginHorizontal="16dp" />
+
                         <LinearLayout android:id="@+id/exportHistory" style="@style/InfoItemStyle">
                             <ImageView style="@style/InfoIconStyle" android:src="@drawable/ic_export_history" android:id="@+id/imgExportHistory" android:layout_width="32dp" android:layout_height="32dp"/>
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/export_history" style="@style/TextAppearance.Material3.BodyLarge"/>
                         </LinearLayout>
 
+                        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" android:layout_marginHorizontal="16dp" />
+
                         <LinearLayout android:id="@+id/exportSettings" style="@style/InfoItemStyle">
                             <ImageView style="@style/InfoIconStyle" android:src="@drawable/ic_export_settings" android:id="@+id/imgExportSettings" android:layout_width="32dp" android:layout_height="32dp"/>
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/export_settings" style="@style/TextAppearance.Material3.BodyLarge"/>
                         </LinearLayout>
+
+                        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" android:layout_marginHorizontal="16dp" />
 
                         <LinearLayout android:id="@+id/exportAll" style="@style/InfoItemStyle">
                             <ImageView style="@style/InfoIconStyle" android:src="@drawable/ic_export_all" android:id="@+id/imgExportAll" android:layout_width="32dp" android:layout_height="32dp"/>

@@ -159,9 +159,12 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 binding.cardSettings.setCardBackgroundColor(cardColor)
                 binding.cardGeneral.setCardBackgroundColor(cardColor)
                 
-                // Force apply to FAB - Restored style
-                binding.addButton.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
-                binding.addButton.imageTintList = android.content.res.ColorStateList.valueOf(monetInstance.getBackgroundColor(this@MainActivity))
+                // Match FAB to content/bottom nav theme in dark mode
+                val fabBg = if (isDark) getThemeColor(com.google.android.material.R.attr.colorSurfaceContainer) else primary
+                val fabIcon = if (isDark) Color.BLACK else monetInstance.getBackgroundColor(this@MainActivity)
+                
+                binding.addButton.backgroundTintList = android.content.res.ColorStateList.valueOf(fabBg)
+                binding.addButton.imageTintList = android.content.res.ColorStateList.valueOf(fabIcon)
 
                 // Tint all icons in options pane
                 listOf(
@@ -583,9 +586,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private fun updateLayoutVisibility(itemId: Int) {
         when (itemId) {
             R.id.nav_home -> {
-                binding.toolbar.title = SpannableString(getString(R.string.nav_home)).apply {
-                    setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
-                }
+                binding.toolbar.title = boldTitle(getString(R.string.nav_home))
                 binding.recycler.visibility = View.VISIBLE
                 binding.recyclerRecents.visibility = View.GONE
                 binding.infoLayout.visibility = View.GONE
@@ -593,9 +594,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
             }
             R.id.nav_recents -> {
-                binding.toolbar.title = SpannableString(getString(R.string.nav_recents)).apply {
-                    setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
-                }
+                binding.toolbar.title = boldTitle(getString(R.string.nav_recents))
                 binding.recycler.visibility = View.GONE
                 binding.recyclerRecents.visibility = View.VISIBLE
                 binding.infoLayout.visibility = View.GONE
@@ -604,9 +603,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 updateEmptyState(adapterRecents.itemCount == 0, getString(R.string.no_history_found))
             }
             R.id.nav_options -> {
-                binding.toolbar.title = SpannableString(getString(R.string.nav_options)).apply {
-                    setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
-                }
+                binding.toolbar.title = boldTitle(getString(R.string.nav_options))
                 binding.recycler.visibility = View.GONE
                 binding.recyclerRecents.visibility = View.GONE
                 binding.infoLayout.visibility = View.VISIBLE
@@ -631,10 +628,10 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             
             val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
             
-            // 9-sided cookie background with primary color
+            // 9-sided cookie background follows material/fallback color
             binding.imgEmpty.background = PolygonDrawable(Cookie9Sided, primary)
             
-            // Icon tint depends on theme (light/dark) to suit other components
+            // Icon matches surface contrast: Black in dark mode, White in light mode
             val iconTint = if (isDark) Color.BLACK else Color.WHITE
             binding.imgEmpty.setColorFilter(iconTint)
 
@@ -714,15 +711,26 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         val title = getString(if (isRecent) R.string.recent_options_title else R.string.sticker_options_title)
         val options = mutableListOf<OptionItem>()
         options.add(OptionItem(R.drawable.ic_export, getString(R.string.export)))
+        options.add(OptionItem(R.drawable.ic_export_gallery, getString(R.string.export_to_gallery_title)))
+        options.add(OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg)))
+        
         if (!isRecent) {
-            options.add(OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg)))
             options.add(OptionItem(R.drawable.ic_delete, getString(R.string.delete)))
-        } else options.add(OptionItem(R.drawable.ic_delete, getString(R.string.delete_history)))
+        } else {
+            options.add(OptionItem(R.drawable.ic_delete, getString(R.string.delete_history)))
+        }
 
         showPaneDialog(title, options) { which ->
+            val file = File(filesDir, uri.lastPathSegment ?: "")
             when (options[which].text) {
-                getString(R.string.export) -> exportSingleSticker(uri)
-                getString(R.string.remove_bg) -> checkAndShowBackgroundRemovalWarning(uri)
+                getString(R.string.export) -> {
+                    if (BackupHelper.exportSingleStickerToGallery(this, file)) {
+                        ToastUtils.showToast(this, getString(R.string.success))
+                    } else {
+                        ToastUtils.showToast(this, getString(R.string.failed))
+                    }
+                }
+                getString(R.string.remove_bg) -> removeBackground(uri)
                 getString(R.string.delete) -> deleteSticker(uri)
                 getString(R.string.delete_history) -> entry?.let { removeFromRecents(it) }
             }
@@ -831,8 +839,7 @@ class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<
             textView.setTextColor(red); iconView.setColorFilter(red)
             iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(red, 30))
         } else {
-            context.theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, android.util.TypedValue(), true)
-            textView.setTextColor(android.util.TypedValue().data)
+            // Use the attribute color directly from the layout for best compatibility
             if (item.iconRes != R.drawable.ic_flag_en && item.iconRes != R.drawable.ic_flag_vi && item.iconRes != R.drawable.ic_flag_ru && item.iconRes != R.drawable.ic_flag_zh) iconView.setColorFilter(primary) else iconView.clearColorFilter()
             iconView.background = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.bg_circle_icon)
             iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 30))
