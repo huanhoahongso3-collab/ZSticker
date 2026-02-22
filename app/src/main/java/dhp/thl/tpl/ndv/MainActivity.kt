@@ -899,9 +899,17 @@ private fun androidx.appcompat.app.AlertDialog.showMonetDialog(context: android.
     if (materialColorEnabled) window?.decorView?.applyMonetRecursively()
     show()
     val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(context) else androidx.core.content.ContextCompat.getColor(context, R.color.orange_primary)
-    getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(primary)
-    getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(primary)
-    getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL)?.setTextColor(primary)
+    
+    val rippleColor = android.content.res.ColorStateList.valueOf(androidx.core.graphics.ColorUtils.setAlphaComponent(primary, 30))
+    listOf(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE, androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE, androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL).forEach { which ->
+        val btn = getButton(which)
+        btn?.setTextColor(primary)
+        if (btn is com.google.android.material.button.MaterialButton) {
+            btn.rippleColor = rippleColor
+        } else if (btn?.background is android.graphics.drawable.RippleDrawable) {
+            (btn.background as android.graphics.drawable.RippleDrawable).setColor(rippleColor)
+        }
+    }
     window?.setDimAmount(0.35f)
 }
 
@@ -911,7 +919,27 @@ private fun androidx.appcompat.app.AlertDialog.showDestructiveDialog(context: an
     show()
     val red = android.graphics.Color.parseColor("#FF3b30")
     val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(context) else androidx.core.content.ContextCompat.getColor(context, R.color.orange_primary)
-    getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(red)
-    getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(primary)
+    
+    val ripplePrimary = android.content.res.ColorStateList.valueOf(androidx.core.graphics.ColorUtils.setAlphaComponent(primary, 30))
+    val rippleRed = android.content.res.ColorStateList.valueOf(androidx.core.graphics.ColorUtils.setAlphaComponent(red, 30))
+
+    getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.let { btn ->
+        btn.setTextColor(red)
+        if (btn is com.google.android.material.button.MaterialButton) {
+            btn.rippleColor = rippleRed
+        } else if (btn.background is android.graphics.drawable.RippleDrawable) {
+            (btn.background as android.graphics.drawable.RippleDrawable).setColor(rippleRed)
+        }
+    }
+    
+    getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.let { btn ->
+        btn.setTextColor(primary)
+        if (btn is com.google.android.material.button.MaterialButton) {
+            btn.rippleColor = ripplePrimary
+        } else if (btn.background is android.graphics.drawable.RippleDrawable) {
+            (btn.background as android.graphics.drawable.RippleDrawable).setColor(ripplePrimary)
+        }
+    }
+    
     window?.setDimAmount(0.35f)
 }
