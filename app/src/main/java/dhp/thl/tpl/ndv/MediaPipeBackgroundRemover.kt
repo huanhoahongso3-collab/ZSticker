@@ -41,10 +41,11 @@ class MediaPipeBackgroundRemover(private val context: Context) {
         
         val outBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         
-        // Use ByteBufferExtractor
-        val byteBuffer = com.google.mediapipe.framework.image.ByteBufferExtractor.extract(categoryMask.get())
+        // Access the mask buffer directly for compatibility
+        val mask = categoryMask.get()
+        val byteBuffer = mask.buffer
         byteBuffer.rewind()
-        
+
         for (i in 0 until (w * h)) {
             val category = byteBuffer.get().toInt()
             // Invert the mapping to fix the mask where subject was being removed
@@ -52,6 +53,7 @@ class MediaPipeBackgroundRemover(private val context: Context) {
                 origPixels[i] = Color.TRANSPARENT
             }
         }
+
         
         outBitmap.setPixels(origPixels, 0, w, 0, 0, w, h)
         return outBitmap
