@@ -888,6 +888,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
                         } else if (hasFailed) {
                             ToastUtils.showToast(this, getString(R.string.failed))
+                        }
                     }
                 }
 
@@ -904,8 +905,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                     }
                 }
 }
-
-
 
 class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<OptionItem>(context, 0, objects) {
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
@@ -998,8 +997,6 @@ private fun androidx.appcompat.app.AlertDialog.showMonetDialog(context: android.
     
     show()
     
-    /* Removed manual black background to follow theme default as requested */
-
     val primary = if (materialColorEnabled) {
         MonetCompat.getInstance().getAccentColor(context)
     } else {
