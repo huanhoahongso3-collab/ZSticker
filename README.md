@@ -1,7 +1,7 @@
 # 📦 ZSticker — Share custom sticker to Zalo
 (Currently is a fork of Zaticker)
 
-Warning: I do not own or linked with the removebg branch. I use the BRIA-RMBG-2.0 model at https://huggingface.co/spaces/briaai/BRIA-RMBG-2.0. Also, the URL I use: https://briarmbg20.vercel.app/ is just a proxy to connect Android with HuggingFace API and I don't collect any data or care about who you are through it. If you're not sure, here's the endpoint source code: https://github.com/huanhoahongso3-collab/briarmbg2.0
+Warning: I do not own or linked with the removebg branch. I use the BRIA-RMBG-1.4 model at https://huggingface.co/spaces/briaai/BRIA-RMBG-1.4 because I don't have local server to host it. Also, the URL I use: bria14proxy.vercel.app is just a proxy to connect Android with HuggingFace API and I don't collect any data or care about who you are through it. If you're not sure, here's the endpoint source code: https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY (if you don't use remove background it should be fine)
 
 Support min SDK 27 (Android 8.1). Recommend using SDK 35 (Android 15).
 
@@ -34,7 +34,7 @@ Working features include:
 - Share intents (`ACTION_SEND` / `ACTION_SEND_MULTIPLE`) directly to Zalo
 - Export stickers when needed
 - Import single and multiple images both in the app and share intent
-- New Material Design 3 from Google
+- New Material Design 3 from Google (some 3e)
 
 ## License
 ZSticker Copyright (c) 2026
