@@ -79,10 +79,26 @@ object ImageUtils {
      */
     fun addStickerBorder(context: Context, originalFile: File): File? {
         try {
-            val originalBitmap = BitmapFactory.decodeFile(originalFile.absolutePath) ?: return null
+            // 1. Load and resize bitmap to a manageable size (max 512) for speed
+            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(originalFile.absolutePath, options)
             
-            // Define border size (adjust as needed for "bubble" look)
-            val borderSize = 32
+            val inSampleSize = calculateInSampleSize(options, TARGET_WIDTH, TARGET_WIDTH)
+            val decodeOptions = BitmapFactory.Options().apply { this.inSampleSize = inSampleSize }
+            val tempBitmap = BitmapFactory.decodeFile(originalFile.absolutePath, decodeOptions) ?: return null
+            
+            // Ensure exact resize if still larger than target
+            val originalBitmap = if (tempBitmap.width > TARGET_WIDTH || tempBitmap.height > TARGET_WIDTH) {
+                val scale = TARGET_WIDTH.toFloat() / Math.max(tempBitmap.width, tempBitmap.height)
+                val resized = Bitmap.createScaledBitmap(tempBitmap, (tempBitmap.width * scale).toInt(), (tempBitmap.height * scale).toInt(), true)
+                if (resized != tempBitmap) tempBitmap.recycle()
+                resized
+            } else {
+                tempBitmap
+            }
+            
+            // Define border size
+            val borderSize = 28
             val newWidth = originalBitmap.width + (borderSize * 2)
             val newHeight = originalBitmap.height + (borderSize * 2)
             
@@ -94,23 +110,22 @@ object ImageUtils {
                 isFilterBitmap = true
             }
             
-            // 1. Draw the white border (bubble)
-            // ColorMatrix to threshold alpha and color everything white.
-            // This removes "particles" (faint noise) and makes the border solid.
+            // 2. Draw the white border (bubble)
             val borderPaint = Paint().apply {
                 isAntiAlias = true
                 isFilterBitmap = true
+                // Thresholding alpha to make the border solid and remove noise
                 val cm = android.graphics.ColorMatrix(floatArrayOf(
                     0f, 0f, 0f, 0f, 255f,
                     0f, 0f, 0f, 0f, 255f,
                     0f, 0f, 0f, 0f, 255f,
-                    0f, 0f, 0f, 20f, -2000f // Threshold: ignore alpha < ~100/255, make > 100 solid
+                    0f, 0f, 0f, 20f, -2000f 
                 ))
                 colorFilter = android.graphics.ColorMatrixColorFilter(cm)
             }
             
-            // Increased iterations for a smoother "bubble" look (especially for larger border sizes)
-            val iterations = 128
+            // 48 iterations is a good balance between speed and smoothness for a 28px border
+            val iterations = 48
             for (i in 0 until iterations) {
                 val angle = 2.0 * Math.PI * i / iterations
                 val dx = (Math.cos(angle) * borderSize).toFloat()
@@ -118,12 +133,10 @@ object ImageUtils {
                 canvas.drawBitmap(originalBitmap, borderSize + dx, borderSize + dy, borderPaint)
             }
             
-            // Fill in the gaps for a smoother bubble if needed, but 16 iterations is usually enough
-            
-            // 2. Draw the original bitmap on top
+            // 3. Draw the original bitmap on top
             canvas.drawBitmap(originalBitmap, borderSize.toFloat(), borderSize.toFloat(), paint)
             
-            // 3. Save to a new file
+            // 4. Save to a new file
             val newFile = File(context.filesDir, "zsticker_${System.currentTimeMillis()}.png")
             FileOutputStream(newFile).use { out ->
                 resultBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
@@ -138,5 +151,18 @@ object ImageUtils {
             e.printStackTrace()
             return null
         }
+    }
+
+    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+        val (height: Int, width: Int) = options.run { outHeight to outWidth }
+        var inSampleSize = 1
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight: Int = height / 2
+            val halfWidth: Int = width / 2
+            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+        return inSampleSize
     }
 }
