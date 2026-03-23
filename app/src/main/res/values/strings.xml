@@ -84,4 +84,5 @@
     <string name="export_to_gallery_note">Export all stickers to your gallery app</string>
     <string name="export_gallery_success">Exported %d stickers to Gallery</string>
     <string name="not_a_backup_file">Not a backup file</string>
+    <string name="stickify">Stickify</string>
 </resources>

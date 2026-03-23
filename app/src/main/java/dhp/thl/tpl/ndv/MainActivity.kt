@@ -742,7 +742,12 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         val options = mutableListOf<OptionItem>()
         // Regular single export/share
         options.add(OptionItem(R.drawable.ic_export_gallery, getString(R.string.export)))
-        options.add(OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg)))
+        
+        if (!isRecent) {
+            options.add(OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg)))
+            options.add(OptionItem(R.drawable.ic_palette, getString(R.string.stickify)))
+        }
+        
         options.add(OptionItem(R.drawable.ic_view_full, getString(R.string.view_full_sticker)))
         
         if (!isRecent) {
@@ -755,6 +760,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             when (options[which].text) {
                 getString(R.string.export) -> exportSingleSticker(uri)
                 getString(R.string.remove_bg) -> checkAndShowBackgroundRemovalWarning(uri)
+                getString(R.string.stickify) -> stickify(uri)
                 getString(R.string.view_full_sticker) -> viewFullSticker(uri)
                 getString(R.string.delete) -> deleteSticker(uri)
                 getString(R.string.delete_history) -> entry?.let { removeFromRecents(it) }
@@ -810,6 +816,28 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         btnContinue.setOnClickListener { if (checkBox.isChecked) prefs.edit().putBoolean("dont_show_rb_warning", true).apply()
             dialog.dismiss(); removeBackground(uri) }
         dialog.showMonetDialog(this)
+    }
+
+    private fun stickify(uri: Uri) {
+        val file = File(filesDir, uri.lastPathSegment ?: "")
+        if (!file.exists()) return
+
+        binding.progressBar.visibility = View.VISIBLE
+        
+        thread {
+            val resultFile = ImageUtils.addStickerBorder(this@MainActivity, file)
+            runOnUiThread {
+                binding.progressBar.visibility = View.GONE
+                if (resultFile != null) {
+                    adapter.refreshData(this@MainActivity)
+                    updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
+                    binding.recycler.scrollToPosition(0)
+                    ToastUtils.showToast(this@MainActivity, getString(R.string.success))
+                } else {
+                    ToastUtils.showToast(this@MainActivity, getString(R.string.failed))
+                }
+            }
+        }
     }
 
     private fun exportSingleSticker(uri: Uri) {

@@ -3,6 +3,11 @@ package dhp.thl.tpl.ndv
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import java.io.File
 import java.io.FileOutputStream
 
@@ -66,6 +71,64 @@ object ImageUtils {
             e.printStackTrace()
             // Fallback to original file if compression fails
             return originalFile
+        }
+    }
+    
+    /**
+     * Adds a white "bubble" border around the sticker.
+     */
+    fun addStickerBorder(context: Context, originalFile: File): File? {
+        try {
+            val originalBitmap = BitmapFactory.decodeFile(originalFile.absolutePath) ?: return null
+            
+            // Define border size (adjust as needed for "bubble" look)
+            val borderSize = 12 
+            val newWidth = originalBitmap.width + (borderSize * 2)
+            val newHeight = originalBitmap.height + (borderSize * 2)
+            
+            val resultBitmap = Bitmap.createBitmap(newWidth, newHeight, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(resultBitmap)
+            
+            val paint = Paint().apply {
+                isAntiAlias = true
+                isFilterBitmap = true
+            }
+            
+            // 1. Draw the white border (bubble)
+            // We draw the bitmap multiple times in a circle to create a thick outline
+            val borderPaint = Paint().apply {
+                isAntiAlias = true
+                isFilterBitmap = true
+                colorFilter = PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
+            }
+            
+            val iterations = 16
+            for (i in 0 until iterations) {
+                val angle = 2.0 * Math.PI * i / iterations
+                val dx = (Math.cos(angle) * borderSize).toFloat()
+                val dy = (Math.sin(angle) * borderSize).toFloat()
+                canvas.drawBitmap(originalBitmap, borderSize + dx, borderSize + dy, borderPaint)
+            }
+            
+            // Fill in the gaps for a smoother bubble if needed, but 16 iterations is usually enough
+            
+            // 2. Draw the original bitmap on top
+            canvas.drawBitmap(originalBitmap, borderSize.toFloat(), borderSize.toFloat(), paint)
+            
+            // 3. Save to a new file
+            val newFile = File(context.filesDir, "zsticker_${System.currentTimeMillis()}.png")
+            FileOutputStream(newFile).use { out ->
+                resultBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+            
+            // Cleanup
+            originalBitmap.recycle()
+            resultBitmap.recycle()
+            
+            return newFile
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return null
         }
     }
 }
