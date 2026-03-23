@@ -98,7 +98,7 @@ object ImageUtils {
             }
             
             // Define border size
-            val borderSize = 28
+            val borderSize = 17
             val newWidth = originalBitmap.width + (borderSize * 2)
             val newHeight = originalBitmap.height + (borderSize * 2)
             
@@ -124,7 +124,7 @@ object ImageUtils {
                 colorFilter = android.graphics.ColorMatrixColorFilter(cm)
             }
             
-            // 48 iterations is a good balance between speed and smoothness for a 28px border
+            // 48 iterations is a good balance between speed and smoothness for a 17px border
             val iterations = 48
             for (i in 0 until iterations) {
                 val angle = 2.0 * Math.PI * i / iterations

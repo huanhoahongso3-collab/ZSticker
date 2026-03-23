@@ -656,7 +656,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 binding.imgEmpty.setImageResource(R.drawable.ic_empty_state)
             }
 
-            val padding = (28 * resources.displayMetrics.density).toInt()
+            val padding = (17 * resources.displayMetrics.density).toInt()
             binding.imgEmpty.setPadding(padding, padding, padding, padding)
         }
     }
