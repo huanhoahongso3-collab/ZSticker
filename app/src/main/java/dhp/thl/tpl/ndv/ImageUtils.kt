@@ -165,4 +165,32 @@ object ImageUtils {
         }
         return inSampleSize
     }
+
+    /**
+     * Crops transparent pixels from the edges of the bitmap.
+     */
+    fun cropTransparent(bitmap: Bitmap): Bitmap {
+        var minX = bitmap.width
+        var minY = bitmap.height
+        var maxX = -1
+        var maxY = -1
+
+        for (y in 0 until bitmap.height) {
+            for (x in 0 until bitmap.width) {
+                val alpha = Color.alpha(bitmap.getPixel(x, y))
+                if (alpha > 0) {
+                    if (x < minX) minX = x
+                    if (x > maxX) maxX = x
+                    if (y < minY) minY = y
+                    if (y > maxY) maxY = y
+                }
+            }
+        }
+
+        if (maxX < minX || maxY < minY) {
+            return bitmap // No non-transparent pixels found
+        }
+
+        return Bitmap.createBitmap(bitmap, minX, minY, (maxX - minX) + 1, (maxY - minY) + 1)
+    }
 }

@@ -10,8 +10,8 @@ android {
         applicationId 'dhp.thl.tpl.ndv'
         minSdk 27
         targetSdk 36
-        versionCode 6120
-        versionName '6.1.2'
+        versionCode 6200
+        versionName '6.2'
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         

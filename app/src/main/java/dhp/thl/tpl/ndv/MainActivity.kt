@@ -11,6 +11,8 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
@@ -544,10 +546,18 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 if (connection.responseCode == 200) {
                     val file = File(filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
                     connection.inputStream.use { input ->
-                        FileOutputStream(file).use { out -> input.copyTo(out) }
+                        val rawBitmap = BitmapFactory.decodeStream(input)
+                        if (rawBitmap != null) {
+                            val croppedBitmap = ImageUtils.cropTransparent(rawBitmap)
+                            FileOutputStream(file).use { out ->
+                                croppedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                            }
+                            if (croppedBitmap != rawBitmap) rawBitmap.recycle()
+                            croppedBitmap.recycle()
+                            resultUri = Uri.fromFile(file)
+                            isSuccess = true
+                        }
                     }
-                    resultUri = Uri.fromFile(file)
-                    isSuccess = true
                 }
             } catch (e: Exception) {
                 // If no internet or API error occurs, isSuccess remains false
