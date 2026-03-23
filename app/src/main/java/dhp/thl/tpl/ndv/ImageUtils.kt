@@ -7,22 +7,22 @@ import java.io.File
 import java.io.FileOutputStream
 
 object ImageUtils {
-    private const val TARGET_WIDTH = 128
+    private const val TARGET_WIDTH = 512
     private const val CACHE_DIR_NAME = "zalo_cache"
 
     /**
-     * Resizes and compresses a sticker for Zalo sharing.
+     * Resizes a sticker for Zalo sharing to 512px.
      * Keeps the original aspect ratio and resizes to [TARGET_WIDTH].
      * Caches the result to avoid redundant processing.
      */
-    fun getCompressedSticker(context: Context, originalFile: File): File {
+    fun getZaloSticker(context: Context, originalFile: File): File {
         val cacheDir = File(context.filesDir, CACHE_DIR_NAME)
         if (!cacheDir.exists()) {
             cacheDir.mkdirs()
         }
 
         // Use a unique name based on original file name and its last modified time to ensure freshness
-        val cachedFileName = "compressed_${originalFile.name}"
+        val cachedFileName = "zalo_512_${originalFile.name}"
         val compressedFile = File(cacheDir, cachedFileName)
 
         // If cached file exists and is newer than original, skip compression
@@ -52,7 +52,7 @@ object ImageUtils {
 
             // 4. Save to cache as PNG (to preserve transparency)
             FileOutputStream(compressedFile).use { out ->
-                scaledBitmap.compress(Bitmap.CompressFormat.PNG, 90, out)
+                scaledBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
             }
 
             // Cleanup

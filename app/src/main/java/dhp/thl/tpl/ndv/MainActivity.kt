@@ -708,8 +708,8 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             val file = File(filesDir, uri.lastPathSegment ?: "")
             if (!file.exists()) return
 
-            // Compress and resize for Zalo
-            val compressedFile = ImageUtils.getCompressedSticker(this, file)
+            // Resize for Zalo (max width 512px)
+            val compressedFile = ImageUtils.getZaloSticker(this, file)
             
             val contentUri = FileProvider.getUriForFile(this, "$packageName.provider", compressedFile)
             val intent = Intent(Intent.ACTION_SEND).apply {
