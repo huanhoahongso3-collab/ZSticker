@@ -7,15 +7,19 @@
     <color name="orange_container">#FFB74D</color> 
     <color name="orange_on_container">#5D3A1A</color>
     
-    <color name="light_surface">#FFFBFE</color>
+    <color name="light_surface">@color/white</color>
     <color name="light_surface_container">#F5F5F5</color>
     <color name="light_on_surface">#1C1B1F</color>
-    <color name="light_background">#FFFBFE</color>
+    <color name="light_background">@color/white</color>
+
+
     
-    <color name="dark_surface">#1C1B1F</color>
+    <color name="dark_surface">@color/black</color>
     <color name="dark_surface_container">#2B2930</color>
     <color name="dark_on_surface">#E6E1E5</color>
-    <color name="dark_background">#1C1B1F</color>
+    <color name="dark_background">@color/black</color>
+
+
     
     <color name="dark_orange_container">#4A3422</color> 
     <color name="dark_orange_on_container">#FFB74D</color>

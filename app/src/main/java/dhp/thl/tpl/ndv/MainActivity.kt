@@ -370,9 +370,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             binding.txtVersion.text = "1.0.0 (1)"
         }
 
-        binding.itemVersion.setOnClickListener {
-            // No longer triggers easter eggs
-        }
 
 
         binding.itemRepo.setOnClickListener {
