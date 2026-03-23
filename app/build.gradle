@@ -18,7 +18,6 @@ android {
         // Only include resources for supported languages
         resConfigs "en", "vi", "ru", "zh"
         
-        // Filter ABIs to exclude x86 (huge size reduction for MediaPipe)
     }
 
     buildTypes {
