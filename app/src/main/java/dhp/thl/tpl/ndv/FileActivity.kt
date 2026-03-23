@@ -157,6 +157,7 @@ class FileActivity : BaseActivity() {
         } catch (e: Exception) {
             e.printStackTrace()
             ToastUtils.showToast(this, getString(R.string.failed))
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
