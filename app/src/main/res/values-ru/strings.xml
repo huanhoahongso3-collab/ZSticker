@@ -84,5 +84,5 @@
     <string name="export_to_gallery_note">Экспортируйте все стикеры в приложение галереи</string>
     <string name="export_gallery_success">Экспортировано %d стикеров в Галерею</string>
     <string name="not_a_backup_file">Это не файл резервной копии</string>
-    <string name="stickify">Сделать стикером</string>
+    <string name="border_sticker">Добавить рамку</string>
 </resources>

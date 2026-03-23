@@ -745,7 +745,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         
         if (!isRecent) {
             options.add(OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg)))
-            options.add(OptionItem(R.drawable.ic_palette, getString(R.string.stickify)))
+            options.add(OptionItem(R.drawable.ic_border_sticker, getString(R.string.border_sticker)))
         }
         
         options.add(OptionItem(R.drawable.ic_view_full, getString(R.string.view_full_sticker)))
@@ -760,7 +760,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             when (options[which].text) {
                 getString(R.string.export) -> exportSingleSticker(uri)
                 getString(R.string.remove_bg) -> checkAndShowBackgroundRemovalWarning(uri)
-                getString(R.string.stickify) -> stickify(uri)
+                getString(R.string.border_sticker) -> stickify(uri)
                 getString(R.string.view_full_sticker) -> viewFullSticker(uri)
                 getString(R.string.delete) -> deleteSticker(uri)
                 getString(R.string.delete_history) -> entry?.let { removeFromRecents(it) }

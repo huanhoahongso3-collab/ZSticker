@@ -82,7 +82,7 @@ object ImageUtils {
             val originalBitmap = BitmapFactory.decodeFile(originalFile.absolutePath) ?: return null
             
             // Define border size (adjust as needed for "bubble" look)
-            val borderSize = 12 
+            val borderSize = 24 
             val newWidth = originalBitmap.width + (borderSize * 2)
             val newHeight = originalBitmap.height + (borderSize * 2)
             
@@ -102,7 +102,7 @@ object ImageUtils {
                 colorFilter = PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
             }
             
-            val iterations = 16
+            val iterations = 32
             for (i in 0 until iterations) {
                 val angle = 2.0 * Math.PI * i / iterations
                 val dx = (Math.cos(angle) * borderSize).toFloat()
