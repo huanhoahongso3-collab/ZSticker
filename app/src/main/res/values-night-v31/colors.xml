@@ -1,4 +1,0 @@
-<resources>
-    <color name="dark_surface">@android:color/system_accent1_900</color>
-    <color name="dark_background">@android:color/system_accent1_900</color>
-</resources>

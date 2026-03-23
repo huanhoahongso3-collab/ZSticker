@@ -1,4 +1,0 @@
-<resources>
-    <color name="light_surface">@android:color/system_accent1_50</color>
-    <color name="light_background">@android:color/system_accent1_50</color>
-</resources>
