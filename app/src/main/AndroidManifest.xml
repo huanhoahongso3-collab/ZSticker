@@ -14,7 +14,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ZSticker"
         android:requestLegacyExternalStorage="true"
-        tools:targetApi="35">
+        tools:targetApi="36">
 
         <activity
             android:name=".MainActivity"
@@ -37,12 +37,6 @@
                 <data android:mimeType="image/*" />
             </intent-filter>
         </activity>
-
-        <activity
-            android:name=".FileActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.ZSticker" />
 
         <activity
             android:name=".FileActivity"
