@@ -170,26 +170,63 @@ object ImageUtils {
      * Crops transparent pixels from the edges of the bitmap.
      */
     fun cropTransparent(bitmap: Bitmap): Bitmap {
-        var minX = bitmap.width
-        var minY = bitmap.height
+        val width = bitmap.width
+        val height = bitmap.height
+        val pixels = IntArray(width * height)
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+
+        var minX = width
+        var minY = height
         var maxX = -1
         var maxY = -1
 
-        for (y in 0 until bitmap.height) {
-            for (x in 0 until bitmap.width) {
-                val alpha = Color.alpha(bitmap.getPixel(x, y))
-                if (alpha > 0) {
-                    if (x < minX) minX = x
-                    if (x > maxX) maxX = x
-                    if (y < minY) minY = y
-                    if (y > maxY) maxY = y
+        // Threshold of 1 to ignore almost invisible noise
+        val alphaThreshold = 1
+
+        // Find minY
+        top@ for (y in 0 until height) {
+            for (x in 0 until width) {
+                if (((pixels[y * width + x] shr 24) and 0xff) > alphaThreshold) {
+                    minY = y
+                    break@top
                 }
             }
         }
 
-        if (maxX < minX || maxY < minY) {
-            return bitmap // No non-transparent pixels found
+        // If minY is still original value, it means the whole image is transparent
+        if (minY == height) return bitmap
+
+        // Find maxY
+        bottom@ for (y in height - 1 downTo minY) {
+            for (x in 0 until width) {
+                if (((pixels[y * width + x] shr 24) and 0xff) > alphaThreshold) {
+                    maxY = y
+                    break@bottom
+                }
+            }
         }
+
+        // Find minX
+        left@ for (x in 0 until width) {
+            for (y in minY..maxY) {
+                if (((pixels[y * width + x] shr 24) and 0xff) > alphaThreshold) {
+                    minX = x
+                    break@left
+                }
+            }
+        }
+
+        // Find maxX
+        right@ for (x in width - 1 downTo minX) {
+            for (y in minY..maxY) {
+                if (((pixels[y * width + x] shr 24) and 0xff) > alphaThreshold) {
+                    maxX = x
+                    break@right
+                }
+            }
+        }
+
+        if (maxX < minX || maxY < minY) return bitmap
 
         return Bitmap.createBitmap(bitmap, minX, minY, (maxX - minX) + 1, (maxY - minY) + 1)
     }
