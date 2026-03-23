@@ -82,7 +82,7 @@ object ImageUtils {
             val originalBitmap = BitmapFactory.decodeFile(originalFile.absolutePath) ?: return null
             
             // Define border size (adjust as needed for "bubble" look)
-            val borderSize = 24 
+            val borderSize = 32
             val newWidth = originalBitmap.width + (borderSize * 2)
             val newHeight = originalBitmap.height + (borderSize * 2)
             
@@ -95,14 +95,22 @@ object ImageUtils {
             }
             
             // 1. Draw the white border (bubble)
-            // We draw the bitmap multiple times in a circle to create a thick outline
+            // ColorMatrix to threshold alpha and color everything white.
+            // This removes "particles" (faint noise) and makes the border solid.
             val borderPaint = Paint().apply {
                 isAntiAlias = true
                 isFilterBitmap = true
-                colorFilter = PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
+                val cm = android.graphics.ColorMatrix(floatArrayOf(
+                    0f, 0f, 0f, 0f, 255f,
+                    0f, 0f, 0f, 0f, 255f,
+                    0f, 0f, 0f, 0f, 255f,
+                    0f, 0f, 0f, 20f, -2000f // Threshold: ignore alpha < ~100/255, make > 100 solid
+                ))
+                colorFilter = android.graphics.ColorMatrixColorFilter(cm)
             }
             
-            val iterations = 32
+            // Increased iterations for a smoother "bubble" look (especially for larger border sizes)
+            val iterations = 128
             for (i in 0 until iterations) {
                 val angle = 2.0 * Math.PI * i / iterations
                 val dx = (Math.cos(angle) * borderSize).toFloat()

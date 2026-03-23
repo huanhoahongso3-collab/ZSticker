@@ -822,6 +822,14 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         val file = File(filesDir, uri.lastPathSegment ?: "")
         if (!file.exists()) return
 
+        // UI Setup for loading state
+        val surfaceColor = getThemeColor(com.google.android.material.R.attr.colorSurface)
+        binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(surfaceColor, 153)) // 60% alpha
+
+        val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+        val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
+        binding.loadingIndicator.setIndicatorColor(primary)
+
         binding.progressBar.visibility = View.VISIBLE
         
         thread {

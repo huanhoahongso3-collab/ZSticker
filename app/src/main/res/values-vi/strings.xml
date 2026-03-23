@@ -25,12 +25,12 @@
     <string name="import_settings">Nhập tất cả cài đặt</string>
     <string name="import_all">Nhập tất cả</string>
     <string name="export_success">Đã xuất ra Bộ nhớ trong/Pictures/ZSticker/%s</string>
-    <string name="info_remove_recent_title">Xóa tất cả nhãn dán gần đây</string>
+    <string name="info_remove_recent_title">Xóa tất cả hình dán gần đây</string>
     <string name="info_remove_recent_confirm_title">Xóa tất cả lịch sử?</string>
-    <string name="info_remove_all_title">Xóa tất cả nhãn dán</string>
-    <string name="info_remove_all_confirm_title">Xóa tất cả nhãn dán?</string>
-    <string name="info_remove_all_confirm_message">Hành động này sẽ xóa vĩnh viễn tất cả nhãn dán của bạn. Không thể hoàn tác.</string>
-    <string name="info_remove_recent_confirm_message">Hành động này sẽ xóa vĩnh viễn tất cả lịch sử nhãn dán của bạn. Không thể hoàn tác.</string>
+    <string name="info_remove_all_title">Xóa tất cả hình dán</string>
+    <string name="info_remove_all_confirm_title">Xóa tất cả hình dán?</string>
+    <string name="info_remove_all_confirm_message">Hành động này sẽ xóa vĩnh viễn tất cả hình dán của bạn. Không thể hoàn tác.</string>
+    <string name="info_remove_recent_confirm_message">Hành động này sẽ xóa vĩnh viễn tất cả lịch sử hình dán của bạn. Không thể hoàn tác.</string>
 
     <string name="theme_light">Sáng</string>
     <string name="theme_dark">Tối</string>
@@ -41,9 +41,9 @@
     
     <string name="info_license_note">Giấy phép Công cộng GNU v3.0</string>
     
-    <string name="sticker_options_title">Tùy chọn nhãn dán</string>
+    <string name="sticker_options_title">Tùy chọn hình dán</string>
     <string name="export">Xuất vào bộ sưu tập</string>
-    <string name="delete">Xóa nhãn dán</string>
+    <string name="delete">Xóa hình dán</string>
     <string name="view_full_sticker">Xem hình dán đầy đủ</string>
     <string name="delete_history">Xóa lịch sử</string>
     <string name="recent_options_title">Tùy chọn gần đây</string>
@@ -51,7 +51,7 @@
     <string name="zalo_share_failed">Không tìm thấy Zalo hoặc chia sẻ thất bại</string>
     <string name="success">Thành công</string>
     <string name="failed">Thất bại</string>
-    <string name="no_stickers_found">Không tìm thấy nhãn dán</string>
+    <string name="no_stickers_found">Không tìm thấy hình dán</string>
     <string name="unsupported_file_type">Định dạng tệp không được hỗ trợ</string>
     <string name="remove_bg">Xóa phông nền</string>
     <string name="rb_completed">Xóa phông nền hoàn tất</string>
@@ -80,9 +80,9 @@
     <string name="info_files_title">Nhập/Xuất</string>
     <string name="import_auto_note">Tự động phát hiện nội dung từ ZIP</string>
     <string name="export_choose_note">Chọn thư mục và nội dung để lưu</string>
-    <string name="export_to_gallery_title">Lưu tất cả nhãn dán vào Bộ sưu tập</string>
-    <string name="export_to_gallery_note">Xuất tất cả nhãn dán vào ứng dụng bộ sưu tập của bạn</string>
-    <string name="export_gallery_success">Đã trích xuất %d nhãn dán vào Bộ sưu tập</string>
+    <string name="export_to_gallery_title">Lưu tất cả hình dán vào Bộ sưu tập</string>
+    <string name="export_to_gallery_note">Xuất tất cả hình dán vào ứng dụng bộ sưu tập của bạn</string>
+    <string name="export_gallery_success">Đã trích xuất %d hình dán vào Bộ sưu tập</string>
     <string name="not_a_backup_file">Không phải tệp sao lưu</string>
-    <string name="border_sticker">Tạo viền Sticker</string>
+    <string name="border_sticker">Tạo viền hình dán</string>
 </resources>
