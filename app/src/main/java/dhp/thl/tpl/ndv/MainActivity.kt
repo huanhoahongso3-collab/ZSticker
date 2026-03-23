@@ -707,7 +707,11 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         try {
             val file = File(filesDir, uri.lastPathSegment ?: "")
             if (!file.exists()) return
-            val contentUri = FileProvider.getUriForFile(this, "$packageName.provider", file)
+
+            // Compress and resize for Zalo
+            val compressedFile = ImageUtils.getCompressedSticker(this, file)
+            
+            val contentUri = FileProvider.getUriForFile(this, "$packageName.provider", compressedFile)
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "image/png"
                 putExtra(Intent.EXTRA_STREAM, contentUri)
@@ -718,7 +722,10 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             }
             startActivity(intent)
             addToRecents(file.name)
-        } catch (e: Exception) { ToastUtils.showToast(this, getString(R.string.zalo_share_failed)) }
+        } catch (e: Exception) { 
+            e.printStackTrace()
+            ToastUtils.showToast(this, getString(R.string.zalo_share_failed)) 
+        }
     }
 
     private fun addToRecents(fileName: String) {
