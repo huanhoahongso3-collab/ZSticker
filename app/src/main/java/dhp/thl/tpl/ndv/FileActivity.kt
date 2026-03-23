@@ -44,6 +44,10 @@ class FileActivity : BaseActivity() {
         binding = ActivityFileBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        isExportExpanded = savedInstanceState?.getBoolean("isExportExpanded", false) ?: false
+        binding.expandableExport.visibility = if (isExportExpanded) View.VISIBLE else View.GONE
+        binding.imgExpand.rotation = if (isExportExpanded) -90f else 0f
+
         binding.btnBack.setOnClickListener { finish() }
 
         binding.itemImport.setOnClickListener {
@@ -153,6 +157,10 @@ class FileActivity : BaseActivity() {
         } catch (e: Exception) {
             e.printStackTrace()
             ToastUtils.showToast(this, getString(R.string.failed))
-        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean("isExportExpanded", isExportExpanded)
     }
 }
