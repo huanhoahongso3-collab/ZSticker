@@ -65,8 +65,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var adapter: StickerAdapter
     private lateinit var adapterRecents: StickerAdapter
-    private var versionClickCount = 0
-    private var lastClickTime: Long = 0
+
     
     private val Cookie9Sided = RoundedPolygon.star(
         numVerticesPerRadius = 9,
@@ -372,16 +371,9 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         }
 
         binding.itemVersion.setOnClickListener {
-            val now = System.currentTimeMillis()
-            versionClickCount = if (now - lastClickTime < 500) versionClickCount + 1 else 1
-            lastClickTime = now
-            if (versionClickCount == 10) {
-                startActivity(Intent(this, MoreOptionActivity::class.java))
-            } else if (versionClickCount >= 20) {
-                versionClickCount = 0
-                startActivity(Intent(this, AdvancedSettingsActivity::class.java))
-            }
+            // No longer triggers easter eggs
         }
+
 
         binding.itemRepo.setOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/huanhoahongso3-collab/ZSticker")))
@@ -521,11 +513,10 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         }
     }
 
-    private val backgroundRemover by lazy { MediaPipeBackgroundRemover(this) }
-
     private fun removeBackground(uri: Uri) {
+        // UI Setup for loading state
         val surfaceColor = getThemeColor(com.google.android.material.R.attr.colorSurface)
-        binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(surfaceColor, 153))
+        binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(surfaceColor, 153)) // 60% alpha
 
         val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
         val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
@@ -537,39 +528,34 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             var isSuccess = false
             var resultUri: Uri? = null
             try {
-                val bitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                    val source = android.graphics.ImageDecoder.createSource(contentResolver, uri)
-                    android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
-                        decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
-                        decoder.isMutableRequired = true
-                    }
-                } else {
-                    @Suppress("DEPRECATION")
-                    android.provider.MediaStore.Images.Media.getBitmap(contentResolver, uri)
+                val inputStream = contentResolver.openInputStream(uri) ?: throw Exception()
+
+                // Updated to the stable 1.4 proxy endpoint
+                val url = URL("https://bria14proxy.vercel.app/api/nobg")
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    doOutput = true
+                    setRequestProperty("Content-Type", "application/octet-stream")
+                    connectTimeout = 30000
+                    readTimeout = 30000
                 }
-                
-                // Copy bitmap to ARGB_8888 if it's not
-                var argbBitmap = bitmap.copy(android.graphics.Bitmap.Config.ARGB_8888, true)
-                val maxDim = 1024
-                if (argbBitmap.width > maxDim || argbBitmap.height > maxDim) {
-                    val ratio = maxDim.toFloat() / kotlin.math.max(argbBitmap.width, argbBitmap.height)
-                    val scaled = android.graphics.Bitmap.createScaledBitmap(argbBitmap, (argbBitmap.width * ratio).toInt(), (argbBitmap.height * ratio).toInt(), true)
-                    if (scaled != argbBitmap) {
-                        argbBitmap.recycle()
-                        argbBitmap = scaled
-                    }
-                }
-                val outBitmap = backgroundRemover.removeBackground(argbBitmap)
-                
-                if (outBitmap != null) {
+
+                // Stream the image data to the proxy
+                connection.outputStream.use { out -> inputStream.copyTo(out) }
+
+                // Handle successful response (Engine 1.4)
+                if (connection.responseCode == 200) {
                     val file = File(filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
-                    FileOutputStream(file).use { out ->
-                        outBitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+                    connection.inputStream.use { input ->
+                        FileOutputStream(file).use { out -> input.copyTo(out) }
                     }
                     resultUri = Uri.fromFile(file)
                     isSuccess = true
                 }
-            } catch (t: Throwable) { isSuccess = false }
+            } catch (e: Exception) {
+                // If no internet or API error occurs, isSuccess remains false
+                isSuccess = false
+            }
 
             runOnUiThread {
                 binding.progressBar.visibility = View.GONE
@@ -579,11 +565,13 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                     binding.recycler.scrollToPosition(0)
                     ToastUtils.showToast(this@MainActivity, getString(R.string.rb_completed))
                 } else {
+                    // Displays failed message for all errors (including connection issues)
                     ToastUtils.showToast(this@MainActivity, getString(R.string.rb_failed))
                 }
             }
         }
     }
+
 
     private fun handleEdgeToEdge() {
         window.statusBarColor = Color.TRANSPARENT
@@ -762,12 +750,13 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         showPaneDialog(title, options) { which ->
             when (options[which].text) {
                 getString(R.string.export) -> exportSingleSticker(uri)
-                getString(R.string.remove_bg) -> removeBackground(uri)
+                getString(R.string.remove_bg) -> checkAndShowBackgroundRemovalWarning(uri)
                 getString(R.string.view_full_sticker) -> viewFullSticker(uri)
                 getString(R.string.delete) -> deleteSticker(uri)
                 getString(R.string.delete_history) -> entry?.let { removeFromRecents(it) }
             }
         }
+
     }
 
     private fun showPaneDialog(title: String, items: List<OptionItem>, selectedIndex: Int = -1, onItemClick: (Int) -> Unit) {

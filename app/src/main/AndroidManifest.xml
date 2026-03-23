@@ -39,20 +39,7 @@
         </activity>
 
         <activity
-            android:name=".AdvancedSettingsActivity"
-            android:exported="false"
-            android:theme="@style/Theme.EasterEgg"
-            android:screenOrientation="portrait" />
-
-        <activity
-            android:name=".SystemOptimizationActivity"
-            android:exported="false"
-            android:screenOrientation="landscape"
-            android:configChanges="orientation|screenSize|keyboardHidden"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
-
-        <activity
-            android:name=".MoreOptionActivity"
+            android:name=".FileActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.ZSticker" />
