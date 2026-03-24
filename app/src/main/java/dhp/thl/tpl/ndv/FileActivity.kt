@@ -10,6 +10,14 @@ import dhp.thl.tpl.ndv.databinding.ActivityFileBinding
 import java.io.OutputStream
 import java.io.File
 import androidx.core.graphics.ColorUtils
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.progressindicator.LinearProgressIndicator
+import android.widget.TextView
+import android.view.LayoutInflater
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class FileActivity : BaseActivity() {
 
@@ -28,12 +36,17 @@ class FileActivity : BaseActivity() {
     private val importLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
             result.data?.data?.let { uri ->
-                if (BackupHelper.importBackup(this, uri)) {
-                    ToastUtils.showToast(this, getString(R.string.success))
-                    setResult(RESULT_OK, Intent().putExtra("did_import", true))
-                    restartApp() // Apply settings instantly by restarting
-                } else {
-                    ToastUtils.showToast(this, getString(R.string.not_a_backup_file))
+                showProgressDialog(getString(R.string.info_import_title)) { onProgress ->
+                    val success = BackupHelper.importBackup(this, uri, onProgress)
+                    withContext(Dispatchers.Main) {
+                        if (success) {
+                            ToastUtils.showToast(this@FileActivity, getString(R.string.success))
+                            setResult(RESULT_OK, Intent().putExtra("did_import", true))
+                            restartApp()
+                        } else {
+                            ToastUtils.showToast(this@FileActivity, getString(R.string.not_a_backup_file))
+                        }
+                    }
                 }
             }
         }
@@ -146,17 +159,48 @@ class FileActivity : BaseActivity() {
     }
 
     private fun exportFile(uri: Uri, type: String) {
-        try {
-            contentResolver.openOutputStream(uri)?.use { outputStream ->
-                if (BackupHelper.exportBackup(this, outputStream, type)) {
-                    ToastUtils.showToast(this, getString(R.string.success))
-                } else {
-                    ToastUtils.showToast(this, getString(R.string.failed))
+        showProgressDialog(getString(R.string.info_export_title)) { onProgress ->
+            try {
+                contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    val success = BackupHelper.exportBackup(this, outputStream, type, onProgress)
+                    withContext(Dispatchers.Main) {
+                        if (success) {
+                            ToastUtils.showToast(this@FileActivity, getString(R.string.success))
+                        } else {
+                            ToastUtils.showToast(this@FileActivity, getString(R.string.failed))
+                        }
+                    }
+                } ?: withContext(Dispatchers.Main) { ToastUtils.showToast(this@FileActivity, getString(R.string.failed)) }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) { ToastUtils.showToast(this@FileActivity, getString(R.string.failed)) }
+            }
+        }
+    }
+
+    private fun showProgressDialog(title: String, action: suspend (onProgress: (Int) -> Unit) -> Unit) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_progress, null)
+        val progressBar = dialogView.findViewById<LinearProgressIndicator>(R.id.progress_indicator)
+        val txtPercentage = dialogView.findViewById<TextView>(R.id.txt_percentage)
+
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(boldTitle(title))
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        dialog.show()
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            action { progress ->
+                lifecycleScope.launch(Dispatchers.Main) {
+                    progressBar.progress = progress
+                    txtPercentage.text = "$progress%"
                 }
-            } ?: ToastUtils.showToast(this, getString(R.string.failed))
-        } catch (e: Exception) {
-            e.printStackTrace()
-            ToastUtils.showToast(this, getString(R.string.failed))
+            }
+            lifecycleScope.launch(Dispatchers.Main) {
+                dialog.dismiss()
+            }
         }
     }
 

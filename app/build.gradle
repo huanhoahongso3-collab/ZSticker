@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId 'dhp.thl.tpl.ndv'
-        minSdk 27
+        minSdk 29
         targetSdk 36
         versionCode 6200
         versionName '6.2'
@@ -52,6 +52,9 @@ dependencies {
     implementation 'com.google.android.material:material:1.14.0-alpha01'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.fragment:fragment-ktx:1.6.2'
+
+    // MediaPipe Vision
+    implementation 'com.google.mediapipe:tasks-vision:0.10.14'
 
     // Navigation
     implementation 'androidx.navigation:navigation-fragment-ktx:2.6.0'

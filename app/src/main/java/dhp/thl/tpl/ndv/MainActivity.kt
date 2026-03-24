@@ -62,6 +62,10 @@ import kotlinx.coroutines.launch
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.CornerRounding
 import androidx.graphics.shapes.star
+import com.google.mediapipe.framework.image.BitmapImageBuilder
+import com.google.mediapipe.tasks.core.BaseOptions
+import com.google.mediapipe.tasks.vision.imagesegmenter.ImageSegmenter
+import com.google.mediapipe.tasks.vision.imagesegmenter.ImageSegmenter.ImageSegmenterOptions
 
 class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private lateinit var binding: ActivityMainBinding
@@ -227,9 +231,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             }
         }
 
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-            requestLegacyPermissions()
-        }
+        // No legacy permissions needed for Android 10+
 
         binding.addButton.setOnClickListener {
             pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
@@ -526,42 +528,73 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         thread {
             var isSuccess = false
             var resultUri: Uri? = null
+            var imageSegmenter: ImageSegmenter? = null
+            
             try {
                 val inputStream = contentResolver.openInputStream(uri) ?: throw Exception()
-
-                // Updated to the stable 1.4 proxy endpoint
-                val url = URL("https://bria14proxy.vercel.app/api/nobg")
-                val connection = (url.openConnection() as HttpURLConnection).apply {
-                    requestMethod = "POST"
-                    doOutput = true
-                    setRequestProperty("Content-Type", "application/octet-stream")
-                    connectTimeout = 30000
-                    readTimeout = 30000
+                val originalBitmap = BitmapFactory.decodeStream(inputStream) ?: throw Exception()
+                
+                // Initialize MediaPipe Image Segmenter
+                val baseOptionsBuilder = BaseOptions.builder().setModelAssetPath("selfie_segmenter.tflite")
+                val optionsBuilder = ImageSegmenterOptions.builder()
+                    .setBaseOptions(baseOptionsBuilder.build())
+                    .setOutputCategoryMask(true)
+                    .setOutputConfidenceMasks(false)
+                
+                imageSegmenter = ImageSegmenter.createFromOptions(this, optionsBuilder.build())
+                
+                // Convert Bitmap to MediaPipe Image
+                val mpImage = BitmapImageBuilder(originalBitmap).build()
+                
+                // Run segmentation
+                val segmentationResult = imageSegmenter.segment(mpImage)
+                val maskImage = segmentationResult.categoryMask().get()
+                val maskBitmap = Bitmap.createBitmap(originalBitmap.width, originalBitmap.height, Bitmap.Config.ARGB_8888)
+                
+                // Convert mask to a Bitmap (MediaPipe mask is usually a single channel image where 0 is background, >0 is foreground)
+                val mpMask = BitmapImageBuilder(maskImage).build().bitmap
+                
+                // Create final bitmap with transparency
+                val resultBitmap = Bitmap.createBitmap(originalBitmap.width, originalBitmap.height, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(resultBitmap)
+                val paint = Paint().apply {
+                    isAntiAlias = true
                 }
-
-                // Stream the image data to the proxy
-                connection.outputStream.use { out -> inputStream.copyTo(out) }
-
-                // Handle successful response (Engine 1.4)
-                if (connection.responseCode == 200) {
-                    val file = File(filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
-                    connection.inputStream.use { input ->
-                        val rawBitmap = BitmapFactory.decodeStream(input)
-                        if (rawBitmap != null) {
-                            val croppedBitmap = ImageUtils.cropTransparent(rawBitmap)
-                            FileOutputStream(file).use { out ->
-                                croppedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-                            }
-                            if (croppedBitmap != rawBitmap) rawBitmap.recycle()
-                            croppedBitmap.recycle()
-                            resultUri = Uri.fromFile(file)
-                            isSuccess = true
+                
+                for (y in 0 until originalBitmap.height) {
+                    for (x in 0 until originalBitmap.width) {
+                        val maskPixel = mpMask.getPixel(x, y)
+                        // In selfie_segmenter, the mask usually has values indicating the class. 
+                        // For person segmentation, 0 is background, 255 (or some other value) is person.
+                        // We check the alpha or color value of the mask pixel.
+                        if (Color.red(maskPixel) > 128) {
+                            resultBitmap.setPixel(x, y, originalBitmap.getPixel(x, y))
+                        } else {
+                            resultBitmap.setPixel(x, y, Color.TRANSPARENT)
                         }
                     }
                 }
+
+                // Crop transparent edges
+                val croppedBitmap = ImageUtils.cropTransparent(resultBitmap)
+                
+                val file = File(filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
+                FileOutputStream(file).use { out ->
+                    croppedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                }
+                
+                // Cleanup
+                originalBitmap.recycle()
+                resultBitmap.recycle()
+                if (croppedBitmap != resultBitmap) croppedBitmap.recycle()
+                mpMask.recycle()
+                
+                resultUri = Uri.fromFile(file)
+                isSuccess = true
             } catch (e: Exception) {
-                // If no internet or API error occurs, isSuccess remains false
-                isSuccess = false
+                e.printStackTrace()
+            } finally {
+                imageSegmenter?.close()
             }
 
             runOnUiThread {
@@ -572,7 +605,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                     binding.recycler.scrollToPosition(0)
                     ToastUtils.showToast(this@MainActivity, getString(R.string.rb_completed))
                 } else {
-                    // Displays failed message for all errors (including connection issues)
                     ToastUtils.showToast(this@MainActivity, getString(R.string.rb_failed))
                 }
             }
@@ -769,7 +801,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         showPaneDialog(title, options) { which ->
             when (options[which].text) {
                 getString(R.string.export) -> exportSingleSticker(uri)
-                getString(R.string.remove_bg) -> checkAndShowBackgroundRemovalWarning(uri)
+                getString(R.string.remove_bg) -> removeBackground(uri)
                 getString(R.string.border_sticker) -> stickify(uri)
                 getString(R.string.view_full_sticker) -> viewFullSticker(uri)
                 getString(R.string.delete) -> deleteSticker(uri)
@@ -801,32 +833,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         dialog.showMonetDialog(this)
     }
 
-    private fun checkAndShowBackgroundRemovalWarning(uri: Uri) {
-        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
-        if (prefs.getBoolean("dont_show_rb_warning", false)) { removeBackground(uri); return }
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_warning, null)
-        val dialog = MaterialAlertDialogBuilder(this).setView(dialogView).create()
-        val titleView = dialogView.findViewById<TextView>(R.id.dialog_title)
-        val messageView = dialogView.findViewById<TextView>(R.id.dialog_message)
-        val iconView = dialogView.findViewById<ImageView>(R.id.icon_warning)
-        val checkBox = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cb_dont_show_again)
-        titleView.text = boldTitle(getString(R.string.rb_warning_title))
-        messageView.text = getString(R.string.rb_warning_message)
-        iconView.setImageResource(R.drawable.ic_remove_bg)
-        val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
-        val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
-        iconView.setColorFilter(primary); messageView.setLinkTextColor(primary)
-        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_cancel)
-        val btnContinue = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_continue)
-        btnCancel.setTextColor(primary); checkBox.buttonTintList = android.content.res.ColorStateList.valueOf(primary)
-        val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-        btnContinue.setTextColor(if (isDark) Color.BLACK else Color.WHITE)
-        btnContinue.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
-        btnCancel.setOnClickListener { dialog.dismiss() }
-        btnContinue.setOnClickListener { if (checkBox.isChecked) prefs.edit().putBoolean("dont_show_rb_warning", true).apply()
-            dialog.dismiss(); removeBackground(uri) }
-        dialog.showMonetDialog(this)
-    }
 
     private fun stickify(uri: Uri) {
         val file = File(filesDir, uri.lastPathSegment ?: "")
@@ -859,13 +865,12 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     }
 
     private fun exportSingleSticker(uri: Uri) {
-        try {
-            val file = File(filesDir, uri.lastPathSegment ?: "")
-            val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
-            if (!outDir.exists()) outDir.mkdirs()
-            File(outDir, file.name).outputStream().use { out -> file.inputStream().use { it.copyTo(out) } }
+        val file = File(filesDir, uri.lastPathSegment ?: "")
+        if (BackupHelper.exportSingleStickerToGallery(this, file)) {
             ToastUtils.showToast(this, getString(R.string.success))
-        } catch (e: Exception) { ToastUtils.showToast(this, getString(R.string.failed)) }
+        } else {
+            ToastUtils.showToast(this, getString(R.string.failed))
+        }
     }
 
     private fun deleteSticker(uri: Uri) {
@@ -909,11 +914,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         }
     }
 
-    private fun requestLegacyPermissions() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 999)
-        }
-    }
 }
 
 class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<OptionItem>(context, 0, objects) {
