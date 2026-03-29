@@ -146,14 +146,32 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
         lifecycleScope.launch {
             if (materialColorEnabled) {
-                monet.awaitMonetReady()
-                binding.root.applyMonetRecursively()
-                binding.bottomNavigation.applyMonet()
-                
-                val monetInstance = MonetCompat.getInstance()
-                val primary = monetInstance.getAccentColor(this@MainActivity)
                 val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-                val surface = if (isDark) monetInstance.getBackgroundColor(this@MainActivity, true) else Color.WHITE
+                val primary: Int
+                val surface: Int
+                val backgroundColor: Int
+                
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    // Android 12+ native Monet colors
+                    if (isDark) {
+                        primary = getColor(android.R.color.system_accent1_50)
+                        surface = getColor(android.R.color.system_accent1_900)
+                    } else {
+                        primary = getColor(android.R.color.system_accent1_900)
+                        surface = getColor(android.R.color.system_accent1_50)
+                    }
+                    backgroundColor = surface
+                } else {
+                    // Legacy MonetCompat for Android 11 and below
+                    monet.awaitMonetReady()
+                    binding.root.applyMonetRecursively()
+                    binding.bottomNavigation.applyMonet()
+                    
+                    val monetInstance = MonetCompat.getInstance()
+                    primary = monetInstance.getAccentColor(this@MainActivity)
+                    surface = if (isDark) monetInstance.getBackgroundColor(this@MainActivity, true) else Color.WHITE
+                    backgroundColor = if (isDark) surface else monetInstance.getBackgroundColor(this@MainActivity)
+                }
                 
                 // Colors for light/dark mode
                 val headColor = primary
@@ -164,9 +182,9 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 binding.cardSettings.setCardBackgroundColor(cardColor)
                 binding.cardGeneral.setCardBackgroundColor(cardColor)
                 
-                // Match FAB to content/bottom nav theme in dark mode
+                // Match FAB to content/bottom nav theme
                 val fabBg = primary
-                val fabIcon = if (isDark) Color.BLACK else monetInstance.getBackgroundColor(this@MainActivity)
+                val fabIcon = if (isDark) Color.BLACK else backgroundColor
                 
                 binding.addButton.backgroundTintList = android.content.res.ColorStateList.valueOf(fabBg)
                 binding.addButton.imageTintList = android.content.res.ColorStateList.valueOf(fabIcon)
@@ -182,7 +200,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
                 // Explicitly set Removal items to red
                 val red = Color.parseColor("#FF3b30")
-                val redAlpha = ColorUtils.setAlphaComponent(red, 30) // Adjusted to 30 as per previous polish
+                val redAlpha = ColorUtils.setAlphaComponent(red, 30)
                 
                 binding.imgRemoveRecent.setColorFilter(red)
                 binding.imgRemoveRecent.backgroundTintList = android.content.res.ColorStateList.valueOf(redAlpha)
@@ -203,7 +221,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 binding.switchMaterialColor.thumbTintList = android.content.res.ColorStateList(states, thumbColors)
                 binding.switchMaterialColor.trackTintList = android.content.res.ColorStateList(states, trackColors)
                 binding.switchMaterialColor.thumbIconTintList = android.content.res.ColorStateList.valueOf(
-                    if (isDark) monetInstance.getBackgroundColor(this@MainActivity) else Color.WHITE
+                    if (isDark) surface else Color.WHITE
                 )
                 binding.loadingIndicator.setIndicatorColor(primary)
 
@@ -519,8 +537,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         val surfaceColor = getThemeColor(com.google.android.material.R.attr.colorSurface)
         binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(surfaceColor, 153)) // 60% alpha
 
-        val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
-        val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
+        val primary = getMonetPrimary(isMaterialColorEnabled)
         binding.loadingIndicator.setIndicatorColor(primary)
 
         binding.progressBar.visibility = View.VISIBLE
@@ -676,11 +693,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
             val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
             
-            val cookieBg = if (materialColorEnabled) {
-                MonetCompat.getInstance().getAccentColor(this)
-            } else {
-                getColor(R.color.orange_primary)
-            }
+            val cookieBg = getMonetPrimary(materialColorEnabled)
             
             val iconTint = if (materialColorEnabled) {
                 if (isDark) Color.BLACK else Color.WHITE
@@ -818,8 +831,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
         items.forEachIndexed { index, item ->
             val itemView = if (selectedIndex != -1) ThemeAdapter(this, items, selectedIndex).getView(index, null, container) else OptionAdapter(this, items).getView(index, null, container)
-            val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
-            val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
+            val primary = getMonetPrimary(isMaterialColorEnabled)
             itemView.background = android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 30)), itemView.background, null)
             itemView.setOnClickListener { onItemClick(index); dialog.dismiss() }
             container.addView(itemView)
@@ -842,8 +854,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         val surfaceColor = getThemeColor(com.google.android.material.R.attr.colorSurface)
         binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(surfaceColor, 153)) // 60% alpha
 
-        val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
-        val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
+        val primary = getMonetPrimary(isMaterialColorEnabled)
         binding.loadingIndicator.setIndicatorColor(primary)
 
         binding.progressBar.visibility = View.VISIBLE
@@ -923,8 +934,7 @@ class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<
         val textView = view.findViewById<TextView>(R.id.item_text)
         val iconView = view.findViewById<ImageView>(R.id.item_icon)
         textView.text = item.text; iconView.setImageResource(item.iconRes)
-        val materialColorEnabled = context.getSharedPreferences("settings", Context.MODE_PRIVATE).getBoolean("material_color_enabled", false)
-        val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(context) else androidx.core.content.ContextCompat.getColor(context, R.color.orange_primary)
+        val primary = context.getMonetPrimary(context.isMaterialColorEnabled)
 
         if (item.text == context.getString(R.string.delete) || item.text == context.getString(R.string.delete_history)) {
             val red = android.graphics.Color.parseColor("#FF3b30")
@@ -948,8 +958,7 @@ class ThemeAdapter(context: Context, objects: List<OptionItem>, private val sele
         val radioButton = view.findViewById<RadioButton>(R.id.item_radio)
         val textView = view.findViewById<TextView>(R.id.item_text)
         iconView.setImageResource(item.iconRes); textView.text = item.text; radioButton.isChecked = (position == selectedIndex)
-        val materialColorEnabled = context.getSharedPreferences("settings", Context.MODE_PRIVATE).getBoolean("material_color_enabled", false)
-        val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(context) else androidx.core.content.ContextCompat.getColor(context, R.color.orange_primary)
+        val primary = context.getMonetPrimary(context.isMaterialColorEnabled)
         radioButton.buttonTintList = android.content.res.ColorStateList(arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf(-android.R.attr.state_checked)), intArrayOf(primary, android.graphics.Color.GRAY))
         if (item.iconRes != R.drawable.ic_flag_en && item.iconRes != R.drawable.ic_flag_vi && item.iconRes != R.drawable.ic_flag_ru && item.iconRes != R.drawable.ic_flag_zh) iconView.setColorFilter(primary) else iconView.clearColorFilter()
         iconView.background = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.bg_circle_icon)
@@ -959,10 +968,10 @@ class ThemeAdapter(context: Context, objects: List<OptionItem>, private val sele
 }
 
 private fun androidx.appcompat.app.AlertDialog.showMonetDialog(context: android.content.Context) {
-    val materialColorEnabled = context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE).getBoolean("material_color_enabled", false)
-    if (materialColorEnabled) window?.decorView?.applyMonetRecursively()
+    val materialEnabled = context.isMaterialColorEnabled
+    if (materialEnabled) window?.decorView?.applyMonetRecursively()
     show()
-    val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(context) else androidx.core.content.ContextCompat.getColor(context, R.color.orange_primary)
+    val primary = context.getMonetPrimary(materialEnabled)
     
     val rippleColor = android.content.res.ColorStateList.valueOf(androidx.core.graphics.ColorUtils.setAlphaComponent(primary, 30))
     listOf(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE, androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE, androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL).forEach { which ->
@@ -978,11 +987,11 @@ private fun androidx.appcompat.app.AlertDialog.showMonetDialog(context: android.
 }
 
 private fun androidx.appcompat.app.AlertDialog.showDestructiveDialog(context: android.content.Context) {
-    val materialColorEnabled = context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE).getBoolean("material_color_enabled", false)
-    if (materialColorEnabled) window?.decorView?.applyMonetRecursively()
+    val materialEnabled = context.isMaterialColorEnabled
+    if (materialEnabled) window?.decorView?.applyMonetRecursively()
     show()
     val red = android.graphics.Color.parseColor("#FF3b30")
-    val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(context) else androidx.core.content.ContextCompat.getColor(context, R.color.orange_primary)
+    val primary = context.getMonetPrimary(materialEnabled)
     
     val ripplePrimary = android.content.res.ColorStateList.valueOf(androidx.core.graphics.ColorUtils.setAlphaComponent(primary, 30))
     val rippleRed = android.content.res.ColorStateList.valueOf(androidx.core.graphics.ColorUtils.setAlphaComponent(red, 30))
@@ -1007,3 +1016,30 @@ private fun androidx.appcompat.app.AlertDialog.showDestructiveDialog(context: an
     
     window?.setDimAmount(0.35f)
 }
+
+fun android.content.Context.getMonetPrimary(isMaterialColorEnabled: Boolean): Int {
+    if (!isMaterialColorEnabled) return androidx.core.content.ContextCompat.getColor(this, R.color.orange_primary)
+    return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+        val isDark = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        getColor(if (isDark) android.R.color.system_accent1_50 else android.R.color.system_accent1_900)
+    } else {
+        com.kieronquinn.monetcompat.core.MonetCompat.getInstance().getAccentColor(this)
+    }
+}
+
+fun android.content.Context.getMonetSurface(isMaterialColorEnabled: Boolean): Int {
+    val isDark = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+    if (!isMaterialColorEnabled) return if (isDark) {
+        androidx.core.content.ContextCompat.getColor(this, R.color.dark_surface)
+    } else {
+        androidx.core.content.ContextCompat.getColor(this, R.color.light_surface)
+    }
+    return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+        getColor(if (isDark) android.R.color.system_accent1_900 else android.R.color.system_accent1_50)
+    } else {
+        com.kieronquinn.monetcompat.core.MonetCompat.getInstance().getBackgroundColor(this, isDark)
+    }
+}
+
+val android.content.Context.isMaterialColorEnabled: Boolean
+    get() = getSharedPreferences("settings", android.content.Context.MODE_PRIVATE).getBoolean("material_color_enabled", false)

@@ -80,4 +80,9 @@
     <string name="export_gallery_success">Exported %d stickers to Gallery</string>
     <string name="not_a_backup_file">Not a backup file</string>
     <string name="border_sticker">Border Sticker</string>
+
+    <string name="rb_warning_title">Background Removal</string>
+    <string name="rb_warning_message">Removing the background may take several seconds depending on your device performance. Would you like to continue?</string>
+    <string name="dont_show_again">Don\'t show again</string>
+    <string name="continue_action">Continue</string>
 </resources>

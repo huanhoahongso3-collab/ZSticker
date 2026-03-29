@@ -80,4 +80,9 @@
     <string name="export_gallery_success">Đã trích xuất %d hình dán vào Bộ sưu tập</string>
     <string name="not_a_backup_file">Không phải tệp sao lưu</string>
     <string name="border_sticker">Tạo viền hình dán</string>
+
+    <string name="rb_warning_title">Xóa Phông Nền</string>
+    <string name="rb_warning_message">Việc xóa phông nền có thể mất vài giây tùy thuộc vào hiệu suất thiết bị của bạn. Bạn có muốn tiếp tục không?</string>
+    <string name="dont_show_again">Không hiển thị lại</string>
+    <string name="continue_action">Tiếp tục</string>
 </resources>

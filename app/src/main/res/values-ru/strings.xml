@@ -80,4 +80,9 @@
     <string name="export_gallery_success">Экспортировано %d стикеров в Галерею</string>
     <string name="not_a_backup_file">Это не файл резервной копии</string>
     <string name="border_sticker">Добавить рамку</string>
+
+    <string name="rb_warning_title">Удаление фона</string>
+    <string name="rb_warning_message">Удаление фона может занять несколько секунд в зависимости от производительности вашего устройства. Продолжить?</string>
+    <string name="dont_show_again">Больше не показывать</string>
+    <string name="continue_action">Продолжить</string>
 </resources>

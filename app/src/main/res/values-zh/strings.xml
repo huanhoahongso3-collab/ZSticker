@@ -80,4 +80,9 @@
     <string name="export_gallery_success">已导出 %d 个贴纸到图库</string>
     <string name="not_a_backup_file">不是备份文件</string>
     <string name="border_sticker">贴纸描边</string>
+
+    <string name="rb_warning_title">移除背景</string>
+    <string name="rb_warning_message">移除背景可能需要几秒钟，具体取决于您的设备性能。是否继续？</string>
+    <string name="dont_show_again">不再显示</string>
+    <string name="continue_action">继续</string>
 </resources>
