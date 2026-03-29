@@ -63,9 +63,12 @@ import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.CornerRounding
 import androidx.graphics.shapes.star
 import com.google.mediapipe.framework.image.BitmapImageBuilder
+import com.google.mediapipe.framework.image.BitmapExtractor
 import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.vision.imagesegmenter.ImageSegmenter
 import com.google.mediapipe.tasks.vision.imagesegmenter.ImageSegmenter.ImageSegmenterOptions
+import android.graphics.Canvas
+import android.graphics.Paint
 
 class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private lateinit var binding: ActivityMainBinding
@@ -569,7 +572,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 val maskBitmap = Bitmap.createBitmap(originalBitmap.width, originalBitmap.height, Bitmap.Config.ARGB_8888)
                 
                 // Convert mask to a Bitmap (MediaPipe mask is usually a single channel image where 0 is background, >0 is foreground)
-                val mpMask = BitmapImageBuilder(maskImage).build().bitmap
+                val mpMask = BitmapExtractor.extract(maskImage)
                 
                 // Create final bitmap with transparency
                 val resultBitmap = Bitmap.createBitmap(originalBitmap.width, originalBitmap.height, Bitmap.Config.ARGB_8888)
