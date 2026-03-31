@@ -152,14 +152,16 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 val monetInstance = MonetCompat.getInstance()
                 val primary = monetInstance.getAccentColor(this@MainActivity)
                 val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-                val surface = if (isDark) monetInstance.getBackgroundColor(this@MainActivity, true) else Color.WHITE
+                val surfaceColor = if (isDark) Color.parseColor("#1C1B1F") else Color.WHITE
+                val cardColor = if (isDark) Color.parseColor("#2B2930") else Color.parseColor("#F5F5F5") 
+
+                binding.root.setBackgroundColor(surfaceColor)
+                binding.appBarLayout.setBackgroundColor(surfaceColor)
+                binding.toolbar.setBackgroundColor(surfaceColor)
+                binding.bottomNavigation.setBackgroundColor(if (isDark) Color.parseColor("#2B2930") else Color.parseColor("#F5F5F5"))
                 
-                // Colors for light/dark mode
-                val headColor = primary
-                val cardColor = if (isDark) surface else Color.parseColor("#F5F5F5") 
-                
-                binding.sectionSettingsHeader.setTextColor(headColor)
-                binding.sectionGeneralHeader.setTextColor(headColor)
+                binding.sectionSettingsHeader.setTextColor(primary)
+                binding.sectionGeneralHeader.setTextColor(primary)
                 binding.cardSettings.setCardBackgroundColor(cardColor)
                 binding.cardGeneral.setCardBackgroundColor(cardColor)
                 
