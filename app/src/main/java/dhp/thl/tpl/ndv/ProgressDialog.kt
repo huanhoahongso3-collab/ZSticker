@@ -49,11 +49,13 @@ class ProgressDialog : DialogFragment() {
                     Color(0xFFFF9500) // orange_primary fallback
                 }
 
-                ProgressDialogContent(
-                    progressProvider = { progressState.floatValue },
-                    messageProvider = { messageState.value },
-                    primaryColor = primaryColor
-                )
+                MaterialTheme {
+                    ProgressDialogContent(
+                        progressProvider = { progressState.floatValue },
+                        messageProvider = { messageState.value },
+                        primaryColor = primaryColor
+                    )
+                }
             }
         }
     }
@@ -64,16 +66,6 @@ class ProgressDialog : DialogFragment() {
 
     fun updateMessage(message: String) {
         messageState.value = message
-    }
-
-    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
-    @Composable
-    private fun ProgressDialogContent(
-        progressProvider: () -> Float,
-        messageProvider: () -> Float, // Wait, message is string
-        primaryColor: Color
-    ) {
-        // Redefine to avoid signature conflict in my thought process
     }
 
     @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -114,11 +106,11 @@ class ProgressDialog : DialogFragment() {
                     progress = { animatedProgress },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(10.dp),
+                        .height(14.dp),
                     color = primaryColor,
                     trackColor = primaryColor.copy(alpha = 0.2f),
-                    stroke = ProgressIndicatorDefaults.WavyProgressIndicatorStroke,
-                    trackStroke = ProgressIndicatorDefaults.WavyProgressIndicatorNoFocusStroke
+                    stroke = WavyProgressIndicatorDefaults.linearIndicatorStroke,
+                    trackStroke = WavyProgressIndicatorDefaults.linearTrackStroke
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
