@@ -916,7 +916,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         
         MaterialAlertDialogBuilder(this)
             .setView(dialogView)
-            .setPositiveButton(getString(android.R.string.ok), null)
+            .setPositiveButton(getString(R.string.ok), null)
             .create()
             .showMonetDialog(this)
     }
