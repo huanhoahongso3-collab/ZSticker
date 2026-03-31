@@ -81,6 +81,9 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         }
     }
 
+    private var materialColorIconId: Int = -1
+    private var isOperationCancelled = false
+
     private fun getThemeColor(attr: Int): Int {
         val typedValue = android.util.TypedValue()
         theme.resolveAttribute(attr, typedValue, true)
@@ -836,6 +839,28 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         dialog.showMonetDialog(this)
     }
 
+    private fun exportSingleSticker(uri: Uri) {
+        val file = File(filesDir, uri.lastPathSegment ?: "")
+        if (!file.exists()) return
+        
+        val progressDialog = ProgressDialog.newInstance(getString(R.string.exporting_to_gallery))
+        isOperationCancelled = false
+        progressDialog.onCancel = { isOperationCancelled = true }
+        progressDialog.show(supportFragmentManager, "export_single")
+
+        thread {
+            val success = BackupHelper.exportSingleStickerToGallery(this, file)
+            runOnUiThread {
+                progressDialog.dismiss()
+                if (isOperationCancelled) {
+                    ToastUtils.showToast(this, getString(R.string.failed)) // already finished on disk if single, but show failed
+                } else {
+                    ToastUtils.showToast(this, if (success) getString(R.string.success) else getString(R.string.failed))
+                }
+            }
+        }
+    }
+
     private fun stickify(uri: Uri) {
         val file = File(filesDir, uri.lastPathSegment ?: "")
         if (!file.exists()) return
@@ -866,15 +891,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         }
     }
 
-    private fun exportSingleSticker(uri: Uri) {
-        try {
-            val file = File(filesDir, uri.lastPathSegment ?: "")
-            val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
-            if (!outDir.exists()) outDir.mkdirs()
-            File(outDir, file.name).outputStream().use { out -> file.inputStream().use { it.copyTo(out) } }
-            ToastUtils.showToast(this, getString(R.string.success))
-        } catch (e: Exception) { ToastUtils.showToast(this, getString(R.string.failed)) }
-    }
+
 
     private fun deleteSticker(uri: Uri) {
         val file = File(filesDir, uri.lastPathSegment ?: "")
@@ -917,11 +934,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         }
     }
 
-    private fun requestLegacyPermissions() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 999)
-        }
-    }
+
 }
 
 class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<OptionItem>(context, 0, objects) {

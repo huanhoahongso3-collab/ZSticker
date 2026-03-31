@@ -23,6 +23,7 @@ class FileActivity : BaseActivity() {
     private lateinit var binding: ActivityFileBinding
     private var currentExportType: String = "all"
     private var isExportExpanded = false
+    private var isOperationCancelled = false
 
     private val createDocumentLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
@@ -36,15 +37,19 @@ class FileActivity : BaseActivity() {
         if (result.resultCode == RESULT_OK) {
             result.data?.data?.let { uri ->
                 val progressDialog = ProgressDialog.newInstance(getString(R.string.importing_backup))
+                isOperationCancelled = false
+                progressDialog.onCancel = { isOperationCancelled = true }
                 progressDialog.show(supportFragmentManager, "import")
                 
                 thread {
-                    val success = BackupHelper.importBackup(this, uri) { progress ->
+                    val success = BackupHelper.importBackup(this, uri, { progress ->
                         runOnUiThread { progressDialog.updateProgress(progress) }
-                    }
+                    }, { isOperationCancelled })
                     runOnUiThread {
                         progressDialog.dismiss()
-                        if (success) {
+                        if (isOperationCancelled) {
+                            ToastUtils.showToast(this, getString(R.string.failed)) // Or "Cancelled"
+                        } else if (success) {
                             ToastUtils.showToast(this, getString(R.string.success))
                             setResult(RESULT_OK, Intent().putExtra("did_import", true))
                             restartApp()
@@ -104,15 +109,20 @@ class FileActivity : BaseActivity() {
 
         binding.itemExportGallery.setOnClickListener {
             val progressDialog = ProgressDialog.newInstance(getString(R.string.exporting_to_gallery))
+            isOperationCancelled = false
+            progressDialog.onCancel = { isOperationCancelled = true }
             progressDialog.show(supportFragmentManager, "export_gallery")
             
             thread {
-                val count = BackupHelper.exportAllStickersToGallery(this) { progress ->
+                val count = BackupHelper.exportAllStickersToGallery(this, { progress ->
                     runOnUiThread { progressDialog.updateProgress(progress) }
-                }
+                }, { isOperationCancelled })
                 runOnUiThread {
                     progressDialog.dismiss()
-                    if (count > 0) {
+                    if (isOperationCancelled) {
+                        // User cancelled gallery export - already stopped adding to MediaStore
+                        ToastUtils.showToast(this, getString(R.string.failed))
+                    } else if (count > 0) {
                         ToastUtils.showToast(this, getString(R.string.export_gallery_success, count))
                     } else {
                         ToastUtils.showToast(this, getString(R.string.no_stickers_found))
@@ -192,17 +202,25 @@ class FileActivity : BaseActivity() {
 
     private fun exportFile(uri: Uri, type: String) {
         val progressDialog = ProgressDialog.newInstance(getString(R.string.exporting_backup))
+        isOperationCancelled = false
+        progressDialog.onCancel = { isOperationCancelled = true }
         progressDialog.show(supportFragmentManager, "export")
         
         thread {
             try {
                 contentResolver.openOutputStream(uri)?.use { outputStream ->
-                    val success = BackupHelper.exportBackup(this, outputStream, type) { progress ->
+                    val success = BackupHelper.exportBackup(this, outputStream, type, { progress ->
                         runOnUiThread { progressDialog.updateProgress(progress) }
-                    }
+                    }, { isOperationCancelled })
                     runOnUiThread {
                         progressDialog.dismiss()
-                        if (success) {
+                        if (isOperationCancelled) {
+                            // Delete half-exported file
+                            try {
+                                contentResolver.delete(uri, null, null)
+                            } catch (e: Exception) {}
+                            ToastUtils.showToast(this, getString(R.string.failed))
+                        } else if (success) {
                             ToastUtils.showToast(this, getString(R.string.success))
                         } else {
                             ToastUtils.showToast(this, getString(R.string.failed))

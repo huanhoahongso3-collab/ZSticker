@@ -23,7 +23,7 @@ object BackupHelper {
 
     private const val PASSWORD = "zalonotfound"
 
-    fun exportBackup(context: Context, outStream: OutputStream, type: String, onProgress: ((Float) -> Unit)? = null): Boolean {
+    fun exportBackup(context: Context, outStream: OutputStream, type: String, onProgress: ((Float) -> Unit)? = null, isCancelled: () -> Boolean = { false }): Boolean {
         val tempFile = File(context.cacheDir, "export_temp.zip")
         if (tempFile.exists()) tempFile.delete()
 
@@ -48,6 +48,10 @@ object BackupHelper {
                 val totalFiles = stickerFiles.size
                 var current = 0
                 for (file in stickerFiles) {
+                    if (isCancelled()) {
+                        tempFile.delete()
+                        return false
+                    }
                     val p = ZipParameters(params)
                     p.fileNameInZip = "images/${file.name}"
                     zipFile.addFile(file, p)
@@ -91,6 +95,10 @@ object BackupHelper {
             zipFile.addFile(metaFile, metaParams)
 
             // Copy static result to output stream
+            if (isCancelled()) {
+                tempFile.delete()
+                return false
+            }
             tempFile.inputStream().use { it.copyTo(outStream) }
             onProgress?.invoke(1.0f)
             outStream.flush()
@@ -105,7 +113,7 @@ object BackupHelper {
         }
     }
 
-    fun importBackup(context: Context, uri: Uri, onProgress: ((Float) -> Unit)? = null): Boolean {
+    fun importBackup(context: Context, uri: Uri, onProgress: ((Float) -> Unit)? = null, isCancelled: () -> Boolean = { false }): Boolean {
         val tempFile = File(context.cacheDir, "import_temp.zip")
         if (tempFile.exists()) tempFile.delete()
 
@@ -132,6 +140,12 @@ object BackupHelper {
             zipFile.extractAll(extractDir.absolutePath)
             
             while (!zipFile.progressMonitor.state.equals(net.lingala.zip4j.progress.ProgressMonitor.State.READY)) {
+                if (isCancelled()) {
+                    zipFile.progressMonitor.isCancelAllTasks = true
+                    extractDir.deleteRecursively()
+                    tempFile.delete()
+                    return false
+                }
                 onProgress?.invoke(zipFile.progressMonitor.percentDone.toFloat() / 100f * 0.7f)
                 Thread.sleep(100)
             }
@@ -139,6 +153,18 @@ object BackupHelper {
             // Validation: Check if it's a valid ZSticker backup
             val metaFile = File(extractDir, "metadata.json")
             if (!metaFile.exists()) {
+                extractDir.deleteRecursively()
+                tempFile.delete()
+                return false
+            }
+
+            val metadataJson = try {
+                JSONObject(metaFile.readText())
+            } catch (e: Exception) {
+                null
+            }
+
+            if (metadataJson == null || !metadataJson.has("version") || !metadataJson.has("type")) {
                 extractDir.deleteRecursively()
                 tempFile.delete()
                 return false
@@ -156,6 +182,11 @@ object BackupHelper {
                 val total = imagesDir.listFiles()?.size ?: 1
                 var processed = 0
                 imagesDir.listFiles()?.forEach { file ->
+                    if (isCancelled()) {
+                        extractDir.deleteRecursively()
+                        tempFile.delete()
+                        return false
+                    }
                     val targetFile = File(context.filesDir, file.name)
                     file.copyTo(targetFile, overwrite = true)
                     
@@ -187,7 +218,7 @@ object BackupHelper {
         }
     }
 
-    fun exportAllStickersToGallery(context: Context, onProgress: ((Float) -> Unit)? = null): Int {
+    fun exportAllStickersToGallery(context: Context, onProgress: ((Float) -> Unit)? = null, isCancelled: () -> Boolean = { false }): Int {
         val stickerFiles = context.filesDir.listFiles { f -> f.name.startsWith("zsticker_") } ?: emptyArray()
         if (stickerFiles.isEmpty()) return 0
         
@@ -202,6 +233,7 @@ object BackupHelper {
 
         val total = stickerFiles.size
         for ((index, file) in stickerFiles.withIndex()) {
+            if (isCancelled()) return count
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     val resolver = context.contentResolver

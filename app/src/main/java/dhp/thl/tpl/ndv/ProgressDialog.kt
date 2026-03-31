@@ -24,6 +24,7 @@ class ProgressDialog : DialogFragment() {
 
     private val progressState = mutableFloatStateOf(0f)
     private val messageState = mutableStateOf("")
+    var onCancel: (() -> Unit)? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,7 +69,8 @@ class ProgressDialog : DialogFragment() {
                     ProgressDialogContent(
                         progressProvider = { progressState.floatValue },
                         messageProvider = { messageState.value },
-                        primaryColor = primaryColor
+                        primaryColor = primaryColor,
+                        onCancel = onCancel
                     )
                 }
             }
@@ -88,7 +90,8 @@ class ProgressDialog : DialogFragment() {
     private fun ProgressDialogContent(
         progressProvider: () -> Float,
         messageProvider: () -> String,
-        primaryColor: Color
+        primaryColor: Color,
+        onCancel: (() -> Unit)?
     ) {
         val progress by rememberUpdatedState(progressProvider())
         val animatedProgress by animateFloatAsState(
@@ -138,6 +141,16 @@ class ProgressDialog : DialogFragment() {
                     ),
                     color = primaryColor
                 )
+
+                if (onCancel != null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextButton(
+                        onClick = { onCancel.invoke() },
+                        colors = ButtonDefaults.textButtonColors(contentColor = primaryColor)
+                    ) {
+                        Text(context.getString(android.R.string.cancel))
+                    }
+                }
             }
         }
     }
