@@ -375,6 +375,15 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             binding.txtVersion.text = "1.0.0 (1)"
         }
 
+        var versionClicks = 0
+        binding.itemVersion.setOnClickListener {
+            versionClicks++
+            if (versionClicks >= 10) {
+                versionClicks = 0
+                startActivity(Intent(this, EasterEggActivity::class.java))
+            }
+        }
+
 
 
         binding.itemRepo.setOnClickListener {
