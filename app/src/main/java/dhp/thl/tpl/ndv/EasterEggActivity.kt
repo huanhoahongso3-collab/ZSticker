@@ -11,9 +11,9 @@ import android.view.ViewOutlineProvider
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import com.kieronquinn.monetcompat.core.MonetCompat
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 import android.content.res.Configuration
 
@@ -128,7 +128,7 @@ class EasterEggActivity : BaseActivity() {
             
             // Fixed Neutral Colors for Surface (as per user request)
             val backgroundColor = if (materialColorEnabled) {
-                if (isDark) Color.parseColor("#1C1B1F") else Color.WHITE
+                monet.getBackgroundColor(this@EasterEggActivity)
             } else {
                 if (isDark) Color.BLACK else Color.WHITE
             }
@@ -140,7 +140,7 @@ class EasterEggActivity : BaseActivity() {
     }
 
     private fun showEasterEggDialog() {
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
             .setTitle(boldTitle("Welcome to dhpOS 44!"))
             .setMessage("Enjoy the good old days!")
             .setPositiveButton("OK", null)
