@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -42,14 +43,28 @@ class ProgressDialog : DialogFragment() {
                     context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
                         .getBoolean("material_color_enabled", false)
                 }
+                val isDark = isSystemInDarkTheme()
+                val monet = MonetCompat.getInstance()
                 
+                val colors = if (materialColorEnabled) {
+                    val primary = Color(monet.getAccentColor(context))
+                    val background = Color(monet.getBackgroundColor(context, isDark))
+                    if (isDark) {
+                        darkColorScheme(primary = primary, surface = background, surfaceContainerHigh = background)
+                    } else {
+                        lightColorScheme(primary = primary, surface = background, surfaceContainerHigh = background)
+                    }
+                } else {
+                    if (isDark) darkColorScheme() else lightColorScheme()
+                }
+
                 val primaryColor = if (materialColorEnabled) {
-                    Color(MonetCompat.getInstance().getAccentColor(context))
+                    Color(monet.getAccentColor(context))
                 } else {
                     Color(0xFFFF9500) // orange_primary fallback
                 }
 
-                MaterialTheme {
+                MaterialTheme(colorScheme = colors) {
                     ProgressDialogContent(
                         progressProvider = { progressState.floatValue },
                         messageProvider = { messageState.value },

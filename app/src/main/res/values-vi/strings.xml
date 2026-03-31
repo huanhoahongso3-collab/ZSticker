@@ -84,5 +84,8 @@
     <string name="export_to_gallery_note">Xuất tất cả hình dán vào ứng dụng bộ sưu tập của bạn</string>
     <string name="export_gallery_success">Đã trích xuất %d hình dán vào Bộ sưu tập</string>
     <string name="not_a_backup_file">Không phải tệp sao lưu</string>
-    <string name="border_sticker">Tạo viền hình dán</string>
+    <string name="border_sticker">Tạo viền nhãn dán</string>
+    <string name="importing_backup">Đang nhập bản sao lưu&#8230;</string>
+    <string name="exporting_backup">Đang xuất bản sao lưu&#8230;</string>
+    <string name="exporting_to_gallery">Đang lưu vào Thư viện&#8230;</string>
 </resources>

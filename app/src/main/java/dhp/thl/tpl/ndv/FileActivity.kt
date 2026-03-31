@@ -16,6 +16,7 @@ import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import android.graphics.Color
+import kotlin.concurrent.thread
 
 class FileActivity : BaseActivity() {
 

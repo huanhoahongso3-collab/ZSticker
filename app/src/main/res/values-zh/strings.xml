@@ -85,4 +85,7 @@
     <string name="export_gallery_success">已导出 %d 个贴纸到图库</string>
     <string name="not_a_backup_file">不是备份文件</string>
     <string name="border_sticker">贴纸描边</string>
+    <string name="importing_backup">正在导入备份&#8230;</string>
+    <string name="exporting_backup">正在导出备份&#8230;</string>
+    <string name="exporting_to_gallery">正在保存到相册&#8230;</string>
 </resources>
