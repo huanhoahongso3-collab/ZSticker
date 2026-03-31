@@ -56,6 +56,10 @@
     <string name="remove_bg">Удалить фон</string>
     <string name="rb_completed">Фон успешно удален!</string>
     <string name="rb_failed">Не удалось удалить фон</string>
+    <string name="rb_warning_title">Предупреждение об удалении фона</string>
+    <string name="rb_warning_message">Эта функция использует стороннее API (BRIA RMBG 1.4). Продолжая, вы подтверждаете, что мы не имеем доступа к чтению изображения, и всё используется и контролируется Hugging Face и сторонним сервисом.\n\nСсылка на проект: https://huggingface.co/spaces/briaai/BRIA-RMBG-1.4\nИсходный код эндпоинта: https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY</string>
+    <string name="dont_show_again">Больше не показывать</string>
+    <string name="continue_action">Продолжить</string>
     
     <string name="lang_en">Английский</string>
     <string name="lang_vi">Вьетнамский</string>
@@ -66,6 +70,7 @@
     <string name="dynamic_color_warning_title">Уведомление о динамических цветах</string>
     <string name="dynamic_color_warning_message">Переключение на тему, отличную от системных настроек, может отключить динамические цвета Material You на некоторых устройствах Android 12+.</string>
     <string name="ok">ОК</string>
+    <string name="no_internet_access">Нет доступа к интернету</string>
     <string name="no_history_found">История не найдена</string>
     <string name="theme_change_warning_title">Смена темы</string>
     <string name="theme_change_warning_message">Для правильного применения темы может потребоваться перезапуск приложения.</string>
@@ -80,9 +85,4 @@
     <string name="export_gallery_success">Экспортировано %d стикеров в Галерею</string>
     <string name="not_a_backup_file">Это не файл резервной копии</string>
     <string name="border_sticker">Добавить рамку</string>
-
-    <string name="rb_warning_title">Удаление фона</string>
-    <string name="rb_warning_message">Удаление фона может занять несколько секунд в зависимости от производительности вашего устройства. Продолжить?</string>
-    <string name="dont_show_again">Больше не показывать</string>
-    <string name="continue_action">Продолжить</string>
 </resources>

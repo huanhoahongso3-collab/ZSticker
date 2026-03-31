@@ -56,6 +56,10 @@
     <string name="remove_bg">移除背景</string>
     <string name="rb_completed">背景移除完成！</string>
     <string name="rb_failed">背景移除失败</string>
+    <string name="rb_warning_title">背景移除警告</string>
+    <string name="rb_warning_message">此功能使用第三方接口 (BRIA RMBG 1.4)。继续操作即表示您知晓我们没有权限读取您的图片，所有操作均由 Hugging Face 及第三方服务控制。\n\n项目链接：https://huggingface.co/spaces/briaai/BRIA-RMBG-1.4\n接口源代码：https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY</string>
+    <string name="dont_show_again">不再显示</string>
+    <string name="continue_action">继续</string>
     
     <string name="lang_en">英语</string>
     <string name="lang_vi">越南语</string>
@@ -66,6 +70,7 @@
     <string name="dynamic_color_warning_title">动态色彩通知</string>
     <string name="dynamic_color_warning_message">更改为与系统设置不同的主题可能会在某些 Android 12+ 设备上禁用 Material You 动态色彩。</string>
     <string name="ok">确定</string>
+    <string name="no_internet_access">无网络连接</string>
     <string name="no_history_found">未发现历史记录</string>
     <string name="theme_change_warning_title">主题更改</string>
     <string name="theme_change_warning_message">可能需要重启应用才能正确应用主题。</string>
@@ -80,9 +85,4 @@
     <string name="export_gallery_success">已导出 %d 个贴纸到图库</string>
     <string name="not_a_backup_file">不是备份文件</string>
     <string name="border_sticker">贴纸描边</string>
-
-    <string name="rb_warning_title">移除背景</string>
-    <string name="rb_warning_message">移除背景可能需要几秒钟，具体取决于您的设备性能。是否继续？</string>
-    <string name="dont_show_again">不再显示</string>
-    <string name="continue_action">继续</string>
 </resources>

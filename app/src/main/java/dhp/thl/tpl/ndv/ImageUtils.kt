@@ -167,6 +167,16 @@ object ImageUtils {
     }
 
     /**
+     * Resizes a bitmap to a specific width while maintaining aspect ratio.
+     */
+    fun resizeBitmapToWidth(bitmap: Bitmap, targetWidth: Int): Bitmap {
+        if (bitmap.width <= targetWidth) return bitmap
+        val aspectRatio = bitmap.height.toFloat() / bitmap.width.toFloat()
+        val targetHeight = (targetWidth * aspectRatio).toInt().coerceAtLeast(1)
+        return Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
+    }
+
+    /**
      * Crops transparent pixels from the edges of the bitmap.
      */
     fun cropTransparent(bitmap: Bitmap): Bitmap {

@@ -10,14 +10,12 @@ import dhp.thl.tpl.ndv.databinding.ActivityFileBinding
 import java.io.OutputStream
 import java.io.File
 import androidx.core.graphics.ColorUtils
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.progressindicator.LinearProgressIndicator
-import android.widget.TextView
-import android.view.LayoutInflater
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import android.graphics.Color
 
 class FileActivity : BaseActivity() {
 
@@ -36,15 +34,21 @@ class FileActivity : BaseActivity() {
     private val importLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
             result.data?.data?.let { uri ->
-                showProgressDialog(getString(R.string.info_import_title)) { onProgress ->
-                    val success = BackupHelper.importBackup(this, uri, onProgress)
-                    withContext(Dispatchers.Main) {
+                val progressDialog = ProgressDialog.newInstance(getString(R.string.importing_backup))
+                progressDialog.show(supportFragmentManager, "import")
+                
+                thread {
+                    val success = BackupHelper.importBackup(this, uri) { progress ->
+                        runOnUiThread { progressDialog.updateProgress(progress) }
+                    }
+                    runOnUiThread {
+                        progressDialog.dismiss()
                         if (success) {
-                            ToastUtils.showToast(this@FileActivity, getString(R.string.success))
+                            ToastUtils.showToast(this, getString(R.string.success))
                             setResult(RESULT_OK, Intent().putExtra("did_import", true))
                             restartApp()
                         } else {
-                            ToastUtils.showToast(this@FileActivity, getString(R.string.not_a_backup_file))
+                            ToastUtils.showToast(this, getString(R.string.not_a_backup_file))
                         }
                     }
                 }
@@ -56,6 +60,23 @@ class FileActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityFileBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        
+        // Edge-to-edge
+        window.statusBarColor = Color.TRANSPARENT
+        window.navigationBarColor = Color.TRANSPARENT
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+        
+        ViewCompat.setOnApplyWindowInsetsListener(binding.appBarLayout) { view, insets ->
+            val statusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+            view.updatePadding(top = statusBarInsets.top)
+            insets
+        }
+        
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            view.updatePadding(bottom = navInsets.bottom)
+            insets
+        }
 
         isExportExpanded = savedInstanceState?.getBoolean("isExportExpanded", false) ?: false
         binding.expandableExport.visibility = if (isExportExpanded) View.VISIBLE else View.GONE
@@ -81,11 +102,21 @@ class FileActivity : BaseActivity() {
         binding.exportAll.setOnClickListener { startExport("all") }
 
         binding.itemExportGallery.setOnClickListener {
-            val count = BackupHelper.exportAllStickersToGallery(this)
-            if (count > 0) {
-                ToastUtils.showToast(this, getString(R.string.export_gallery_success, count))
-            } else {
-                ToastUtils.showToast(this, getString(R.string.no_stickers_found))
+            val progressDialog = ProgressDialog.newInstance(getString(R.string.exporting_to_gallery))
+            progressDialog.show(supportFragmentManager, "export_gallery")
+            
+            thread {
+                val count = BackupHelper.exportAllStickersToGallery(this) { progress ->
+                    runOnUiThread { progressDialog.updateProgress(progress) }
+                }
+                runOnUiThread {
+                    progressDialog.dismiss()
+                    if (count > 0) {
+                        ToastUtils.showToast(this, getString(R.string.export_gallery_success, count))
+                    } else {
+                        ToastUtils.showToast(this, getString(R.string.no_stickers_found))
+                    }
+                }
             }
         }
         
@@ -159,47 +190,33 @@ class FileActivity : BaseActivity() {
     }
 
     private fun exportFile(uri: Uri, type: String) {
-        showProgressDialog(getString(R.string.info_export_title)) { onProgress ->
+        val progressDialog = ProgressDialog.newInstance(getString(R.string.exporting_backup))
+        progressDialog.show(supportFragmentManager, "export")
+        
+        thread {
             try {
                 contentResolver.openOutputStream(uri)?.use { outputStream ->
-                    val success = BackupHelper.exportBackup(this, outputStream, type, onProgress)
-                    withContext(Dispatchers.Main) {
+                    val success = BackupHelper.exportBackup(this, outputStream, type) { progress ->
+                        runOnUiThread { progressDialog.updateProgress(progress) }
+                    }
+                    runOnUiThread {
+                        progressDialog.dismiss()
                         if (success) {
-                            ToastUtils.showToast(this@FileActivity, getString(R.string.success))
+                            ToastUtils.showToast(this, getString(R.string.success))
                         } else {
-                            ToastUtils.showToast(this@FileActivity, getString(R.string.failed))
+                            ToastUtils.showToast(this, getString(R.string.failed))
                         }
                     }
-                } ?: withContext(Dispatchers.Main) { ToastUtils.showToast(this@FileActivity, getString(R.string.failed)) }
+                } ?: runOnUiThread {
+                    progressDialog.dismiss()
+                    ToastUtils.showToast(this, getString(R.string.failed))
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(Dispatchers.Main) { ToastUtils.showToast(this@FileActivity, getString(R.string.failed)) }
-            }
-        }
-    }
-
-    private fun showProgressDialog(title: String, action: suspend (onProgress: (Int) -> Unit) -> Unit) {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_progress, null)
-        val progressBar = dialogView.findViewById<LinearProgressIndicator>(R.id.progress_indicator)
-        val txtPercentage = dialogView.findViewById<TextView>(R.id.txt_percentage)
-
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle(boldTitle(title))
-            .setView(dialogView)
-            .setCancelable(false)
-            .create()
-
-        dialog.show()
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            action { progress ->
-                lifecycleScope.launch(Dispatchers.Main) {
-                    progressBar.progress = progress
-                    txtPercentage.text = "$progress%"
+                runOnUiThread {
+                    progressDialog.dismiss()
+                    ToastUtils.showToast(this, getString(R.string.failed))
                 }
-            }
-            lifecycleScope.launch(Dispatchers.Main) {
-                dialog.dismiss()
             }
         }
     }

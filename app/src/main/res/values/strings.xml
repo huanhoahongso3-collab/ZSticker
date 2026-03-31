@@ -56,6 +56,10 @@
     <string name="remove_bg">Remove background</string>
     <string name="rb_completed">Remove background completed!</string>
     <string name="rb_failed">Failed to remove background</string>
+    <string name="rb_warning_title">Background Removal Warning</string>
+    <string name="rb_warning_message">This feature uses a third-party API (BRIA RMBG 1.4). By continuing, you acknowledge that we do not have permission to read the image and everything is used and controlled by Hugging Face and the third-party service.\n\nProject Link: https://huggingface.co/spaces/briaai/BRIA-RMBG-1.4\nEndpoint Source Code: https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY</string>
+    <string name="dont_show_again">Don\'t show again</string>
+    <string name="continue_action">Continue</string>
     
     <string name="lang_en">English</string>
     <string name="lang_vi">Vietnamese</string>
@@ -66,6 +70,7 @@
     <string name="dynamic_color_warning_title">Dynamic Color Notice</string>
     <string name="dynamic_color_warning_message">Changing to a theme that differs from your system settings may disable Material You dynamic colors on some devices.</string>
     <string name="ok">OK</string>
+    <string name="no_internet_access">No internet access</string>
     <string name="no_history_found">No history found</string>
     <string name="theme_change_warning_title">Theme Change</string>
     <string name="theme_change_warning_message">A restart may be needed for the theme to apply correctly.</string>
@@ -80,9 +85,4 @@
     <string name="export_gallery_success">Exported %d stickers to Gallery</string>
     <string name="not_a_backup_file">Not a backup file</string>
     <string name="border_sticker">Border Sticker</string>
-
-    <string name="rb_warning_title">Background Removal</string>
-    <string name="rb_warning_message">Removing the background may take several seconds depending on your device performance. Would you like to continue?</string>
-    <string name="dont_show_again">Don\'t show again</string>
-    <string name="continue_action">Continue</string>
 </resources>

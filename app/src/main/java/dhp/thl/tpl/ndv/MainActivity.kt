@@ -62,13 +62,6 @@ import kotlinx.coroutines.launch
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.CornerRounding
 import androidx.graphics.shapes.star
-import com.google.mediapipe.framework.image.BitmapImageBuilder
-import com.google.mediapipe.framework.image.BitmapExtractor
-import com.google.mediapipe.tasks.core.BaseOptions
-import com.google.mediapipe.tasks.vision.imagesegmenter.ImageSegmenter
-import com.google.mediapipe.tasks.vision.imagesegmenter.ImageSegmenter.ImageSegmenterOptions
-import android.graphics.Canvas
-import android.graphics.Paint
 
 class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private lateinit var binding: ActivityMainBinding
@@ -149,32 +142,14 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
         lifecycleScope.launch {
             if (materialColorEnabled) {
-                val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-                val primary: Int
-                val surface: Int
-                val backgroundColor: Int
+                monet.awaitMonetReady()
+                binding.root.applyMonetRecursively()
+                binding.bottomNavigation.applyMonet()
                 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    // Android 12+ native Monet colors
-                    if (isDark) {
-                        primary = getColor(android.R.color.system_accent1_50)
-                        surface = getColor(android.R.color.system_accent1_900)
-                    } else {
-                        primary = getColor(android.R.color.system_accent1_900)
-                        surface = getColor(android.R.color.system_accent1_50)
-                    }
-                    backgroundColor = surface
-                } else {
-                    // Legacy MonetCompat for Android 11 and below
-                    monet.awaitMonetReady()
-                    binding.root.applyMonetRecursively()
-                    binding.bottomNavigation.applyMonet()
-                    
-                    val monetInstance = MonetCompat.getInstance()
-                    primary = monetInstance.getAccentColor(this@MainActivity)
-                    surface = if (isDark) monetInstance.getBackgroundColor(this@MainActivity, true) else Color.WHITE
-                    backgroundColor = if (isDark) surface else monetInstance.getBackgroundColor(this@MainActivity)
-                }
+                val monetInstance = MonetCompat.getInstance()
+                val primary = monetInstance.getAccentColor(this@MainActivity)
+                val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+                val surface = if (isDark) monetInstance.getBackgroundColor(this@MainActivity, true) else Color.WHITE
                 
                 // Colors for light/dark mode
                 val headColor = primary
@@ -185,9 +160,9 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 binding.cardSettings.setCardBackgroundColor(cardColor)
                 binding.cardGeneral.setCardBackgroundColor(cardColor)
                 
-                // Match FAB to content/bottom nav theme
+                // Match FAB to content/bottom nav theme in dark mode
                 val fabBg = primary
-                val fabIcon = if (isDark) Color.BLACK else backgroundColor
+                val fabIcon = if (isDark) Color.BLACK else monetInstance.getBackgroundColor(this@MainActivity)
                 
                 binding.addButton.backgroundTintList = android.content.res.ColorStateList.valueOf(fabBg)
                 binding.addButton.imageTintList = android.content.res.ColorStateList.valueOf(fabIcon)
@@ -203,7 +178,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
                 // Explicitly set Removal items to red
                 val red = Color.parseColor("#FF3b30")
-                val redAlpha = ColorUtils.setAlphaComponent(red, 30)
+                val redAlpha = ColorUtils.setAlphaComponent(red, 30) // Adjusted to 30 as per previous polish
                 
                 binding.imgRemoveRecent.setColorFilter(red)
                 binding.imgRemoveRecent.backgroundTintList = android.content.res.ColorStateList.valueOf(redAlpha)
@@ -224,7 +199,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 binding.switchMaterialColor.thumbTintList = android.content.res.ColorStateList(states, thumbColors)
                 binding.switchMaterialColor.trackTintList = android.content.res.ColorStateList(states, trackColors)
                 binding.switchMaterialColor.thumbIconTintList = android.content.res.ColorStateList.valueOf(
-                    if (isDark) surface else Color.WHITE
+                    if (isDark) monetInstance.getBackgroundColor(this@MainActivity) else Color.WHITE
                 )
                 binding.loadingIndicator.setIndicatorColor(primary)
 
@@ -252,7 +227,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             }
         }
 
-        // No legacy permissions needed for Android 10+
+
 
         binding.addButton.setOnClickListener {
             pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
@@ -540,7 +515,8 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         val surfaceColor = getThemeColor(com.google.android.material.R.attr.colorSurface)
         binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(surfaceColor, 153)) // 60% alpha
 
-        val primary = getMonetPrimary(isMaterialColorEnabled)
+        val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+        val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
         binding.loadingIndicator.setIndicatorColor(primary)
 
         binding.progressBar.visibility = View.VISIBLE
@@ -548,73 +524,52 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         thread {
             var isSuccess = false
             var resultUri: Uri? = null
-            var imageSegmenter: ImageSegmenter? = null
-            
             try {
                 val inputStream = contentResolver.openInputStream(uri) ?: throw Exception()
                 val originalBitmap = BitmapFactory.decodeStream(inputStream) ?: throw Exception()
                 
-                // Initialize MediaPipe Image Segmenter
-                val baseOptionsBuilder = BaseOptions.builder().setModelAssetPath("selfie_segmenter.tflite")
-                val optionsBuilder = ImageSegmenterOptions.builder()
-                    .setBaseOptions(baseOptionsBuilder.build())
-                    .setOutputCategoryMask(true)
-                    .setOutputConfidenceMasks(false)
+                // Resize to 512px width as per requirement to save bandwidth
+                val resizedBitmap = ImageUtils.resizeBitmapToWidth(originalBitmap, 512)
                 
-                imageSegmenter = ImageSegmenter.createFromOptions(this, optionsBuilder.build())
-                
-                // Convert Bitmap to MediaPipe Image
-                val mpImage = BitmapImageBuilder(originalBitmap).build()
-                
-                // Run segmentation
-                val segmentationResult = imageSegmenter.segment(mpImage)
-                val maskImage = segmentationResult.categoryMask().get()
-                val maskBitmap = Bitmap.createBitmap(originalBitmap.width, originalBitmap.height, Bitmap.Config.ARGB_8888)
-                
-                // Convert mask to a Bitmap (MediaPipe mask is usually a single channel image where 0 is background, >0 is foreground)
-                val mpMask = BitmapExtractor.extract(maskImage)
-                
-                // Create final bitmap with transparency
-                val resultBitmap = Bitmap.createBitmap(originalBitmap.width, originalBitmap.height, Bitmap.Config.ARGB_8888)
-                val canvas = Canvas(resultBitmap)
-                val paint = Paint().apply {
-                    isAntiAlias = true
+                // Updated to the stable 1.4 proxy endpoint
+                val url = URL("https://bria14proxy.vercel.app/api/nobg")
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    doOutput = true
+                    setRequestProperty("Content-Type", "application/octet-stream")
+                    connectTimeout = 30000
+                    readTimeout = 30000
                 }
+
+                // Stream the resized image data to the proxy
+                connection.outputStream.use { out ->
+                    resizedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                }
+
+                // Cleanup bitmaps
+                if (resizedBitmap != originalBitmap) originalBitmap.recycle()
                 
-                for (y in 0 until originalBitmap.height) {
-                    for (x in 0 until originalBitmap.width) {
-                        val maskPixel = mpMask.getPixel(x, y)
-                        // In selfie_segmenter, the mask usually has values indicating the class. 
-                        // For person segmentation, 0 is background, 255 (or some other value) is person.
-                        // We check the alpha or color value of the mask pixel.
-                        if (Color.red(maskPixel) > 128) {
-                            resultBitmap.setPixel(x, y, originalBitmap.getPixel(x, y))
-                        } else {
-                            resultBitmap.setPixel(x, y, Color.TRANSPARENT)
+                // Handle successful response (Engine 1.4)
+                if (connection.responseCode == 200) {
+                    val file = File(filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
+                    connection.inputStream.use { input ->
+                        val rawBitmap = BitmapFactory.decodeStream(input)
+                        if (rawBitmap != null) {
+                            val croppedBitmap = ImageUtils.cropTransparent(rawBitmap)
+                            FileOutputStream(file).use { out ->
+                                croppedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                            }
+                            if (croppedBitmap != rawBitmap) rawBitmap.recycle()
+                            croppedBitmap.recycle()
+                            resultUri = Uri.fromFile(file)
+                            isSuccess = true
                         }
                     }
                 }
-
-                // Crop transparent edges
-                val croppedBitmap = ImageUtils.cropTransparent(resultBitmap)
-                
-                val file = File(filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
-                FileOutputStream(file).use { out ->
-                    croppedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-                }
-                
-                // Cleanup
-                originalBitmap.recycle()
-                resultBitmap.recycle()
-                if (croppedBitmap != resultBitmap) croppedBitmap.recycle()
-                mpMask.recycle()
-                
-                resultUri = Uri.fromFile(file)
-                isSuccess = true
+                resizedBitmap.recycle()
             } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                imageSegmenter?.close()
+                // If no internet or API error occurs, isSuccess remains false
+                isSuccess = false
             }
 
             runOnUiThread {
@@ -625,6 +580,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                     binding.recycler.scrollToPosition(0)
                     ToastUtils.showToast(this@MainActivity, getString(R.string.rb_completed))
                 } else {
+                    // Displays failed message for all errors (including connection issues)
                     ToastUtils.showToast(this@MainActivity, getString(R.string.rb_failed))
                 }
             }
@@ -696,7 +652,11 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
             val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
             
-            val cookieBg = getMonetPrimary(materialColorEnabled)
+            val cookieBg = if (materialColorEnabled) {
+                MonetCompat.getInstance().getAccentColor(this)
+            } else {
+                getColor(R.color.orange_primary)
+            }
             
             val iconTint = if (materialColorEnabled) {
                 if (isDark) Color.BLACK else Color.WHITE
@@ -817,7 +777,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         showPaneDialog(title, options) { which ->
             when (options[which].text) {
                 getString(R.string.export) -> exportSingleSticker(uri)
-                getString(R.string.remove_bg) -> removeBackground(uri)
+                getString(R.string.remove_bg) -> checkAndShowBackgroundRemovalWarning(uri)
                 getString(R.string.border_sticker) -> stickify(uri)
                 getString(R.string.view_full_sticker) -> viewFullSticker(uri)
                 getString(R.string.delete) -> deleteSticker(uri)
@@ -834,7 +794,8 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
         items.forEachIndexed { index, item ->
             val itemView = if (selectedIndex != -1) ThemeAdapter(this, items, selectedIndex).getView(index, null, container) else OptionAdapter(this, items).getView(index, null, container)
-            val primary = getMonetPrimary(isMaterialColorEnabled)
+            val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+            val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
             itemView.background = android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 30)), itemView.background, null)
             itemView.setOnClickListener { onItemClick(index); dialog.dismiss() }
             container.addView(itemView)
@@ -848,6 +809,32 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         dialog.showMonetDialog(this)
     }
 
+    private fun checkAndShowBackgroundRemovalWarning(uri: Uri) {
+        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+        if (prefs.getBoolean("dont_show_rb_warning", false)) { removeBackground(uri); return }
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_warning, null)
+        val dialog = MaterialAlertDialogBuilder(this).setView(dialogView).create()
+        val titleView = dialogView.findViewById<TextView>(R.id.dialog_title)
+        val messageView = dialogView.findViewById<TextView>(R.id.dialog_message)
+        val iconView = dialogView.findViewById<ImageView>(R.id.icon_warning)
+        val checkBox = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cb_dont_show_again)
+        titleView.text = boldTitle(getString(R.string.rb_warning_title))
+        messageView.text = getString(R.string.rb_warning_message)
+        iconView.setImageResource(R.drawable.ic_remove_bg)
+        val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
+        val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
+        iconView.setColorFilter(primary); messageView.setLinkTextColor(primary)
+        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_cancel)
+        val btnContinue = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_continue)
+        btnCancel.setTextColor(primary); checkBox.buttonTintList = android.content.res.ColorStateList.valueOf(primary)
+        val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        btnContinue.setTextColor(if (isDark) Color.BLACK else Color.WHITE)
+        btnContinue.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
+        btnCancel.setOnClickListener { dialog.dismiss() }
+        btnContinue.setOnClickListener { if (checkBox.isChecked) prefs.edit().putBoolean("dont_show_rb_warning", true).apply()
+            dialog.dismiss(); removeBackground(uri) }
+        dialog.showMonetDialog(this)
+    }
 
     private fun stickify(uri: Uri) {
         val file = File(filesDir, uri.lastPathSegment ?: "")
@@ -857,7 +844,8 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         val surfaceColor = getThemeColor(com.google.android.material.R.attr.colorSurface)
         binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(surfaceColor, 153)) // 60% alpha
 
-        val primary = getMonetPrimary(isMaterialColorEnabled)
+        val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+        val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
         binding.loadingIndicator.setIndicatorColor(primary)
 
         binding.progressBar.visibility = View.VISIBLE
@@ -879,12 +867,13 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     }
 
     private fun exportSingleSticker(uri: Uri) {
-        val file = File(filesDir, uri.lastPathSegment ?: "")
-        if (BackupHelper.exportSingleStickerToGallery(this, file)) {
+        try {
+            val file = File(filesDir, uri.lastPathSegment ?: "")
+            val outDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "ZSticker")
+            if (!outDir.exists()) outDir.mkdirs()
+            File(outDir, file.name).outputStream().use { out -> file.inputStream().use { it.copyTo(out) } }
             ToastUtils.showToast(this, getString(R.string.success))
-        } else {
-            ToastUtils.showToast(this, getString(R.string.failed))
-        }
+        } catch (e: Exception) { ToastUtils.showToast(this, getString(R.string.failed)) }
     }
 
     private fun deleteSticker(uri: Uri) {
@@ -928,6 +917,11 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         }
     }
 
+    private fun requestLegacyPermissions() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 999)
+        }
+    }
 }
 
 class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<OptionItem>(context, 0, objects) {
@@ -937,7 +931,8 @@ class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<
         val textView = view.findViewById<TextView>(R.id.item_text)
         val iconView = view.findViewById<ImageView>(R.id.item_icon)
         textView.text = item.text; iconView.setImageResource(item.iconRes)
-        val primary = context.getMonetPrimary(context.isMaterialColorEnabled)
+        val materialColorEnabled = context.getSharedPreferences("settings", Context.MODE_PRIVATE).getBoolean("material_color_enabled", false)
+        val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(context) else androidx.core.content.ContextCompat.getColor(context, R.color.orange_primary)
 
         if (item.text == context.getString(R.string.delete) || item.text == context.getString(R.string.delete_history)) {
             val red = android.graphics.Color.parseColor("#FF3b30")
@@ -961,7 +956,8 @@ class ThemeAdapter(context: Context, objects: List<OptionItem>, private val sele
         val radioButton = view.findViewById<RadioButton>(R.id.item_radio)
         val textView = view.findViewById<TextView>(R.id.item_text)
         iconView.setImageResource(item.iconRes); textView.text = item.text; radioButton.isChecked = (position == selectedIndex)
-        val primary = context.getMonetPrimary(context.isMaterialColorEnabled)
+        val materialColorEnabled = context.getSharedPreferences("settings", Context.MODE_PRIVATE).getBoolean("material_color_enabled", false)
+        val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(context) else androidx.core.content.ContextCompat.getColor(context, R.color.orange_primary)
         radioButton.buttonTintList = android.content.res.ColorStateList(arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf(-android.R.attr.state_checked)), intArrayOf(primary, android.graphics.Color.GRAY))
         if (item.iconRes != R.drawable.ic_flag_en && item.iconRes != R.drawable.ic_flag_vi && item.iconRes != R.drawable.ic_flag_ru && item.iconRes != R.drawable.ic_flag_zh) iconView.setColorFilter(primary) else iconView.clearColorFilter()
         iconView.background = androidx.core.content.ContextCompat.getDrawable(context, R.drawable.bg_circle_icon)
@@ -971,10 +967,10 @@ class ThemeAdapter(context: Context, objects: List<OptionItem>, private val sele
 }
 
 private fun androidx.appcompat.app.AlertDialog.showMonetDialog(context: android.content.Context) {
-    val materialEnabled = context.isMaterialColorEnabled
-    if (materialEnabled) window?.decorView?.applyMonetRecursively()
+    val materialColorEnabled = context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE).getBoolean("material_color_enabled", false)
+    if (materialColorEnabled) window?.decorView?.applyMonetRecursively()
     show()
-    val primary = context.getMonetPrimary(materialEnabled)
+    val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(context) else androidx.core.content.ContextCompat.getColor(context, R.color.orange_primary)
     
     val rippleColor = android.content.res.ColorStateList.valueOf(androidx.core.graphics.ColorUtils.setAlphaComponent(primary, 30))
     listOf(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE, androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE, androidx.appcompat.app.AlertDialog.BUTTON_NEUTRAL).forEach { which ->
@@ -990,11 +986,11 @@ private fun androidx.appcompat.app.AlertDialog.showMonetDialog(context: android.
 }
 
 private fun androidx.appcompat.app.AlertDialog.showDestructiveDialog(context: android.content.Context) {
-    val materialEnabled = context.isMaterialColorEnabled
-    if (materialEnabled) window?.decorView?.applyMonetRecursively()
+    val materialColorEnabled = context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE).getBoolean("material_color_enabled", false)
+    if (materialColorEnabled) window?.decorView?.applyMonetRecursively()
     show()
     val red = android.graphics.Color.parseColor("#FF3b30")
-    val primary = context.getMonetPrimary(materialEnabled)
+    val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(context) else androidx.core.content.ContextCompat.getColor(context, R.color.orange_primary)
     
     val ripplePrimary = android.content.res.ColorStateList.valueOf(androidx.core.graphics.ColorUtils.setAlphaComponent(primary, 30))
     val rippleRed = android.content.res.ColorStateList.valueOf(androidx.core.graphics.ColorUtils.setAlphaComponent(red, 30))
@@ -1019,30 +1015,3 @@ private fun androidx.appcompat.app.AlertDialog.showDestructiveDialog(context: an
     
     window?.setDimAmount(0.35f)
 }
-
-fun android.content.Context.getMonetPrimary(isMaterialColorEnabled: Boolean): Int {
-    if (!isMaterialColorEnabled) return androidx.core.content.ContextCompat.getColor(this, R.color.orange_primary)
-    return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-        val isDark = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
-        getColor(if (isDark) android.R.color.system_accent1_50 else android.R.color.system_accent1_900)
-    } else {
-        com.kieronquinn.monetcompat.core.MonetCompat.getInstance().getAccentColor(this)
-    }
-}
-
-fun android.content.Context.getMonetSurface(isMaterialColorEnabled: Boolean): Int {
-    val isDark = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
-    if (!isMaterialColorEnabled) return if (isDark) {
-        androidx.core.content.ContextCompat.getColor(this, R.color.dark_surface)
-    } else {
-        androidx.core.content.ContextCompat.getColor(this, R.color.light_surface)
-    }
-    return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-        getColor(if (isDark) android.R.color.system_accent1_900 else android.R.color.system_accent1_50)
-    } else {
-        com.kieronquinn.monetcompat.core.MonetCompat.getInstance().getBackgroundColor(this, isDark)
-    }
-}
-
-val android.content.Context.isMaterialColorEnabled: Boolean
-    get() = getSharedPreferences("settings", android.content.Context.MODE_PRIVATE).getBoolean("material_color_enabled", false)

@@ -23,7 +23,7 @@ object BackupHelper {
 
     private const val PASSWORD = "zalonotfound"
 
-    fun exportBackup(context: Context, outStream: OutputStream, type: String, onProgress: ((Int) -> Unit)? = null): Boolean {
+    fun exportBackup(context: Context, outStream: OutputStream, type: String, onProgress: ((Float) -> Unit)? = null): Boolean {
         val tempFile = File(context.cacheDir, "export_temp.zip")
         if (tempFile.exists()) tempFile.delete()
 
@@ -41,20 +41,30 @@ object BackupHelper {
             metadata.put("export_date", SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()))
             
             val contents = mutableListOf<String>()
-            val filesToExport = mutableListOf<Pair<File, String>>()
 
             if (type == "image" || type == "all") {
                 val stickerFiles = context.filesDir.listFiles { f -> f.name.startsWith("zsticker_") } ?: emptyArray()
+                val timestamps = JSONObject()
+                val totalFiles = stickerFiles.size
+                var current = 0
                 for (file in stickerFiles) {
-                    filesToExport.add(file to "images/${file.name}")
+                    val p = ZipParameters(params)
+                    p.fileNameInZip = "images/${file.name}"
+                    zipFile.addFile(file, p)
+                    timestamps.put(file.name, file.lastModified())
+                    current++
+                    onProgress?.invoke(current.toFloat() / totalFiles * 0.9f) // Leave room for result copy
                 }
+                metadata.put("timestamps", timestamps)
                 contents.add("images")
             }
 
             if (type == "history" || type == "all") {
                 val prefsFile = File(context.applicationInfo.dataDir, "shared_prefs/recents.xml")
                 if (prefsFile.exists()) {
-                    filesToExport.add(prefsFile to "prefs/recents.xml")
+                    val p = ZipParameters(params)
+                    p.fileNameInZip = "prefs/recents.xml"
+                    zipFile.addFile(prefsFile, p)
                     contents.add("history")
                 }
             }
@@ -62,26 +72,12 @@ object BackupHelper {
             if (type == "settings" || type == "all") {
                 val prefsFile = File(context.applicationInfo.dataDir, "shared_prefs/settings.xml")
                 if (prefsFile.exists()) {
-                    filesToExport.add(prefsFile to "prefs/settings.xml")
+                    val p = ZipParameters(params)
+                    p.fileNameInZip = "prefs/settings.xml"
+                    zipFile.addFile(prefsFile, p)
                     contents.add("settings")
                 }
             }
-
-            val totalItems = filesToExport.size + 2 // +1 for metadata, +1 for copying to outStream
-            var currentItem = 0
-
-            val timestamps = JSONObject()
-            for ((file, nameInZip) in filesToExport) {
-                val p = ZipParameters(params)
-                p.fileNameInZip = nameInZip
-                zipFile.addFile(file, p)
-                if (nameInZip.startsWith("images/")) {
-                    timestamps.put(file.name, file.lastModified())
-                }
-                currentItem++
-                onProgress?.invoke((currentItem * 100 / totalItems).coerceAtMost(90))
-            }
-            metadata.put("timestamps", timestamps)
 
             metadata.put("contents", JSONObject().apply { 
                 contents.forEach { put(it, true) }
@@ -93,16 +89,12 @@ object BackupHelper {
             val metaParams = ZipParameters(params)
             metaParams.fileNameInZip = "metadata.json"
             zipFile.addFile(metaFile, metaParams)
-            currentItem++
-            onProgress?.invoke((currentItem * 100 / totalItems).coerceAtMost(95))
 
             // Copy static result to output stream
             tempFile.inputStream().use { it.copyTo(outStream) }
+            onProgress?.invoke(1.0f)
             outStream.flush()
             
-            currentItem++
-            onProgress?.invoke(100)
-
             tempFile.delete()
             metaFile.delete()
             return true
@@ -113,19 +105,17 @@ object BackupHelper {
         }
     }
 
-    fun importBackup(context: Context, uri: Uri, onProgress: ((Int) -> Unit)? = null): Boolean {
+    fun importBackup(context: Context, uri: Uri, onProgress: ((Float) -> Unit)? = null): Boolean {
         val tempFile = File(context.cacheDir, "import_temp.zip")
         if (tempFile.exists()) tempFile.delete()
 
         try {
-            onProgress?.invoke(5)
             context.contentResolver.openInputStream(uri)?.use { input ->
                 tempFile.outputStream().use { output ->
                     input.copyTo(output)
                 }
             } ?: return false
 
-            onProgress?.invoke(20)
             val zipFile = ZipFile(tempFile)
             
             // Check if encrypted
@@ -138,8 +128,13 @@ object BackupHelper {
             if (extractDir.exists()) extractDir.deleteRecursively()
             extractDir.mkdirs()
             
+            zipFile.isRunInThread = true
             zipFile.extractAll(extractDir.absolutePath)
-            onProgress?.invoke(40)
+            
+            while (!zipFile.progressMonitor.state.equals(net.lingala.zip4j.progress.ProgressMonitor.State.READY)) {
+                onProgress?.invoke(zipFile.progressMonitor.percentDone.toFloat() / 100f * 0.7f)
+                Thread.sleep(100)
+            }
             
             // Validation: Check if it's a valid ZSticker backup
             val metaFile = File(extractDir, "metadata.json")
@@ -153,17 +148,14 @@ object BackupHelper {
             val imagesDir = File(extractDir, "images")
             val prefsDir = File(extractDir, "prefs")
 
-            val images = imagesDir.listFiles() ?: emptyArray()
-            val prefs = prefsDir.listFiles() ?: emptyArray()
-            val totalToRestore = images.size + prefs.size
-            var restored = 0
-
             // Restore images
             if (imagesDir.exists() && imagesDir.isDirectory) {
                 val metadataJson = JSONObject(metaFile.readText())
                 val timestamps = metadataJson.optJSONObject("timestamps")
                 
-                images.forEach { file ->
+                val total = imagesDir.listFiles()?.size ?: 1
+                var processed = 0
+                imagesDir.listFiles()?.forEach { file ->
                     val targetFile = File(context.filesDir, file.name)
                     file.copyTo(targetFile, overwrite = true)
                     
@@ -171,23 +163,20 @@ object BackupHelper {
                     timestamps?.optLong(file.name, 0L)?.let { timestamp ->
                         if (timestamp > 0) targetFile.setLastModified(timestamp)
                     }
-                    restored++
-                    onProgress?.invoke(40 + (restored * 50 / totalToRestore))
+                    processed++
+                    onProgress?.invoke(0.7f + (processed.toFloat() / total * 0.3f))
                 }
             }
 
             // Restore prefs
             if (prefsDir.exists() && prefsDir.isDirectory) {
-                prefs.forEach { file ->
+                prefsDir.listFiles()?.forEach { file ->
                     val target = File(context.applicationInfo.dataDir, "shared_prefs/${file.name}")
                     if (!target.parentFile.exists()) target.parentFile.mkdirs()
                     file.copyTo(target, overwrite = true)
-                    restored++
-                    onProgress?.invoke(40 + (restored * 50 / totalToRestore))
                 }
             }
 
-            onProgress?.invoke(100)
             extractDir.deleteRecursively()
             tempFile.delete()
             return true
@@ -198,7 +187,7 @@ object BackupHelper {
         }
     }
 
-    fun exportAllStickersToGallery(context: Context): Int {
+    fun exportAllStickersToGallery(context: Context, onProgress: ((Float) -> Unit)? = null): Int {
         val stickerFiles = context.filesDir.listFiles { f -> f.name.startsWith("zsticker_") } ?: emptyArray()
         if (stickerFiles.isEmpty()) return 0
         
@@ -211,7 +200,8 @@ object BackupHelper {
             dir
         }
 
-        for (file in stickerFiles) {
+        val total = stickerFiles.size
+        for ((index, file) in stickerFiles.withIndex()) {
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     val resolver = context.contentResolver
@@ -240,6 +230,7 @@ object BackupHelper {
                     }
                     count++
                 }
+                onProgress?.invoke((index + 1).toFloat() / total)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
