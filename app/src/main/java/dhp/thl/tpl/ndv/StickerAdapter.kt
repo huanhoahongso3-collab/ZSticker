@@ -79,13 +79,8 @@ class StickerAdapter(
             val context = holder.itemView.context
             val isDark = (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
             
-            if (materialColorEnabled) {
-                if (!isDark) {
-                    val surface = com.kieronquinn.monetcompat.core.MonetCompat.getInstance().getBackgroundColor(context)
-                    holder.card.setCardBackgroundColor(surface)
-                }
-            } else if (!isDark) {
-                holder.card.setCardBackgroundColor(androidx.core.content.ContextCompat.getColor(context, R.color.light_orange_background))
+            if (!isDark) {
+                holder.card.setCardBackgroundColor(android.graphics.Color.TRANSPARENT)
             }
         }
     }
