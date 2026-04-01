@@ -241,7 +241,9 @@ object ImageUtils {
 
         if (maxX < minX || maxY < minY) return bitmap
 
-
+        return Bitmap.createBitmap(bitmap, minX, minY, (maxX - minX) + 1, (maxY - minY) + 1)
+    }
+    
     /**
      * Fixes bitmap rotation based on EXIF data.
      */
