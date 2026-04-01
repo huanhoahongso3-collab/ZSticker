@@ -14,7 +14,6 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
-import android.graphics.Matrix
 import android.graphics.Typeface
 import android.net.Uri
 import android.os.Build
@@ -479,29 +478,13 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             if (!mimeType.startsWith("image/") || mimeType == "image/gif") return 1
 
             contentResolver.openInputStream(src)?.use { input ->
-                val rawBitmap = BitmapFactory.decodeStream(input) ?: return 2
-                val portraitBitmap = ImageUtils.rotateBitmapIfRequired(this, rawBitmap, src)
-                
-                // Automatically resize to 512 width on initial import to save space and match requirements
-                val resizedBitmap = ImageUtils.resizeBitmapToWidth(portraitBitmap, 512)
-                
                 val file = File(filesDir, "zsticker_${System.currentTimeMillis()}.png")
                 FileOutputStream(file).use { out ->
-                    resizedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                    if (input.copyTo(out) > 0) return 0 else return 2
                 }
-                
-                // Cleanup
-                if (resizedBitmap != portraitBitmap) resizedBitmap.recycle()
-                portraitBitmap.recycle()
-                if (rawBitmap != portraitBitmap) rawBitmap.recycle()
-                
-                return 0
             }
             return 2
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return 2
-        }
+        } catch (e: Exception) { return 2 }
     }
 
     private fun handleIncomingShare(intent: Intent?) {
@@ -956,58 +939,22 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
         val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
         
-        // Step 1: Pre-resize to 512 width before GUI to ensure compatibility and efficiency
-        val inputResizedFile = File(cacheDir, "crop_input_512_${System.currentTimeMillis()}.png")
-        try {
-            contentResolver.openInputStream(uri)?.use { input ->
-                val source = BitmapFactory.decodeStream(input)
-                if (source != null) {
-                    val targetWidth = 512
-                    if (source.width > targetWidth) {
-                        val scale = targetWidth.toFloat() / source.width
-                        val matrix = Matrix().apply { postScale(scale, scale) }
-                        val resized = Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
-                        FileOutputStream(inputResizedFile).use { out ->
-                            resized.compress(Bitmap.CompressFormat.PNG, 100, out)
-                        }
-                        if (resized != source) resized.recycle()
-                    } else {
-                        // Already smaller, just save as PNG to internal cache
-                        FileOutputStream(inputResizedFile).use { out ->
-                            source.compress(Bitmap.CompressFormat.PNG, 100, out)
-                        }
-                    }
-                    source.recycle()
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        if (!inputResizedFile.exists()) return
-
-        val sourceUri = Uri.fromFile(inputResizedFile)
-        val destinationUri = Uri.fromFile(File(cacheDir, "crop_output_${System.currentTimeMillis()}.png"))
+        val destinationUri = Uri.fromFile(File(cacheDir, "crop_temp_${System.currentTimeMillis()}.png"))
         
-        val surfaceColor = getThemeColor(com.google.android.material.R.attr.colorSurface)
-
         val options = UCrop.Options().apply {
-            setToolbarColor(surfaceColor)
-            setStatusBarColor(surfaceColor)
+            val surface = getThemeColor(com.google.android.material.R.attr.colorSurface)
+            setToolbarColor(surface)
+            setStatusBarColor(surface)
             setToolbarWidgetColor(primary)
             setActiveControlsWidgetColor(primary)
+            setRootViewBackgroundColor(surface)
+            setLogoColor(primary)
             setToolbarTitle(getString(R.string.crop))
             setCompressionFormat(Bitmap.CompressFormat.PNG)
             setFreeStyleCropEnabled(true)
-            
-            // Material 3 / Light Theme styling
-            setRootViewBackgroundColor(surfaceColor)
-            setCropFrameColor(primary)
-            setCropGridColor(primary)
-            setLogoColor(android.graphics.Color.TRANSPARENT)
         }
 
-        val intent = UCrop.of(sourceUri, destinationUri)
+        val intent = UCrop.of(uri, destinationUri)
             .withOptions(options)
             .getIntent(this)
         
