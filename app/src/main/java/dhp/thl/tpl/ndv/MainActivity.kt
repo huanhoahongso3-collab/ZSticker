@@ -939,19 +939,58 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
         val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
         
-        val destinationUri = Uri.fromFile(File(cacheDir, "crop_temp_${System.currentTimeMillis()}.png"))
-        
-        val options = UCrop.Options().apply {
-            setToolbarColor(getThemeColor(com.google.android.material.R.attr.colorSurface))
-            setStatusBarColor(getThemeColor(com.google.android.material.R.attr.colorSurface))
-            setToolbarWidgetColor(primary)
-            setActiveControlsWidgetColor(primary)
-            setToolbarTitle(getString(R.string.crop))
-            setCompressionFormat(Bitmap.CompressFormat.PNG)
-            setFreeStyleCropEnabled(true)
+        // Step 1: Pre-resize to 512 width before GUI to ensure compatibility and efficiency
+        val inputResizedFile = File(cacheDir, "crop_input_512_${System.currentTimeMillis()}.png")
+        try {
+            contentResolver.openInputStream(uri)?.use { input ->
+                val source = BitmapFactory.decodeStream(input)
+                if (source != null) {
+                    val targetWidth = 512
+                    if (source.width > targetWidth) {
+                        val scale = targetWidth.toFloat() / source.width
+                        val matrix = Matrix().apply { postScale(scale, scale) }
+                        val resized = Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
+                        FileOutputStream(inputResizedFile).use { out ->
+                            resized.compress(Bitmap.CompressFormat.PNG, 100, out)
+                        }
+                        if (resized != source) resized.recycle()
+                    } else {
+                        // Already smaller, just save as PNG to internal cache
+                        FileOutputStream(inputResizedFile).use { out ->
+                            source.compress(Bitmap.CompressFormat.PNG, 100, out)
+                        }
+                    }
+                    source.recycle()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
 
-        val intent = UCrop.of(uri, destinationUri)
+        if (!inputResizedFile.exists()) return
+
+        val sourceUri = Uri.fromFile(inputResizedFile)
+        val destinationUri = Uri.fromFile(File(cacheDir, "crop_output_${System.currentTimeMillis()}.png"))
+        
+        val surfaceColor = getThemeColor(com.google.android.material.R.attr.colorSurface)
+
+        val options = UCrop.Options().apply {
+            setToolbarColor(surfaceColor)
+            setStatusBarColor(surfaceColor)
+            setToolbarWidgetColor(primary)
+            setActiveControlsWidgetColor(primary)
+            setToolbarTitle(boldTitle(getString(R.string.crop)))
+            setCompressionFormat(Bitmap.CompressFormat.PNG)
+            setFreeStyleCropEnabled(true)
+            
+            // Material 3 / Light Theme styling
+            setRootViewBackgroundColor(surfaceColor)
+            setCropFrameColor(primary)
+            setCropGridColor(primary)
+            setLogoColor(android.graphics.Color.TRANSPARENT)
+        }
+
+        val intent = UCrop.of(sourceUri, destinationUri)
             .withOptions(options)
             .getIntent(this)
         
