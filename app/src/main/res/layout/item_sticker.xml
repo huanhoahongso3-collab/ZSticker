@@ -6,6 +6,7 @@
     android:padding="4dp">
 
     <com.google.android.material.card.MaterialCardView
+        android:id="@+id/stickerCard"
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:cardCornerRadius="16dp"

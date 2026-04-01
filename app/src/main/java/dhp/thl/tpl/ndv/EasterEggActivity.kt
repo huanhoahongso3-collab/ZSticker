@@ -140,11 +140,19 @@ class EasterEggActivity : BaseActivity() {
     }
 
     private fun showEasterEggDialog() {
-        MaterialAlertDialogBuilder(this)
+        val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+        val dialog = MaterialAlertDialogBuilder(this)
             .setTitle(boldTitle("Welcome to dhpOS 44!"))
             .setMessage("Enjoy the good old days!")
             .setPositiveButton("OK", null)
-            .show()
+            .create()
+        
+        dialog.show()
+        
+        if (materialColorEnabled) {
+            val primary = monet.getAccentColor(this)
+            dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setTextColor(primary)
+        }
     }
 
     private fun vibrate() {

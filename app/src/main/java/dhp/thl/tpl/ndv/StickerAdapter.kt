@@ -75,6 +75,15 @@ class StickerAdapter(
                 }
                 true
             }
+
+            if (materialColorEnabled) {
+                val context = holder.itemView.context
+                val isDark = (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                if (!isDark) {
+                    val surface = com.kieronquinn.monetcompat.core.MonetCompat.getInstance().getBackgroundColor(context)
+                    holder.card.setCardBackgroundColor(surface)
+                }
+            }
         }
     }
 
@@ -94,6 +103,7 @@ class StickerAdapter(
 
     class StickerViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val image: ImageView = view.findViewById(R.id.stickerImage)
+        val card: com.google.android.material.card.MaterialCardView = view.findViewById(R.id.stickerCard)
     }
 
     companion object {

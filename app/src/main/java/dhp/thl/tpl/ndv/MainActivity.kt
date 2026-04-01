@@ -154,7 +154,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 val surface = monetInstance.getBackgroundColor(this@MainActivity)
                 val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
                 val headColor = primary
-                val cardColor = if (isDark) surface else Color.parseColor("#F5F5F5") 
+                val cardColor = if (isDark) Color.BLACK else Color.parseColor("#F5F5F5") 
 
                 binding.root.setBackgroundColor(surface)
                 binding.appBarLayout.setBackgroundColor(surface)
@@ -541,7 +541,8 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             var resultUri: Uri? = null
             try {
                 val inputStream = contentResolver.openInputStream(uri) ?: throw Exception()
-                val originalBitmap = BitmapFactory.decodeStream(inputStream) ?: throw Exception()
+                val rawBitmap = BitmapFactory.decodeStream(inputStream) ?: throw Exception()
+                val originalBitmap = ImageUtils.rotateBitmapIfRequired(this, rawBitmap, uri)
                 
                 // Resize to 512px width as per requirement to save bandwidth
                 val resizedBitmap = ImageUtils.resizeBitmapToWidth(originalBitmap, 512)

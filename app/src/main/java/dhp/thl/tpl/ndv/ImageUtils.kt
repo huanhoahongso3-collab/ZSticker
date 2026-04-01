@@ -8,8 +8,11 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
+import android.graphics.Matrix
+import android.net.Uri
 import java.io.File
 import java.io.FileOutputStream
+import androidx.exifinterface.media.ExifInterface
 
 object ImageUtils {
     private const val TARGET_WIDTH = 512
@@ -238,6 +241,34 @@ object ImageUtils {
 
         if (maxX < minX || maxY < minY) return bitmap
 
-        return Bitmap.createBitmap(bitmap, minX, minY, (maxX - minX) + 1, (maxY - minY) + 1)
+
+    /**
+     * Fixes bitmap rotation based on EXIF data.
+     */
+    fun rotateBitmapIfRequired(context: Context, bitmap: Bitmap, uri: Uri): Bitmap {
+        try {
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                val ei = ExifInterface(inputStream)
+                val orientation = ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+                
+                return when (orientation) {
+                    ExifInterface.ORIENTATION_ROTATE_90 -> rotateImage(bitmap, 90f)
+                    ExifInterface.ORIENTATION_ROTATE_180 -> rotateImage(bitmap, 180f)
+                    ExifInterface.ORIENTATION_ROTATE_270 -> rotateImage(bitmap, 270f)
+                    else -> bitmap
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return bitmap
+    }
+
+    private fun rotateImage(source: Bitmap, angle: Float): Bitmap {
+        val matrix = Matrix()
+        matrix.postRotate(angle)
+        val rotated = Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
+        if (rotated != source) source.recycle()
+        return rotated
     }
 }
