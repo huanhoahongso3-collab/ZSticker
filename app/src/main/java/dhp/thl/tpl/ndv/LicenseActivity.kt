@@ -110,12 +110,16 @@ class LicenseActivity : BaseActivity() {
                 Library("AndroidX Splash Screen", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("BRIA RMBG 1.4", "Creative Commons", "The model is released under a Creative Commons license for non-commercial use."),
                 Library("Glide", "BSD/MIT/Apache", "License information for Glide can be found at: https://github.com/bumptech/glide/blob/master/LICENSE"),
-                Library("Jetpack Compose", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("Kotlin Coroutines", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("Kotlin Standard Library", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("Material Components", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("Material 3", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
+                Library("Jetpack Compose", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
+                Library("Activity Compose", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
+                Library("Lifecycle Runtime Compose", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("MonetCompat", "MIT License", "Copyright (c) 2021 Kieron Quinn\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software."),
+                Library("UI Graphics", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
+                Library("UI Tooling Preview", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("Zip4j", "Apache 2.0", "Licensed under the Apache License, Version 2.0")
             ).sortedBy { it.name.lowercase() }
 
