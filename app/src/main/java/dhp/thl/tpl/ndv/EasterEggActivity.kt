@@ -113,6 +113,7 @@ class EasterEggActivity : BaseActivity() {
                 .start()
                 
             vibrate()
+            if (clickCount == 14) showAprilFoolsDialog()
         }
         rootLayout.addView(imgLogo)
 
@@ -139,6 +140,24 @@ class EasterEggActivity : BaseActivity() {
         }
     }
 
+    private fun showAprilFoolsDialog() {
+        val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(boldTitle("Happy April Fools day."))
+            .setMessage("dhpUI? dhpUV")
+            .setPositiveButton("OK", null)
+            .create()
+        
+        dialog.show()
+        
+        val accentColor = if (materialColorEnabled) {
+            monet.getAccentColor(this)
+        } else {
+            getColor(R.color.orange_primary)
+        }
+        dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setTextColor(accentColor)
+    }
+
     private fun showEasterEggDialog() {
         val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
         val dialog = MaterialAlertDialogBuilder(this)
@@ -149,10 +168,12 @@ class EasterEggActivity : BaseActivity() {
         
         dialog.show()
         
-        if (materialColorEnabled) {
-            val primary = monet.getAccentColor(this)
-            dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setTextColor(primary)
+        val accentColor = if (materialColorEnabled) {
+            monet.getAccentColor(this)
+        } else {
+            getColor(R.color.orange_primary)
         }
+        dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setTextColor(accentColor)
     }
 
     private fun vibrate() {

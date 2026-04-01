@@ -58,9 +58,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import android.widget.LinearLayout
 import androidx.core.graphics.ColorUtils
-import com.canhub.cropper.CropImageContract
-import com.canhub.cropper.CropImageContractOptions
-import com.canhub.cropper.CropImageOptions
 import com.canhub.cropper.CropImageView
 import kotlinx.coroutines.launch
 import androidx.graphics.shapes.RoundedPolygon
@@ -942,22 +939,47 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
         val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
         
-        cropImage.launch(
-            CropImageContractOptions(
-                uri,
-                CropImageOptions(
-                    guidelines = CropImageView.Guidelines.ON,
-                    activityTitle = getString(R.string.crop),
-                    progressBarColor = primary,
-                    activityMenuIconColor = primary,
-                    toolbarColor = getThemeColor(com.google.android.material.R.attr.colorSurface),
-                    toolbarBackButtonColor = primary,
-                    backgroundColor = getThemeColor(com.google.android.material.R.attr.colorSurface),
-                    outputCompressFormat = Bitmap.CompressFormat.PNG,
-                    fixAspectRatio = false
-                )
-            )
-        )
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_crop, null)
+        val cropImageView = dialogView.findViewById<com.canhub.cropper.CropImageView>(R.id.crop_image_view)
+        
+        cropImageView.setImageUriAsync(uri)
+        
+        // Ensure UI matches the theme
+        cropImageView.setGuidelines(com.canhub.cropper.CropImageView.Guidelines.ON)
+        cropImageView.setBorderLineColor(primary)
+        cropImageView.setBorderCornerColor(primary)
+        cropImageView.setGuidelinesColor(primary)
+
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(boldTitle(getString(R.string.crop)))
+            .setView(dialogView)
+            .setPositiveButton(getString(R.string.ok), null) // Set null to handle manually to avoid auto-dismiss
+            .setNegativeButton(getString(R.string.cancel), null)
+            .create()
+
+        dialog.setOnShowListener {
+            dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                // Perform crop
+                val croppedBitmap = cropImageView.getCroppedImage()
+                if (croppedBitmap != null) {
+                    val file = File(filesDir, "zsticker_${System.currentTimeMillis()}.png")
+                    try {
+                        FileOutputStream(file).use { out ->
+                            croppedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                        }
+                        adapter.refreshData(this)
+                        updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
+                        ToastUtils.showToast(this, getString(R.string.success))
+                        dialog.dismiss()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        ToastUtils.showToast(this, getString(R.string.failed))
+                    }
+                }
+            }
+        }
+        
+        dialog.showMonetDialog(this)
     }
 
     private fun viewFullSticker(uri: Uri) {
@@ -970,26 +992,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             .setPositiveButton(getString(R.string.ok), null)
             .create()
             .showMonetDialog(this)
-    }
-
-    private val cropImage = registerForActivityResult(CropImageContract()) { result ->
-        if (result.isSuccessful) {
-            val uriContent = result.uriContent
-            if (uriContent != null) {
-                try {
-                    contentResolver.openInputStream(uriContent)?.use { input ->
-                        val file = File(filesDir, "zsticker_${System.currentTimeMillis()}.png")
-                        FileOutputStream(file).use { out -> input.copyTo(out) }
-                    }
-                    adapter.refreshData(this)
-                    updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
-                    ToastUtils.showToast(this, getString(R.string.success))
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    ToastUtils.showToast(this, getString(R.string.failed))
-                }
-            }
-        }
     }
 
     private val pickImages = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
