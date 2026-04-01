@@ -9,11 +9,6 @@
     <com.canhub.cropper.CropImageView
         android:id="@+id/crop_image_view"
         android:layout_width="match_parent"
-        android:layout_height="320dp"
-        app:cropGuidelines="on"
-        app:cropShowProgressBar="true"
-        app:cropBorderLineColor="?attr/colorPrimary"
-        app:cropCornerColor="?attr/colorPrimary"
-        app:cropGuidelinesColor="?attr/colorPrimary" />
+        android:layout_height="320dp" />
 
 </LinearLayout>
