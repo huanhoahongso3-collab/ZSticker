@@ -945,10 +945,10 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         cropImageView.setImageUriAsync(uri)
         
         // Ensure UI matches the theme
-        cropImageView.setGuidelines(com.canhub.cropper.CropImageView.Guidelines.ON)
-        cropImageView.setBorderLineColor(primary)
-        cropImageView.setBorderCornerColor(primary)
-        cropImageView.setGuidelinesColor(primary)
+        cropImageView.guidelines = com.canhub.cropper.CropImageView.Guidelines.ON
+        cropImageView.borderLineColor = primary
+        cropImageView.borderCornerColor = primary
+        cropImageView.guidelinesColor = primary
 
         val dialog = MaterialAlertDialogBuilder(this)
             .setTitle(boldTitle(getString(R.string.crop)))
