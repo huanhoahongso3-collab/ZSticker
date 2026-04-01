@@ -14,6 +14,7 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.Typeface
 import android.net.Uri
 import android.os.Build
@@ -478,13 +479,29 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             if (!mimeType.startsWith("image/") || mimeType == "image/gif") return 1
 
             contentResolver.openInputStream(src)?.use { input ->
+                val rawBitmap = BitmapFactory.decodeStream(input) ?: return 2
+                val portraitBitmap = ImageUtils.rotateBitmapIfRequired(this, rawBitmap, src)
+                
+                // Automatically resize to 512 width on initial import to save space and match requirements
+                val resizedBitmap = ImageUtils.resizeBitmapToWidth(portraitBitmap, 512)
+                
                 val file = File(filesDir, "zsticker_${System.currentTimeMillis()}.png")
                 FileOutputStream(file).use { out ->
-                    if (input.copyTo(out) > 0) return 0 else return 2
+                    resizedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
                 }
+                
+                // Cleanup
+                if (resizedBitmap != portraitBitmap) resizedBitmap.recycle()
+                portraitBitmap.recycle()
+                if (rawBitmap != portraitBitmap) rawBitmap.recycle()
+                
+                return 0
             }
             return 2
-        } catch (e: Exception) { return 2 }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return 2
+        }
     }
 
     private fun handleIncomingShare(intent: Intent?) {
@@ -979,7 +996,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             setStatusBarColor(surfaceColor)
             setToolbarWidgetColor(primary)
             setActiveControlsWidgetColor(primary)
-            setToolbarTitle(boldTitle(getString(R.string.crop)))
+            setToolbarTitle(getString(R.string.crop))
             setCompressionFormat(Bitmap.CompressFormat.PNG)
             setFreeStyleCropEnabled(true)
             

@@ -99,7 +99,7 @@ class LicenseActivity : BaseActivity() {
             }
 
             val libraries = listOf(
-                Library("Android-Image-Cropper", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
+                Library("uCrop", "Apache 2.0", "Licensed under the Apache License, Version 2.0. Copyright 2017 Yalantis"),
                 Library("AndroidX Activity", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("AndroidX AppCompat", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("AndroidX ConstraintLayout", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
