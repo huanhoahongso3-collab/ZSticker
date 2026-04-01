@@ -70,6 +70,8 @@ class EasterEggActivity : BaseActivity() {
             setOnClickListener {
                 if (clickCount == 10 || clickCount == 56 || clickCount == 74) {
                     showEasterEggDialog()
+                } else if (clickCount == 14) {
+                    showAprilFoolsDialog()
                 }
             }
         }
@@ -113,7 +115,6 @@ class EasterEggActivity : BaseActivity() {
                 .start()
                 
             vibrate()
-            if (clickCount == 14) showAprilFoolsDialog()
         }
         rootLayout.addView(imgLogo)
 
