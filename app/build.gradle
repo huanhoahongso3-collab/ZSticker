@@ -85,6 +85,6 @@ dependencies {
     implementation 'androidx.activity:activity-compose'
     implementation 'androidx.lifecycle:lifecycle-runtime-compose'
     
-    // Android Image Cropper
-    implementation 'com.github.CanHub:Android-Image-Cropper:4.5.0'
+    // uCrop
+    implementation 'com.github.yalantis:ucrop:2.2.8'
 }
