@@ -156,6 +156,12 @@ class EasterEggActivity : BaseActivity() {
     }
 
     private fun vibrate() {
-        window.decorView.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
+        val feedback = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            android.view.HapticFeedbackConstants.CONFIRM
+        } else {
+            @Suppress("DEPRECATION")
+            android.view.HapticFeedbackConstants.VIRTUAL_KEY
+        }
+        imgLogo.performHapticFeedback(feedback, android.view.HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING)
     }
 }
