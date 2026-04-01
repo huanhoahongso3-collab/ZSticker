@@ -88,4 +88,5 @@
     <string name="importing_backup">Đang nhập bản sao lưu&#8230;</string>
     <string name="exporting_backup">Đang xuất bản sao lưu&#8230;</string>
     <string name="exporting_to_gallery">Đang lưu vào Thư viện&#8230;</string>
+    <string name="crop">Cắt ảnh</string>
 </resources>

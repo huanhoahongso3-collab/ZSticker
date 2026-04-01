@@ -88,4 +88,5 @@
     <string name="importing_backup">Importing backup&#8230;</string>
     <string name="exporting_backup">Exporting backup&#8230;</string>
     <string name="exporting_to_gallery">Exporting to Gallery&#8230;</string>
+    <string name="crop">Crop</string>
 </resources>

@@ -88,4 +88,5 @@
     <string name="importing_backup">Импорт резервной копии&#8230;</string>
     <string name="exporting_backup">Экспорт резервной копии&#8230;</string>
     <string name="exporting_to_gallery">Сохранение в Галерее&#8230;</string>
+    <string name="crop">Обрезать</string>
 </resources>

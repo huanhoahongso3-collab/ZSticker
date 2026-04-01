@@ -88,4 +88,5 @@
     <string name="importing_backup">正在导入备份&#8230;</string>
     <string name="exporting_backup">正在导出备份&#8230;</string>
     <string name="exporting_to_gallery">正在保存到相册&#8230;</string>
+    <string name="crop">裁剪</string>
 </resources>

@@ -11,8 +11,8 @@ android {
         applicationId 'dhp.thl.tpl.ndv'
         minSdk 29
         targetSdk 37
-        versionCode 6320
-        versionName '6.3.2'
+        versionCode 6400
+        versionName '6.4'
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         
@@ -84,4 +84,7 @@ dependencies {
     implementation 'androidx.compose.material3:material3:1.4.0-alpha04'
     implementation 'androidx.activity:activity-compose'
     implementation 'androidx.lifecycle:lifecycle-runtime-compose'
+    
+    // Android Image Cropper
+    implementation 'com.github.CanHub:Android-Image-Cropper:4.5.0'
 }
