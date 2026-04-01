@@ -154,7 +154,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 val surface = monetInstance.getBackgroundColor(this@MainActivity)
                 val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
                 val headColor = primary
-                val cardColor = if (isDark) Color.BLACK else Color.parseColor("#F5F5F5") 
+                val cardColor = if (isDark) Color.parseColor("#2B2930") else Color.parseColor("#F5F5F5") 
 
                 binding.root.setBackgroundColor(surface)
                 binding.appBarLayout.setBackgroundColor(surface)
@@ -230,6 +230,14 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 binding.txtRemoveAll.setTextColor(red)
                 
                 // Allow FAB to use standard XML theme colors (colorSecondaryContainer) in dark/light mode
+                
+                val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+                if (!isDark) {
+                    val lightBg = Color.parseColor("#F8F9FA") // Off-white/Light grey to distinguish from white stickers
+                    binding.root.setBackgroundColor(lightBg)
+                    binding.appBarLayout.setBackgroundColor(lightBg)
+                    binding.toolbar.setBackgroundColor(lightBg)
+                }
             }
         }
 
