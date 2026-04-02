@@ -11,8 +11,8 @@ android {
         applicationId 'dhp.thl.tpl.ndv'
         minSdk 29
         targetSdk 37
-        versionCode 6400
-        versionName '6.4'
+        versionCode 6410
+        versionName '6.4.1'
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         
@@ -86,5 +86,5 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-runtime-compose'
     
     // uCrop
-    implementation 'com.github.yalantis:ucrop:2.2.8'
+    implementation 'com.github.yalantis:ucrop:2.2.11'
 }
