@@ -944,7 +944,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         val options = UCrop.Options().apply {
             val surface = getThemeColor(com.google.android.material.R.attr.colorSurface)
             setToolbarColor(surface)
-            setStatusBarColor(surface)
             setToolbarWidgetColor(primary)
             setActiveControlsWidgetColor(primary)
             setRootViewBackgroundColor(surface)
