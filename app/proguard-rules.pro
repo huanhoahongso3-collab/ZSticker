@@ -25,6 +25,9 @@
 -dontwarn autovalue.shaded.**
 -dontwarn com.google.auto.value.**
 -dontwarn com.google.errorprone.annotations.**
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-dontwarn com.yalantis.ucrop.**
 
 # Support libraries
 -keep class androidx.appcompat.widget.** { *; }
