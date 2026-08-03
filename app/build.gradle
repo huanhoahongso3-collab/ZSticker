@@ -87,4 +87,7 @@ dependencies {
     
     // uCrop
     implementation 'com.github.yalantis:ucrop:2.2.11'
+
+    // Offline background removal
+    implementation 'com.google.mlkit:segmentation-selfie:16.0.0'
 }

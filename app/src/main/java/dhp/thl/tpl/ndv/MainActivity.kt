@@ -554,48 +554,27 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 val inputStream = contentResolver.openInputStream(uri) ?: throw Exception()
                 val rawBitmap = BitmapFactory.decodeStream(inputStream) ?: throw Exception()
                 val originalBitmap = ImageUtils.rotateBitmapIfRequired(this, rawBitmap, uri)
-                
-                // Resize to 512px width as per requirement to save bandwidth
-                val resizedBitmap = ImageUtils.resizeBitmapToWidth(originalBitmap, 512)
-                
-                // Updated to the stable 1.4 proxy endpoint
-                val url = URL("https://bria14proxy.vercel.app/api/nobg")
-                val connection = (url.openConnection() as HttpURLConnection).apply {
-                    requestMethod = "POST"
-                    doOutput = true
-                    setRequestProperty("Content-Type", "application/octet-stream")
-                    connectTimeout = 30000
-                    readTimeout = 30000
-                }
 
-                // Stream the resized image data to the proxy
-                connection.outputStream.use { out ->
-                    resizedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-                }
+                // Resize to a manageable size for on-device segmentation
+                val resizedBitmap = ImageUtils.resizeBitmapToWidth(originalBitmap, 512)
+                val segmentedBitmap = ImageUtils.removeBackgroundWithSegmentation(resizedBitmap)
 
                 // Cleanup bitmaps
                 if (resizedBitmap != originalBitmap) originalBitmap.recycle()
-                
-                // Handle successful response (Engine 1.4)
-                if (connection.responseCode == 200) {
-                    val file = File(filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
-                    connection.inputStream.use { input ->
-                        val rawBitmap = BitmapFactory.decodeStream(input)
-                        if (rawBitmap != null) {
-                            val croppedBitmap = ImageUtils.cropTransparent(rawBitmap)
-                            FileOutputStream(file).use { out ->
-                                croppedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-                            }
-                            if (croppedBitmap != rawBitmap) rawBitmap.recycle()
-                            croppedBitmap.recycle()
-                            resultUri = Uri.fromFile(file)
-                            isSuccess = true
-                        }
-                    }
-                }
                 resizedBitmap.recycle()
+
+                if (segmentedBitmap != null) {
+                    val croppedBitmap = ImageUtils.cropTransparent(segmentedBitmap)
+                    val file = File(filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
+                    FileOutputStream(file).use { out ->
+                        croppedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                    }
+                    if (croppedBitmap != segmentedBitmap) segmentedBitmap.recycle()
+                    croppedBitmap.recycle()
+                    resultUri = Uri.fromFile(file)
+                    isSuccess = true
+                }
             } catch (e: Exception) {
-                // If no internet or API error occurs, isSuccess remains false
                 isSuccess = false
             }
 
@@ -805,7 +784,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         showPaneDialog(title, options) { which ->
             when (options[which].text) {
                 getString(R.string.export) -> exportSingleSticker(uri)
-                getString(R.string.remove_bg) -> checkAndShowBackgroundRemovalWarning(uri)
+                getString(R.string.remove_bg) -> removeBackground(uri)
                 getString(R.string.border_sticker) -> stickify(uri)
                 getString(R.string.crop) -> startCrop(uri)
                 getString(R.string.view_full_sticker) -> viewFullSticker(uri)
@@ -835,33 +814,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 alpha = 0.1f
             })
         }
-        dialog.showMonetDialog(this)
-    }
-
-    private fun checkAndShowBackgroundRemovalWarning(uri: Uri) {
-        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
-        if (prefs.getBoolean("dont_show_rb_warning", false)) { removeBackground(uri); return }
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_warning, null)
-        val dialog = MaterialAlertDialogBuilder(this).setView(dialogView).create()
-        val titleView = dialogView.findViewById<TextView>(R.id.dialog_title)
-        val messageView = dialogView.findViewById<TextView>(R.id.dialog_message)
-        val iconView = dialogView.findViewById<ImageView>(R.id.icon_warning)
-        val checkBox = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cb_dont_show_again)
-        titleView.text = boldTitle(getString(R.string.rb_warning_title))
-        messageView.text = getString(R.string.rb_warning_message)
-        iconView.setImageResource(R.drawable.ic_remove_bg)
-        val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
-        val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
-        iconView.setColorFilter(primary); messageView.setLinkTextColor(primary)
-        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_cancel)
-        val btnContinue = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_continue)
-        btnCancel.setTextColor(primary); checkBox.buttonTintList = android.content.res.ColorStateList.valueOf(primary)
-        val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-        btnContinue.setTextColor(if (isDark) Color.BLACK else Color.WHITE)
-        btnContinue.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
-        btnCancel.setOnClickListener { dialog.dismiss() }
-        btnContinue.setOnClickListener { if (checkBox.isChecked) prefs.edit().putBoolean("dont_show_rb_warning", true).apply()
-            dialog.dismiss(); removeBackground(uri) }
         dialog.showMonetDialog(this)
     }
 
