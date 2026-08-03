@@ -271,17 +271,21 @@ object ImageUtils {
 
             val width = bitmap.width
             val height = bitmap.height
+            val maskWidth = segmentationMask.width
+            val maskHeight = segmentationMask.height
             val pixels = IntArray(width * height)
             bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
 
             val outputPixels = IntArray(width * height)
             for (y in 0 until height) {
                 for (x in 0 until width) {
-                    val index = y * width + x
-                    val maskValue = maskValues.getOrNull(index) ?: 0f
-                    val pixel = pixels[index]
-                    val alpha = if (maskValue > 0.5f) 255 else 0
-                    outputPixels[index] = (alpha shl 24) or (pixel and 0x00FFFFFF)
+                    val maskX = (x.toFloat() * maskWidth / width).toInt().coerceIn(0, maskWidth - 1)
+                    val maskY = (y.toFloat() * maskHeight / height).toInt().coerceIn(0, maskHeight - 1)
+                    val maskIndex = maskY * maskWidth + maskX
+                    val maskValue = maskValues.getOrNull(maskIndex) ?: 0f
+                    val alpha = (maskValue * 255f).toInt().coerceIn(0, 255)
+                    val pixel = pixels[y * width + x]
+                    outputPixels[y * width + x] = (alpha shl 24) or (pixel and 0x00FFFFFF)
                 }
             }
 

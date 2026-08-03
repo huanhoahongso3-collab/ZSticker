@@ -162,7 +162,7 @@ class EasterEggActivity : BaseActivity() {
     private fun showEasterEggDialog() {
         val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
         val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle(boldTitle("Welcome to dhpOS 44!"))
+            .setTitle(boldTitle("Welcome to ZSticker!"))
             .setMessage("Enjoy the good old days!")
             .setPositiveButton("OK", null)
             .create()
