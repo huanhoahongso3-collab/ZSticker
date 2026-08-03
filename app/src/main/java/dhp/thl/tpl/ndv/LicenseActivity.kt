@@ -109,7 +109,7 @@ class LicenseActivity : BaseActivity() {
                 Library("AndroidX Graphics Shapes", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("AndroidX Lifecycle", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("AndroidX Splash Screen", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
-                Library("BRIA RMBG 1.4", "Creative Commons", "The model is released under a Creative Commons license for non-commercial use."),
+                Library("Google ML Kit Selfie Segmentation", "Apache 2.0", "Licensed under the Apache License, Version 2.0. Source: https://github.com/googlesamples/mlkit"),
                 Library("Glide", "BSD/MIT/Apache", "License information for Glide can be found at: https://github.com/bumptech/glide/blob/master/LICENSE"),
                 Library("Kotlin Coroutines", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("Kotlin Standard Library", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
