@@ -69,6 +69,9 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private lateinit var adapter: StickerAdapter
     private lateinit var adapterRecents: StickerAdapter
 
+    // Open-source on-device background remover (Google MediaPipe Tasks Vision)
+    private val mediaPipeBackgroundRemover by lazy { MediaPipeBackgroundRemover(this) }
+
     
     private val Cookie9Sided = RoundedPolygon.star(
         numVerticesPerRadius = 9,
@@ -262,8 +265,13 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        setIntent(intent) 
+        setIntent(intent)
         handleIncomingShare(intent)
+    }
+
+    override fun onDestroy() {
+        mediaPipeBackgroundRemover.close()
+        super.onDestroy()
     }
 
     private fun setupInfoSection() {
@@ -349,6 +357,11 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         binding.switchMaterialColor.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean("material_color_enabled", isChecked).apply()
             recreate()
+        }
+
+        binding.switchOnlineRemoveBg.isChecked = prefs.getBoolean("removebg_online_mode", false)
+        binding.switchOnlineRemoveBg.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("removebg_online_mode", isChecked).apply()
         }
 
         setupSecondaryInfo()
@@ -557,7 +570,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
                 // Resize to a manageable size for on-device segmentation
                 val resizedBitmap = ImageUtils.resizeBitmapToWidth(originalBitmap, 512)
-                val segmentedBitmap = ImageUtils.removeBackgroundWithSegmentation(resizedBitmap)
+                val segmentedBitmap = mediaPipeBackgroundRemover.removeBackground(resizedBitmap)
 
                 // Cleanup bitmaps
                 if (resizedBitmap != originalBitmap) originalBitmap.recycle()
@@ -575,6 +588,111 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                     isSuccess = true
                 }
             } catch (e: Exception) {
+                isSuccess = false
+            }
+
+            runOnUiThread {
+                binding.progressBar.visibility = View.GONE
+                if (isSuccess && resultUri != null) {
+                    adapter.refreshData(this@MainActivity)
+                    updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
+                    binding.recycler.scrollToPosition(0)
+                    ToastUtils.showToast(this@MainActivity, getString(R.string.rb_completed))
+                } else {
+                    // Displays failed message for all errors (including connection issues)
+                    ToastUtils.showToast(this@MainActivity, getString(R.string.rb_failed))
+                }
+            }
+        }
+    }
+
+    private fun checkAndShowBackgroundRemovalWarning(uri: Uri) {
+        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+        if (prefs.getBoolean("dont_show_rb_warning", false)) { removeBackgroundOnline(uri); return }
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_warning, null)
+        val dialog = MaterialAlertDialogBuilder(this).setView(dialogView).create()
+        val titleView = dialogView.findViewById<TextView>(R.id.dialog_title)
+        val messageView = dialogView.findViewById<TextView>(R.id.dialog_message)
+        val iconView = dialogView.findViewById<ImageView>(R.id.icon_warning)
+        val checkBox = dialogView.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cb_dont_show_again)
+        titleView.text = boldTitle(getString(R.string.rb_warning_title))
+        messageView.text = getString(R.string.rb_warning_message)
+        iconView.setImageResource(R.drawable.ic_remove_bg)
+        val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
+        val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
+        iconView.setColorFilter(primary); messageView.setLinkTextColor(primary)
+        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_cancel)
+        val btnContinue = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_continue)
+        btnCancel.setTextColor(primary); checkBox.buttonTintList = android.content.res.ColorStateList.valueOf(primary)
+        val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        btnContinue.setTextColor(if (isDark) Color.BLACK else Color.WHITE)
+        btnContinue.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
+        btnCancel.setOnClickListener { dialog.dismiss() }
+        btnContinue.setOnClickListener { if (checkBox.isChecked) prefs.edit().putBoolean("dont_show_rb_warning", true).apply()
+            dialog.dismiss(); removeBackgroundOnline(uri) }
+        dialog.showMonetDialog(this)
+    }
+
+    private fun removeBackgroundOnline(uri: Uri) {
+        // UI Setup for loading state
+        val surfaceColor = getThemeColor(com.google.android.material.R.attr.colorSurface)
+        binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(surfaceColor, 153)) // 60% alpha
+
+        val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
+        val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
+        binding.loadingIndicator.setIndicatorColor(primary)
+
+        binding.progressBar.visibility = View.VISIBLE
+
+        thread {
+            var isSuccess = false
+            var resultUri: Uri? = null
+            try {
+                val inputStream = contentResolver.openInputStream(uri) ?: throw Exception()
+                val rawBitmap = BitmapFactory.decodeStream(inputStream) ?: throw Exception()
+                val originalBitmap = ImageUtils.rotateBitmapIfRequired(this, rawBitmap, uri)
+
+                // Resize to 512px width as per requirement to save bandwidth
+                val resizedBitmap = ImageUtils.resizeBitmapToWidth(originalBitmap, 512)
+
+                // Uses the stable BRIA RMBG 1.4 proxy endpoint
+                val url = URL("https://bria14proxy.vercel.app/api/nobg")
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    doOutput = true
+                    setRequestProperty("Content-Type", "application/octet-stream")
+                    connectTimeout = 30000
+                    readTimeout = 30000
+                }
+
+                // Stream the resized image data to the proxy
+                connection.outputStream.use { out ->
+                    resizedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                }
+
+                // Cleanup bitmaps
+                if (resizedBitmap != originalBitmap) originalBitmap.recycle()
+
+                // Handle successful response (Engine 1.4)
+                if (connection.responseCode == 200) {
+                    val file = File(filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
+                    connection.inputStream.use { input ->
+                        val downloadedBitmap = BitmapFactory.decodeStream(input)
+                        if (downloadedBitmap != null) {
+                            val croppedBitmap = ImageUtils.cropTransparent(downloadedBitmap)
+                            FileOutputStream(file).use { out ->
+                                croppedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                            }
+                            if (croppedBitmap != downloadedBitmap) downloadedBitmap.recycle()
+                            croppedBitmap.recycle()
+                            resultUri = Uri.fromFile(file)
+                            isSuccess = true
+                        }
+                    }
+                }
+                resizedBitmap.recycle()
+            } catch (e: Exception) {
+                // If no internet or API error occurs, isSuccess remains false
                 isSuccess = false
             }
 
@@ -784,7 +902,10 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         showPaneDialog(title, options) { which ->
             when (options[which].text) {
                 getString(R.string.export) -> exportSingleSticker(uri)
-                getString(R.string.remove_bg) -> removeBackground(uri)
+                getString(R.string.remove_bg) -> {
+                    val onlineModeEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("removebg_online_mode", false)
+                    if (onlineModeEnabled) checkAndShowBackgroundRemovalWarning(uri) else removeBackground(uri)
+                }
                 getString(R.string.border_sticker) -> stickify(uri)
                 getString(R.string.crop) -> startCrop(uri)
                 getString(R.string.view_full_sticker) -> viewFullSticker(uri)

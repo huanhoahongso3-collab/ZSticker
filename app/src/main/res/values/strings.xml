@@ -38,6 +38,8 @@
     
     <string name="info_material_color_title">Material Color</string>
     <string name="info_material_color_subtitle">Use system colors</string>
+    <string name="info_online_removebg_title">Online background removal</string>
+    <string name="info_online_removebg_subtitle">Use third-party API instead of on-device processing</string>
     
     <string name="info_license_note">GNU General Public License v3.0</string>
     

@@ -88,6 +88,6 @@ dependencies {
     // uCrop
     implementation 'com.github.yalantis:ucrop:2.2.11'
 
-    // Offline background removal
-    implementation 'com.google.mlkit:segmentation-selfie:16.0.0-beta6'
+    // Offline background removal (Google MediaPipe Tasks Vision - Apache 2.0, fully open source)
+    implementation 'com.google.mediapipe:tasks-vision:0.10.14'
 }

@@ -13,10 +13,6 @@ import android.net.Uri
 import java.io.File
 import java.io.FileOutputStream
 import androidx.exifinterface.media.ExifInterface
-import com.google.android.gms.tasks.Tasks
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.segmentation.Segmentation
-import com.google.mlkit.vision.segmentation.selfie.SelfieSegmenterOptions
 
 object ImageUtils {
     private const val TARGET_WIDTH = 512
@@ -248,58 +244,6 @@ object ImageUtils {
         return Bitmap.createBitmap(bitmap, minX, minY, (maxX - minX) + 1, (maxY - minY) + 1)
     }
     
-    /**
-     * Removes the background using Google ML Kit selfie segmentation.
-     * The foreground remains opaque while the background becomes transparent.
-     */
-    fun removeBackgroundWithSegmentation(bitmap: Bitmap): Bitmap? {
-        val options = SelfieSegmenterOptions.Builder()
-            .setDetectorMode(SelfieSegmenterOptions.SINGLE_IMAGE_MODE)
-            .enableRawSizeMask()
-            .build()
-
-        val segmenter = Segmentation.getClient(options)
-        val inputImage = InputImage.fromBitmap(bitmap, 0)
-
-        return try {
-            val segmentationMask = Tasks.await(segmenter.process(inputImage))
-            val maskBuffer = segmentationMask.buffer
-            maskBuffer.rewind()
-            val floatBuffer = maskBuffer.asFloatBuffer()
-            val maskValues = FloatArray(floatBuffer.remaining())
-            floatBuffer.get(maskValues)
-
-            val width = bitmap.width
-            val height = bitmap.height
-            val maskWidth = segmentationMask.width
-            val maskHeight = segmentationMask.height
-            val pixels = IntArray(width * height)
-            bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
-
-            val outputPixels = IntArray(width * height)
-            for (y in 0 until height) {
-                for (x in 0 until width) {
-                    val maskX = (x.toFloat() * maskWidth / width).toInt().coerceIn(0, maskWidth - 1)
-                    val maskY = (y.toFloat() * maskHeight / height).toInt().coerceIn(0, maskHeight - 1)
-                    val maskIndex = maskY * maskWidth + maskX
-                    val maskValue = maskValues.getOrNull(maskIndex) ?: 0f
-                    val alpha = (maskValue * 255f).toInt().coerceIn(0, 255)
-                    val pixel = pixels[y * width + x]
-                    outputPixels[y * width + x] = (alpha shl 24) or (pixel and 0x00FFFFFF)
-                }
-            }
-
-            val outputBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-            outputBitmap.setPixels(outputPixels, 0, width, 0, 0, width, height)
-            outputBitmap
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        } finally {
-            segmenter.close()
-        }
-    }
-
     /**
      * Fixes bitmap rotation based on EXIF data.
      */
