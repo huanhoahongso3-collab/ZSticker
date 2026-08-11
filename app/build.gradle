@@ -17,8 +17,13 @@ android {
         
         // Only include resources for supported languages
         resConfigs "en", "vi", "ru", "zh"
-        
-        // Filter ABIs to exclude x86 (huge size reduction for MediaPipe)
+
+        // Filter ABIs to exclude x86 (huge size reduction for MediaPipe),
+        // while explicitly keeping both 32-bit and 64-bit ARM so Play's
+        // "must ship 64-bit native code" check is satisfied.
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'
+        }
     }
 
     signingConfigs {
@@ -43,6 +48,14 @@ android {
             if (System.getenv("SIGNING_STORE_FILE") != null) {
                 signingConfig signingConfigs.release
             }
+        }
+    }
+
+    // Required for Play's 16 KB memory page size support check: uncompressed,
+    // page-aligned native libraries so AGP can align .so files to 16 KB.
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
         }
     }
 
