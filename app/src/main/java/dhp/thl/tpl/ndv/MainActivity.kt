@@ -180,7 +180,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 // Tint all icons in options pane
                 listOf(
                     binding.imgTheme, binding.imgMaterialColor, binding.imgLanguage,
-                    binding.imgFiles,
+                    binding.imgFiles, binding.imgOnlineRemoveBg,
                     binding.imgVersion, binding.imgRepo, binding.imgLicense, binding.imgOpenSource
                 ).forEach { icon ->
                     icon.setColorFilter(primary)
@@ -211,6 +211,13 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 binding.switchMaterialColor.thumbIconTintList = android.content.res.ColorStateList.valueOf(
                     if (isDark) monetInstance.getBackgroundColor(this@MainActivity) else Color.WHITE
                 )
+
+                binding.switchOnlineRemoveBg.thumbTintList = android.content.res.ColorStateList(states, thumbColors)
+                binding.switchOnlineRemoveBg.trackTintList = android.content.res.ColorStateList(states, trackColors)
+                binding.switchOnlineRemoveBg.thumbIconTintList = android.content.res.ColorStateList.valueOf(
+                    if (isDark) monetInstance.getBackgroundColor(this@MainActivity) else Color.WHITE
+                )
+
                 binding.loadingIndicator.setIndicatorColor(primary)
 
                 // Refresh empty state with correct localized colors and data
