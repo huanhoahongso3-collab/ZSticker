@@ -6,8 +6,15 @@ buildscript {
     dependencies {
         classpath "com.android.tools.build:gradle:8.13.2"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.10"
+        // Needed so the release signingConfig can read a BouncyCastle (BKS) keystore
+        classpath "org.bouncycastle:bcprov-jdk18on:1.78.1"
     }
 }
+
+// Register the BouncyCastle security provider so KeyStore.getInstance("BKS")
+// works when signing with a .bks release keystore.
+import java.security.Security
+Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider())
 
 allprojects {
     repositories {
