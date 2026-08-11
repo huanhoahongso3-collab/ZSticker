@@ -38,7 +38,10 @@
     
     <string name="info_material_color_title">Material Color</string>
     <string name="info_material_color_subtitle">Use system colors</string>
-    
+
+    <string name="info_online_rb_title">Online Background Removal</string>
+    <string name="info_online_rb_subtitle">Use BRIA RMBG API instead of on-device MediaPipe</string>
+
     <string name="info_license_note">GNU General Public License v3.0</string>
     
     <string name="sticker_options_title">Sticker Options</string>

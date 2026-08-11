@@ -103,6 +103,7 @@ class LicenseActivity : BaseActivity() {
                 Library("AndroidX AppCompat", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("AndroidX ConstraintLayout", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("AndroidX Core", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
+                Library("AndroidX ExifInterface", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("AndroidX Fragment", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("AndroidX Graphics Shapes", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),
                 Library("AndroidX Lifecycle", "Apache 2.0", "Licensed under the Apache License, Version 2.0"),

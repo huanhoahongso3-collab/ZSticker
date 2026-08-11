@@ -76,4 +76,7 @@ dependencies {
 
     // Graphics Shapes for the 9-side cookie shape
     implementation 'androidx.graphics:graphics-shapes:1.1.0'
+
+    // EXIF handling for online background removal image preprocessing
+    implementation 'androidx.exifinterface:exifinterface:1.3.7'
 }
