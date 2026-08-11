@@ -42,11 +42,12 @@ jobs:
       # Patch compileSdk/targetSdk in this checkout ONLY (never pushed back)
       # so Play's "must target API 35+" check passes, then jar-sign the
       # resulting unsigned .aab afterwards.
-      - name: Bump compileSdk/targetSdk to 35 for this build only
+      - name: Bump compileSdk/targetSdk/versionCode for this build only
         run: |
           sed -i "s/compileSdk 34/compileSdk 35/" app/build.gradle
           sed -i "s/targetSdk 34/targetSdk 35/" app/build.gradle
-          grep -n "compileSdk\|targetSdk" app/build.gradle
+          sed -i "s/versionCode 5611/versionCode 5612/" app/build.gradle
+          grep -n "compileSdk\|targetSdk\|versionCode" app/build.gradle
 
       - name: Build unsigned release AAB
         run: ./gradlew bundleRelease --stacktrace
