@@ -1,0 +1,69 @@
+name: Build Signed Release (APK + AAB)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [main, legacy]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout ${{ matrix.branch }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - name: Download Gradle 8.14.4
+        run: |
+          wget https://services.gradle.org/distributions/gradle-8.14.4-bin.zip -O gradle-8.14.4.zip
+          unzip gradle-8.14.4.zip -d gradle-dist
+          chmod +x gradle-dist/gradle-8.14.4/bin/gradle
+
+      - name: Generate Gradle wrapper if missing
+        run: |
+          if [ ! -f ./gradlew ]; then
+            echo "Gradle wrapper not found, generating..."
+            ./gradle-dist/gradle-8.14.4/bin/gradle wrapper --gradle-version 8.14.4
+          else
+            echo "Gradle wrapper already exists."
+          fi
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Decode release keystore
+        run: echo "${{ secrets.BKS }}" | base64 -d > "${{ runner.temp }}/release.keystore"
+
+      - name: Build signed release APK and AAB
+        env:
+          SIGNING_STORE_FILE: ${{ runner.temp }}/release.keystore
+          SIGNING_STORE_PASSWORD: ${{ secrets.PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.PASSWORD }}
+        run: ./gradlew assembleRelease bundleRelease --stacktrace
+
+      - name: Remove keystore
+        if: always()
+        run: rm -f "${{ runner.temp }}/release.keystore"
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZSticker-${{ matrix.branch }}-release-apk
+          path: app/build/outputs/apk/release/*.apk
+
+      - name: Upload release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZSticker-${{ matrix.branch }}-release-aab
+          path: app/build/outputs/bundle/release/*.aab

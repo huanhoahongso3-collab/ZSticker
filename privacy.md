@@ -1,6 +1,6 @@
 # Chính Sách Quyền Riêng Tư
 
-_Last Updated: August 3, 2026_
+_Last Updated: August 11, 2026_
 
 ## 📑 Điều hướng / Navigation
 
@@ -51,11 +51,20 @@ Chúng tôi tôn trọng quyền riêng tư của bạn. Ứng dụng này **kh�
 
 Hầu hết các tính năng của ứng dụng hoạt động hoàn toàn ngoại tuyến và **không yêu cầu kết nối Internet**.
 
-Tính năng duy nhất yêu cầu Internet là **Xóa nền (Remove Background)**.
+Tính năng **Xóa nền (Remove Background)** có hai chế độ, có thể chuyển đổi trong Cài đặt:
+
+- **Ngoại tuyến (Offline)**: xử lý hoàn toàn trên thiết bị bằng Google MediaPipe Tasks Vision, **không yêu cầu Internet** và hình ảnh không rời khỏi máy của bạn.
+- **Trực tuyến (Online)**: yêu cầu kết nối Internet và gửi hình ảnh đến dịch vụ bên thứ ba như mô tả bên dưới.
 
 ## Tính năng Xóa nền
 
-Tính năng Xóa nền sử dụng mô hình AI **BRIA-RMBG-1.4** được lưu trữ trên Hugging Face.
+### Chế độ Ngoại tuyến (Offline)
+
+Chế độ này sử dụng **Google MediaPipe Tasks Vision** (mã nguồn mở, giấy phép Apache 2.0) để xử lý hình ảnh trực tiếp trên thiết bị của bạn. Không có hình ảnh hoặc dữ liệu nào được gửi ra ngoài máy.
+
+### Chế độ Trực tuyến (Online)
+
+Chế độ này sử dụng mô hình AI **BRIA-RMBG-1.4** được lưu trữ trên Hugging Face.
 
 ### Tuyên bố
 
@@ -83,11 +92,11 @@ Mã nguồn proxy có thể được kiểm tra tại:
 
 https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY
 
-Nếu bạn **không sử dụng tính năng Xóa nền**, ứng dụng không gửi hình ảnh hoặc dữ liệu qua proxy này.
+Nếu bạn **không sử dụng chế độ Trực tuyến của tính năng Xóa nền**, ứng dụng không gửi hình ảnh hoặc dữ liệu qua proxy này.
 
 ## Dịch vụ bên thứ ba
 
-Ứng dụng chỉ sử dụng dịch vụ bên thứ ba sau khi bạn sử dụng tính năng Xóa nền:
+Ứng dụng chỉ sử dụng dịch vụ bên thứ ba sau khi bạn sử dụng chế độ Trực tuyến của tính năng Xóa nền:
 
 | Dịch vụ | Mục đích |
 |---|---|
@@ -149,11 +158,20 @@ This application:
 
 Most features of the application work completely offline and **do not require an internet connection**.
 
-The only feature that requires internet access is **Remove Background**.
+The **Remove Background** feature has two modes, switchable in Settings:
+
+- **Offline**: processed fully on-device using Google MediaPipe Tasks Vision, **does not require internet access**, and your images never leave your device.
+- **Online**: requires an internet connection and sends your image to a third-party service as described below.
 
 ## Remove Background
 
-The Remove Background feature uses the **BRIA-RMBG-1.4** AI model hosted on Hugging Face.
+### Offline Mode
+
+This mode uses **Google MediaPipe Tasks Vision** (open source, Apache 2.0 license) to process images directly on your device. No image or data is sent off the device.
+
+### Online Mode
+
+This mode uses the **BRIA-RMBG-1.4** AI model hosted on Hugging Face.
 
 ### Disclaimer
 
@@ -181,11 +199,11 @@ The complete proxy source code is available here:
 
 https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY
 
-If you do **not** use the Remove Background feature, the application does not send your images or data through this proxy.
+If you do **not** use the Online mode of the Remove Background feature, the application does not send your images or data through this proxy.
 
 ## Third-Party Services
 
-The application uses the following third-party service only when you use the Remove Background feature:
+The application uses the following third-party service only when you use the Online mode of the Remove Background feature:
 
 | Service | Purpose |
 |---|---|
