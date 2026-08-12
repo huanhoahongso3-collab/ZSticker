@@ -89,4 +89,6 @@
     <string name="exporting_backup">正在导出备份&#8230;</string>
     <string name="exporting_to_gallery">正在保存到相册&#8230;</string>
     <string name="crop">裁剪</string>
+    <string name="info_online_removebg_title">在线抠图</string>
+    <string name="info_online_removebg_subtitle">使用第三方 API,而非设备本地处理</string>
 </resources>

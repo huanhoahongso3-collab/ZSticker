@@ -89,4 +89,6 @@
     <string name="exporting_backup">Đang xuất bản sao lưu&#8230;</string>
     <string name="exporting_to_gallery">Đang lưu vào Thư viện&#8230;</string>
     <string name="crop">Cắt ảnh</string>
+    <string name="info_online_removebg_title">Xóa nền trực tuyến</string>
+    <string name="info_online_removebg_subtitle">Dùng API bên thứ ba thay vì xử lý trên thiết bị</string>
 </resources>
