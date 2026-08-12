@@ -84,4 +84,6 @@
     <string name="export_to_gallery_note">Экспортируйте все стикеры в приложение галереи</string>
     <string name="export_gallery_success">Экспортировано %d стикеров в Галерею</string>
     <string name="not_a_backup_file">Это не файл резервной копии</string>
+    <string name="info_online_rb_title">Удаление фона онлайн</string>
+    <string name="info_online_rb_subtitle">Использовать API BRIA RMBG вместо MediaPipe на устройстве</string>
 </resources>

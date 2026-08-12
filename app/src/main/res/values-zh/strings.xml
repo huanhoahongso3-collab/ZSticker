@@ -84,4 +84,6 @@
     <string name="export_to_gallery_note">将所有贴纸导出到您的图库应用</string>
     <string name="export_gallery_success">已导出 %d 个贴纸到图库</string>
     <string name="not_a_backup_file">不是备份文件</string>
+    <string name="info_online_rb_title">在线抠图</string>
+    <string name="info_online_rb_subtitle">使用 BRIA RMBG API,而非设备本地 MediaPipe</string>
 </resources>
