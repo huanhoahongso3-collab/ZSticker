@@ -16,7 +16,15 @@
 # MediaPipe rules (often need some keeps for native methods)
 -keep class com.google.mediapipe.** { *; }
 -keep interface com.google.mediapipe.** { *; }
+-keep class com.google.mediapipe.proto.** { *; }
 -keep class com.google.android.gms.tasks.** { *; }
+-keepclassmembers class * extends com.google.protobuf.GeneratedMessageLite { *; }
+
+# Flogger does its own caller-class stack walking internally; if R8 strips
+# or renames it, MediaPipe's Graph.<clinit> crashes with
+# "IllegalStateException: no caller found on the stack for: ..."
+# See https://github.com/google-ai-edge/mediapipe/issues/6138
+-keep class com.google.common.flogger.** { *; }
 
 # Fix R8 missing class errors
 -dontwarn com.google.mediapipe.proto.**
