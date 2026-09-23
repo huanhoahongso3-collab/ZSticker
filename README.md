@@ -1,50 +1,114 @@
-# 📦 ZSticker — Share custom sticker to Zalo
-(Currently is a fork of Zaticker)
+# 📦 ZSticker — Share Custom Stickers to Zalo
+*(Forked from Zaticker)*
 
-This repo is now archived. As I'm busy with my personal stuff, I can't maintain this repo anymore but at least it will continue working as the UI bugs are mostly fixed (the API I got from Zamoji is from 2018, which is still working as of March 2026)
-
-Background removal offers two options, switchable in Settings:
-- **Offline**: runs fully on-device using Google MediaPipe Tasks Vision (Apache 2.0, open source). Nothing leaves your phone.
-- **Online**: I do not own or linked with the removebg branch. I use the BRIA-RMBG-1.4 model at https://huggingface.co/spaces/briaai/BRIA-RMBG-1.4 because I don't have local server to host it. Also, the URL I use: bria14proxy.vercel.app is just a proxy to connect Android with HuggingFace API and I don't collect any data or care about who you are through it. If you're not sure, here's the endpoint source code: https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY (if you don't use remove background it should be fine)
-
-Support min SDK 29 (Android 10). Recommend using SDK 36 (Android 16).
-
-App support English, Vietnamese, Russian and Chinese Simplified.
-
-ZSticker is a vibe-driven coding project focused on how Zalo handles sticker share by Intent in Android.
-
-It is inspired by how Zamoji - a VNG app can send sticker to Zalo
-
-Released under **GPLv3** to keep it open.
+[ Tiếng Việt ](#-tiếng-việt) | [ English ](#-english)
 
 ---
 
-## Project Goals
+## 🇻🇳 Tiếng Việt
 
-- Allow users to test custom sticker packs with Zalo
-- Log successes and failures during sticker sending
+ℹ️ **Trạng thái dự án:** Các lỗi giao diện chính đã được khắc phục. Mặc dù tần suất cập nhật có thể chậm do lịch trình cá nhân, ứng dụng vẫn hoạt động ổn định và API lấy từ Zamoji (từ năm 2018) vẫn hoạt động bình thường tính đến tháng 3/2026.
 
 ---
-## How I found it:
-- I started using ADB and logcat to observe how Zamoji sends stickers to Zalo
-- Then, I also deep in Zamoji source code using reverse engineering to see how the intent is sent to Zalo to send stickers
 
-## Status Overview
+### 💡 Ý tưởng & Nguồn gốc
 
-> **STATUS:** Functional. Usable for normal uses, but bugs are still existed
+ZSticker là một dự án lập trình ngẫu hứng (vibe-coding), ra đời nhằm nghiên cứu cách Zalo xử lý việc chia sẻ sticker qua Android `Intent`.
 
-Working features include:
+Dự án lấy cảm hứng từ **Zamoji** — ứng dụng chính thức của VNG cho phép gửi sticker trực tiếp vào Zalo.
+* **Cách phát hiện:** Dùng ADB và `logcat` để theo dõi luồng dữ liệu khi Zamoji gửi sticker sang Zalo, kết hợp dịch ngược (reverse engineering) mã nguồn Zamoji để phân tích cơ chế truyền Intent.
 
-- Share intents (`ACTION_SEND` / `ACTION_SEND_MULTIPLE`) directly to Zalo
-- Export stickers when needed
-- Import single and multiple images both in the app and share intent
-- New Material Design 3 from Google (some 3e)
+---
 
-## License
-ZSticker Copyright (c) 2026
+### 🎯 Mục tiêu dự án
 
-Licensed under the GNU General Public License v3.0 (GPL-3.0)
+- Cho phép người dùng thử nghiệm các bộ sticker tự tạo trên Zalo.
+- Ghi lại log chi tiết (thành công / thất bại) trong quá trình truyền gửi sticker.
 
-Warning: GPL-3.0 only applies to the code of this project. All assets of this project (logo file, additional png and html) is copyright and must not be used for any reason without author's approval (vector xml is allowed).
+---
 
-This warning applys to all versions and all branches of this program from its very first day
+### ⚙️ Tính năng nổi bật & Trạng thái
+
+> **Trạng thái:** Dùng tốt cho nhu cầu cơ bản (vẫn còn một số lỗi nhỏ).
+
+* **Chia sẻ trực tiếp:** Hỗ trợ Android Share Intent (`ACTION_SEND` / `ACTION_SEND_MULTIPLE`) thẳng sang Zalo.
+* **Nhập / Xuất linh hoạt:** Import ảnh đơn lẻ hoặc hàng loạt (trực tiếp trong app hoặc qua menu chia sẻ hệ thống); xuất gói sticker khi cần.
+* **Tách nền ảnh (Background Removal):** Cung cấp 2 cơ chế (tùy chỉnh trong Cài đặt):
+  * **Offline:** Chạy hoàn toàn trên thiết bị thông qua *Google MediaPipe Tasks Vision* (Mã nguồn mở, Apache 2.0). Dữ liệu hoàn toàn không rời khỏi thiết bị.
+  * **Online:** Sử dụng mô hình *BRIA-RMBG-1.4* hosted trên HuggingFace Spaces. Endpoint proxy (`bria14proxy.vercel.app`) chỉ đóng vai trò trung gian kết nối giữa Android và HuggingFace API, hoàn toàn không lưu trữ dữ liệu hay thu thập thông tin cá nhân ([Xem mã nguồn proxy](https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY)).
+* **Giao diện:** Thiết kế theo chuẩn Google Material Design 3 (Material You).
+
+---
+
+### 🛠️ Yêu cầu hệ thống & Ngôn ngữ
+
+* **Android OS:** Hỗ trợ tối thiểu **Android 10 (SDK 29)**, khuyến nghị **Android 16 (SDK 36)**.
+* **Đa ngôn ngữ:** Tiếng Việt, Tiếng Anh, Tiếng Nga, Tiếng Trung giản thể.
+
+---
+
+### 📜 Giấy phép & Bản quyền (License)
+
+Dự án được phát hành theo giấy phép **GNU General Public License v3.0 (GPL-3.0)**.
+
+⚠️ **LƯU Ý QUAN TRỌNG VỀ BẢN QUYỀN ASSET:**
+* Giấy phép GPL-3.0 **chỉ áp dụng cho mã nguồn**.
+* Tất cả tài nguyên đồ họa (assets) thuộc dự án — bao gồm logo, tệp PNG bổ sung và tệp HTML — đều thuộc bản quyền tác giả. **Không được phép tái sử dụng dưới bất kỳ hình thức nào** khi chưa có sự đồng ý bằng văn bản từ tác giả (ngoại trừ các tệp vector XML).
+* Quy định này áp dụng cho mọi phiên bản và mọi nhánh (branch) của dự án từ ngày đầu tiên khởi tạo.
+
+---
+
+## 🇬🇧 English
+
+ℹ️ **Project Status:** Core UI bugs have been fixed. While active updates may be infrequent due to personal schedules, the app remains functional and the Zamoji API integration (from 2018) continues to work seamlessly as of March 2026.
+
+---
+
+### 💡 Background & Origin
+
+ZSticker is an exploratory, vibe-driven coding project focused on analyzing how Zalo handles sticker sharing via Android `Intent`s.
+
+It was inspired by **Zamoji** — an official VNG application that integrates sticker sharing directly into Zalo.
+* **Discovery process:** Monitored sticker sharing events using ADB and `logcat`, followed by reverse-engineering Zamoji's codebase to understand its Intent structure.
+
+---
+
+### 🎯 Project Goals
+
+- Allow users to test custom sticker packs directly with Zalo.
+- Log operational successes and failures during sticker dispatch.
+
+---
+
+### ⚙️ Features & Current Status
+
+> **Status:** Functional for general use (minor bugs may still exist).
+
+* **Direct Share:** Native support for Android Share Intents (`ACTION_SEND` / `ACTION_SEND_MULTIPLE`) targeting Zalo.
+* **Flexible Import/Export:** Import single or batch images via in-app picker or system share menu; export custom packs on demand.
+* **Background Removal:** Offers two configurable engines in Settings:
+  * **Offline:** Powered on-device by *Google MediaPipe Tasks Vision* (Apache 2.0 open-source). Zero data leaves your device.
+  * **Online:** Powered by the *BRIA-RMBG-1.4* model hosted on HuggingFace Spaces. The endpoint proxy (`bria14proxy.vercel.app`) acts strictly as a bridge between Android and the HuggingFace API — no personal data or images are logged or stored ([View proxy source code](https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY)).
+* **UI/UX:** Updated to Google Material Design 3 (Material You).
+
+---
+
+### 🛠️ System Requirements & Languages
+
+* **Android OS:** Minimum **Android 10 (SDK 29)**, recommended **Android 16 (SDK 36)**.
+* **Localization:** English, Vietnamese, Russian, and Simplified Chinese.
+
+---
+
+### 📜 License & Asset Copyright
+
+ZSticker is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.
+
+⚠️ **IMPORTANT NOTICE ON GRAPHICAL ASSETS:**
+* The GPL-3.0 license **applies strictly to the source code**.
+* All visual assets (including logos, extra PNGs, and HTML files) are copyrighted property. They **may not be reused or redistributed** for any purpose without explicit written approval from the author (Vector XML files are exempt).
+* This restriction applies retroactively to all past and future versions, tags, and branches of this project.
+
+---
+
+*ZSticker Copyright (c) 2026*
