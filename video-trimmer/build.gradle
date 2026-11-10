@@ -1,0 +1,45 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+
+android {
+    namespace 'com.gowtham.library'
+    compileSdk 36
+
+    defaultConfig {
+        minSdk 24
+        targetSdk 36
+        consumerProguardFiles 'consumer-rules.pro'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_25
+        targetCompatibility JavaVersion.VERSION_25
+    }
+
+    kotlinOptions {
+        jvmTarget = "25"
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.coordinatorlayout:coordinatorlayout:1.2.0'
+    implementation 'com.google.android.material:material:1.14.0-alpha01'
+
+    // Glide
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+
+    // ExoPlayer & Media3
+    implementation 'com.google.android.exoplayer:exoplayer:2.17.1'
+    implementation 'androidx.media3:media3-transformer:1.8.0'
+    implementation 'androidx.media3:media3-effect:1.8.0'
+    implementation 'androidx.media3:media3-common:1.8.0'
+
+    // Guava
+    implementation 'com.google.guava:guava:33.4.0-android'
+
+    // Localization & Gson
+    implementation 'com.akexorcist:localization:1.2.9'
+    implementation 'com.google.code.gson:gson:2.10.1'
+}
