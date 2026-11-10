@@ -3,7 +3,6 @@
 
     <application>
         <activity android:name=".ui.ActVideoTrimmer"
-            android:launchMode="singleTask"
             android:theme="@style/VideoTrimmerTheme"
             android:exported="false"/>
     </application>

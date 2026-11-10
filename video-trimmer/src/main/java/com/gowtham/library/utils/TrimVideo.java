@@ -15,7 +15,10 @@ import com.gowtham.library.ui.ActVideoTrimmer;
 public class TrimVideo {
 
     public static final String TRIM_VIDEO_OPTION = "trim_video_option",
-            TRIM_VIDEO_URI = "trim_video_uri",TRIMMED_VIDEO_PATH="trimmed_video_path", ENABLE_COMPRESSION= "is_compression_enabled";
+            TRIM_VIDEO_URI = "trim_video_uri",TRIMMED_VIDEO_PATH="trimmed_video_path",
+            ENABLE_COMPRESSION= "is_compression_enabled",
+            TRIM_START_MS = "trim_start_ms",
+            TRIM_END_MS = "trim_end_ms";
 
 
     public static ActivityBuilder activity(String uri) {
@@ -24,6 +27,14 @@ public class TrimVideo {
 
     public static String getTrimmedVideoPath(Intent intent){
         return intent.getStringExtra(TRIMMED_VIDEO_PATH);
+    }
+
+    public static long getTrimStartMs(Intent intent) {
+        return intent != null ? intent.getLongExtra(TRIM_START_MS, 0L) : 0L;
+    }
+
+    public static long getTrimEndMs(Intent intent) {
+        return intent != null ? intent.getLongExtra(TRIM_END_MS, 0L) : 0L;
     }
 
     public static final class ActivityBuilder {

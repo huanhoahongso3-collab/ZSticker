@@ -95,7 +95,8 @@ class AnimatedGifEncoder {
             writePixels()
             firstFrame = false
             return true
-        } catch (e: IOException) {
+        } catch (e: Exception) {
+            e.printStackTrace()
             return false
         }
     }
@@ -124,13 +125,20 @@ class AnimatedGifEncoder {
     }
 
     private fun getImagePixels() {
-        val w = image!!.width
-        val h = image!!.height
-        val tempBitmap = if (w != width || h != height) {
-            val scaled = Bitmap.createScaledBitmap(image!!, width, height, true)
-            scaled
+        val srcBitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O &&
+            image!!.config == Bitmap.Config.HARDWARE
+        ) {
+            image!!.copy(Bitmap.Config.ARGB_8888, false)
         } else {
             image!!
+        }
+
+        val w = srcBitmap.width
+        val h = srcBitmap.height
+        val tempBitmap = if (w != width || h != height) {
+            Bitmap.createScaledBitmap(srcBitmap, width, height, true)
+        } else {
+            srcBitmap
         }
 
         val argb = IntArray(width * height)
@@ -156,8 +164,11 @@ class AnimatedGifEncoder {
             transparent = Color.MAGENTA
         }
 
-        if (tempBitmap != image) {
+        if (tempBitmap != srcBitmap && tempBitmap != image) {
             tempBitmap.recycle()
+        }
+        if (srcBitmap != image) {
+            srcBitmap.recycle()
         }
     }
 
@@ -308,9 +319,10 @@ class AnimatedGifEncoder {
 
         init {
             for (i in 0..255) {
-                network[i][0] = ((i shl (3 + 8)) / 256).toDouble()
-                network[i][1] = ((i shl (3 + 8)) / 256).toDouble()
-                network[i][2] = ((i shl (3 + 8)) / 256).toDouble()
+                val v = ((i shl (4 + 8)) / 256).toDouble()
+                network[i][0] = v
+                network[i][1] = v
+                network[i][2] = v
                 freq[i] = (1 shl 16) / 256
                 bias[i] = 0
             }
@@ -319,15 +331,24 @@ class AnimatedGifEncoder {
         fun colorMap(): ByteArray {
             val map = ByteArray(3 * 256)
             val index = IntArray(256)
-            for (i in 0..255) index[network[i][3].toInt()] = i
+            for (i in 0..255) index[network[i][3].toInt().coerceIn(0, 255)] = i
             var k = 0
             for (i in 0..255) {
                 val j = index[i]
-                map[k++] = (network[j][0].toInt() shr 4).toByte()
-                map[k++] = (network[j][1].toInt() shr 4).toByte()
-                map[k++] = (network[j][2].toInt() shr 4).toByte()
+                map[k++] = network[j][0].toInt().coerceIn(0, 255).toByte()
+                map[k++] = network[j][1].toInt().coerceIn(0, 255).toByte()
+                map[k++] = network[j][2].toInt().coerceIn(0, 255).toByte()
             }
             return map
+        }
+
+        fun unbiasnet() {
+            for (i in 0..255) {
+                network[i][0] = (network[i][0].toInt() shr 4).coerceIn(0, 255).toDouble()
+                network[i][1] = (network[i][1].toInt() shr 4).coerceIn(0, 255).toDouble()
+                network[i][2] = (network[i][2].toInt() shr 4).coerceIn(0, 255).toDouble()
+                network[i][3] = i.toDouble()
+            }
         }
 
         fun inxbuild() {
@@ -336,12 +357,13 @@ class AnimatedGifEncoder {
             for (i in 0..255) {
                 val p = network[i]
                 var smallpos = i
-                var smallval = p[1].toInt()
+                var smallval = p[1].toInt().coerceIn(0, 255)
                 for (j in i + 1..255) {
                     val q = network[j]
-                    if (q[1].toInt() < smallval) {
+                    val qval = q[1].toInt().coerceIn(0, 255)
+                    if (qval < smallval) {
                         smallpos = j
-                        smallval = q[1].toInt()
+                        smallval = qval
                     }
                 }
                 val q = network[smallpos]
@@ -353,7 +375,9 @@ class AnimatedGifEncoder {
                 }
                 if (smallval != previouscol) {
                     netindex[previouscol] = (startpos + i) shr 1
-                    for (j in previouscol + 1 until smallval) netindex[j] = i
+                    for (j in previouscol + 1 until smallval) {
+                        if (j in 0..255) netindex[j] = i
+                    }
                     previouscol = smallval
                     startpos = i
                 }
@@ -466,7 +490,7 @@ class AnimatedGifEncoder {
 
         fun process(): ByteArray {
             learn()
-            for (i in 0..255) network[i][3] = i.toDouble()
+            unbiasnet()
             inxbuild()
             return colorMap()
         }
@@ -557,6 +581,13 @@ class AnimatedGifEncoder {
         private val codetab = IntArray(5003)
         private val accum = ByteArray(256)
         private var a_count = 0
+        private var g_init_bits = 0
+        private var n_bits = 0
+        private var maxcode = 0
+        private var clear_flg = false
+        private var clear_code = 0
+        private var eof_code = 0
+        private var free_ent = 0
 
         fun encode(os: OutputStream) {
             os.write(initCodeSize)
@@ -566,15 +597,19 @@ class AnimatedGifEncoder {
             os.write(0)
         }
 
-        private fun compress(init_bits: Int, outs: OutputStream) {
-            var n_bits = init_bits
-            var maxcode = (1 shl n_bits) - 1
-            val clear_flg = false
-            val clear_code = 1 shl (init_bits - 1)
-            val eof_code = clear_code + 1
-            var free_ent = clear_code + 2
+        private fun maxCode(nBits: Int): Int = (1 shl nBits) - 1
 
-            var a_count = 0
+        private fun compress(init_bits: Int, outs: OutputStream) {
+            g_init_bits = init_bits
+            clear_flg = false
+            n_bits = g_init_bits
+            maxcode = maxCode(n_bits)
+
+            clear_code = 1 shl (init_bits - 1)
+            eof_code = clear_code + 1
+            free_ent = clear_code + 2
+
+            a_count = 0
             var ent = nextPixel()
 
             var hshift = 0
@@ -588,7 +623,7 @@ class AnimatedGifEncoder {
             val hsize_reg = 5003
             for (i in 0 until hsize_reg) htab[i] = -1
 
-            output(clear_code, outs, n_bits)
+            output(clear_code, outs)
 
             outer_loop@ while (true) {
                 val c = nextPixel()
@@ -613,7 +648,7 @@ class AnimatedGifEncoder {
                     } while (htab[i] >= 0)
                 }
 
-                output(ent, outs, n_bits)
+                output(ent, outs)
                 ent = c
                 if (free_ent < 4096) {
                     codetab[i] = free_ent++
@@ -621,41 +656,69 @@ class AnimatedGifEncoder {
                 } else {
                     for (idx in 0 until hsize_reg) htab[idx] = -1
                     free_ent = clear_code + 2
-                    output(clear_code, outs, n_bits)
-                    n_bits = init_bits
-                    maxcode = (1 shl n_bits) - 1
-                }
-
-                if (free_ent > maxcode) {
-                    n_bits++
-                    maxcode = if (n_bits == 12) 4096 else (1 shl n_bits) - 1
+                    clear_flg = true
+                    output(clear_code, outs)
                 }
             }
 
-            output(ent, outs, n_bits)
-            output(eof_code, outs, n_bits)
+            output(ent, outs)
+            output(eof_code, outs)
         }
 
         private fun nextPixel(): Int {
             if (remaining == 0) return -1
             remaining--
-            val pix = pixAry[curPixel++].toInt() and 0xff
-            return pix
+            return pixAry[curPixel++].toInt() and 0xff
         }
 
-        private fun output(code: Int, outs: OutputStream, n_bits: Int) {
-            cur_accum = cur_accum or (code shl cur_bits)
+        private fun charOut(c: Byte, outs: OutputStream) {
+            accum[a_count++] = c
+            if (a_count >= 254) {
+                flushChar(outs)
+            }
+        }
+
+        private fun flushChar(outs: OutputStream) {
+            if (a_count > 0) {
+                outs.write(a_count)
+                outs.write(accum, 0, a_count)
+                a_count = 0
+            }
+        }
+
+        private fun output(code: Int, outs: OutputStream) {
+            cur_accum = cur_accum and masks[cur_bits]
+            if (cur_bits > 0) {
+                cur_accum = cur_accum or (code shl cur_bits)
+            } else {
+                cur_accum = code
+            }
             cur_bits += n_bits
 
             while (cur_bits >= 8) {
-                accum[a_count++] = (cur_accum and 0xff).toByte()
-                if (a_count >= 254) {
-                    outs.write(a_count)
-                    outs.write(accum, 0, a_count)
-                    a_count = 0
-                }
-                cur_accum = cur_accum shr 8
+                charOut((cur_accum and 0xff).toByte(), outs)
+                cur_accum = cur_accum ushr 8
                 cur_bits -= 8
+            }
+
+            if (free_ent > maxcode || clear_flg) {
+                if (clear_flg) {
+                    n_bits = g_init_bits
+                    maxcode = maxCode(n_bits)
+                    clear_flg = false
+                } else {
+                    n_bits++
+                    maxcode = if (n_bits == 12) 4096 else maxCode(n_bits)
+                }
+            }
+
+            if (code == eof_code) {
+                while (cur_bits > 0) {
+                    charOut((cur_accum and 0xff).toByte(), outs)
+                    cur_accum = cur_accum ushr 8
+                    cur_bits -= 8
+                }
+                flushChar(outs)
             }
         }
     }

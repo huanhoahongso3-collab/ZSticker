@@ -277,7 +277,9 @@ import java.util.concurrent.Executors;
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putString("selectedRes", selectedRes.getDisplayName());
+        if (selectedRes != null) {
+            outState.putString("selectedRes", selectedRes.getDisplayName());
+        }
     }
 
     private void setUpToolBar(ActionBar actionBar, String title) {
@@ -662,6 +664,19 @@ import java.util.concurrent.Executors;
 
     @UnstableApi private void trimVideo() {
         if (isValidVideo) {
+            if (!isCompressionEnabled) {
+                if (videoPlayer != null) {
+                    videoPlayer.setPlayWhenReady(false);
+                }
+                Intent intent = new Intent();
+                String sourcePath = fileUri != null && fileUri.getPath() != null ? fileUri.getPath() : String.valueOf(fileUri);
+                intent.putExtra(TrimVideo.TRIMMED_VIDEO_PATH, sourcePath);
+                intent.putExtra(TrimVideo.TRIM_START_MS, lastMinValue * 1000L);
+                intent.putExtra(TrimVideo.TRIM_END_MS, lastMaxValue * 1000L);
+                setResult(RESULT_OK, intent);
+                finish();
+                return;
+            }
             //not exceed given maxDuration if has given
             outputPath = getFileName();
             LogMessage.v("outputPath::" + outputPath + new File(outputPath).exists());

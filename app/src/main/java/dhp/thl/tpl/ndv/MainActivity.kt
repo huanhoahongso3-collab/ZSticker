@@ -583,7 +583,14 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                             break
                         } else {
                             val destFile = File(filesDir, "zsticker_${System.currentTimeMillis()}.gif")
-                            val success = VideoToGifConverter.convertVideoToGif(this, Uri.fromFile(tempVideoFile), destFile)
+                            val success = VideoToGifConverter.convertVideoToGif(
+                                this,
+                                Uri.fromFile(tempVideoFile),
+                                destFile,
+                                onProgress = { p ->
+                                    runOnUiThread { progressDialog.updateProgress((index + p) / uris.size) }
+                                }
+                            )
                             tempVideoFile.delete()
                             if (success) hasSuccess = true else hasFailed = true
                         }
@@ -648,13 +655,26 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         }
     }
 
-    private fun processVideoFile(videoUri: Uri, startMs: Long = 0L, isTempFile: Boolean = false) {
+    private fun processVideoFile(
+        videoUri: Uri,
+        startMs: Long = 0L,
+        maxDurationMs: Long = VideoToGifConverter.MAX_VIDEO_STICKER_DURATION_MS,
+        isTempFile: Boolean = false,
+        extraCleanupFile: File? = null
+    ) {
         val progressDialog = ProgressDialog.newInstance(getString(R.string.converting_video))
         progressDialog.show(supportFragmentManager, "convert_video")
 
         thread {
             val destFile = File(filesDir, "zsticker_${System.currentTimeMillis()}.gif")
-            val success = VideoToGifConverter.convertVideoToGif(this, videoUri, destFile, startMs = startMs, maxDurationMs = 3000L, fps = 10) { progress ->
+            val success = VideoToGifConverter.convertVideoToGif(
+                this,
+                videoUri,
+                destFile,
+                startMs = startMs,
+                maxDurationMs = maxDurationMs,
+                fps = 10
+            ) { progress ->
                 runOnUiThread { progressDialog.updateProgress(progress) }
             }
             if (isTempFile) {
@@ -663,6 +683,11 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
+            }
+            try {
+                extraCleanupFile?.delete()
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
             runOnUiThread {
                 progressDialog.dismiss()
@@ -1261,16 +1286,48 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         val inputTemp = currentTempVideoFile
         currentTempVideoFile = null
         if (result.resultCode == RESULT_OK && result.data != null) {
-            val trimmedPath = TrimVideo.getTrimmedVideoPath(result.data!!)
+            val data = result.data!!
+            val trimmedPath = TrimVideo.getTrimmedVideoPath(data)
+            val startMs = TrimVideo.getTrimStartMs(data).coerceAtLeast(0L)
+            val endMs = TrimVideo.getTrimEndMs(data)
+            val clipDurationMs = if (endMs > startMs) {
+                (endMs - startMs).coerceIn(100L, VideoToGifConverter.MAX_VIDEO_STICKER_DURATION_MS)
+            } else {
+                VideoToGifConverter.MAX_VIDEO_STICKER_DURATION_MS
+            }
+
             if (!trimmedPath.isNullOrEmpty()) {
                 val trimmedFile = File(trimmedPath)
-                val trimmedUri = if (trimmedFile.exists()) Uri.fromFile(trimmedFile) else (if (trimmedPath.startsWith("/")) Uri.fromFile(File(trimmedPath)) else Uri.parse(trimmedPath))
-                processVideoFile(trimmedUri, isTempFile = true)
+                val trimmedUri = if (trimmedFile.exists()) {
+                    Uri.fromFile(trimmedFile)
+                } else if (inputTemp != null && inputTemp.exists()) {
+                    Uri.fromFile(inputTemp)
+                } else if (trimmedPath.startsWith("/")) {
+                    Uri.fromFile(File(trimmedPath))
+                } else {
+                    Uri.parse(trimmedPath)
+                }
+                processVideoFile(
+                    videoUri = trimmedUri,
+                    startMs = startMs,
+                    maxDurationMs = clipDurationMs,
+                    isTempFile = true,
+                    extraCleanupFile = inputTemp
+                )
+            } else if (inputTemp != null && inputTemp.exists()) {
+                processVideoFile(
+                    videoUri = Uri.fromFile(inputTemp),
+                    startMs = startMs,
+                    maxDurationMs = clipDurationMs,
+                    isTempFile = true
+                )
             } else {
+                inputTemp?.delete()
                 ToastUtils.showToast(this, getString(R.string.failed))
             }
+        } else {
+            inputTemp?.delete()
         }
-        inputTemp?.delete()
     }
 
 

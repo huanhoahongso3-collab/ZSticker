@@ -91,38 +91,24 @@ object VideoToGifConverter {
             encoder.setSize(targetW, targetH)
             encoder.setDelay(frameIntervalMs.toInt())
 
+            var framesAdded = 0
             FileOutputStream(outputFile).use { fos ->
                 encoder.start(fos)
 
                 var frameIndex = 0
-                var framesAdded = 0
                 var timeUs = startMs * 1000L
                 val endUs = (startMs + actualDurationMs) * 1000L
 
                 while (timeUs <= endUs && frameIndex < totalFrames) {
-                    val rawFrame = retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
-                        ?: retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST)
+                    val rawFrame = retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST)
+                        ?: retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                        ?: retriever.getFrameAtTime(timeUs)
 
                     if (rawFrame != null) {
-                        val orientedFrame = if (rotation != 0) {
-                            val matrix = Matrix().apply { postRotate(rotation.toFloat()) }
-                            val rotated = Bitmap.createBitmap(rawFrame, 0, 0, rawFrame.width, rawFrame.height, matrix, true)
-                            if (rotated != rawFrame) rawFrame.recycle()
-                            rotated
-                        } else {
-                            rawFrame
+                        val scaledFrame = orientAndScaleFrame(rawFrame, rawW, rawH, rotation, targetW, targetH)
+                        if (encoder.addFrame(scaledFrame)) {
+                            framesAdded++
                         }
-
-                        val scaledFrame = if (orientedFrame.width != targetW || orientedFrame.height != targetH) {
-                            val scaled = Bitmap.createScaledBitmap(orientedFrame, targetW, targetH, true)
-                            if (scaled != orientedFrame) orientedFrame.recycle()
-                            scaled
-                        } else {
-                            orientedFrame
-                        }
-
-                        encoder.addFrame(scaledFrame)
-                        framesAdded++
                         scaledFrame.recycle()
                     }
 
@@ -133,26 +119,22 @@ object VideoToGifConverter {
 
                 if (framesAdded == 0) {
                     val fallback = retriever.getFrameAtTime(startMs * 1000L, MediaMetadataRetriever.OPTION_CLOSEST)
+                        ?: retriever.getFrameAtTime(startMs * 1000L, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
                         ?: retriever.getFrameAtTime(0L, MediaMetadataRetriever.OPTION_CLOSEST)
+                        ?: retriever.getFrameAtTime()
                     if (fallback != null) {
-                        val oriented = if (rotation != 0) {
-                            val matrix = Matrix().apply { postRotate(rotation.toFloat()) }
-                            val rotated = Bitmap.createBitmap(fallback, 0, 0, fallback.width, fallback.height, matrix, true)
-                            if (rotated != fallback) fallback.recycle()
-                            rotated
-                        } else fallback
-                        val scaled = Bitmap.createScaledBitmap(oriented, targetW, targetH, true)
-                        if (scaled != oriented) oriented.recycle()
-                        encoder.addFrame(scaled)
+                        val scaled = orientAndScaleFrame(fallback, rawW, rawH, rotation, targetW, targetH)
+                        if (encoder.addFrame(scaled)) {
+                            framesAdded++
+                        }
                         scaled.recycle()
-                        framesAdded++
                     }
                 }
 
                 encoder.finish()
             }
 
-            if (outputFile.exists() && outputFile.length() > 0) {
+            if (framesAdded > 0 && outputFile.exists() && outputFile.length() > 0) {
                 true
             } else {
                 outputFile.delete()
@@ -160,11 +142,45 @@ object VideoToGifConverter {
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            try {
+                if (outputFile.exists()) outputFile.delete()
+            } catch (_: Exception) {}
             false
         } finally {
             try {
                 retriever.release()
             } catch (e: Exception) {}
+        }
+    }
+
+    private fun orientAndScaleFrame(
+        rawFrame: Bitmap,
+        rawW: Int,
+        rawH: Int,
+        rotation: Int,
+        targetW: Int,
+        targetH: Int
+    ): Bitmap {
+        val isRotated90or270 = rotation == 90 || rotation == 270
+        val alreadyRotated = isRotated90or270 && rawW != rawH &&
+            rawFrame.width == rawH && rawFrame.height == rawW
+        val needsRotation = rotation != 0 && !alreadyRotated
+
+        val orientedFrame = if (needsRotation) {
+            val matrix = Matrix().apply { postRotate(rotation.toFloat()) }
+            val rotated = Bitmap.createBitmap(rawFrame, 0, 0, rawFrame.width, rawFrame.height, matrix, true)
+            if (rotated != rawFrame) rawFrame.recycle()
+            rotated
+        } else {
+            rawFrame
+        }
+
+        return if (orientedFrame.width != targetW || orientedFrame.height != targetH) {
+            val scaled = Bitmap.createScaledBitmap(orientedFrame, targetW, targetH, true)
+            if (scaled != orientedFrame) orientedFrame.recycle()
+            scaled
+        } else {
+            orientedFrame
         }
     }
 
