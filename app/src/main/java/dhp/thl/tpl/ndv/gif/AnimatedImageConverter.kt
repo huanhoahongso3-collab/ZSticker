@@ -4,9 +4,9 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import com.bumptech.glide.gifdecoder.GifDecoder
 import com.bumptech.glide.gifdecoder.GifHeaderParser
 import com.bumptech.glide.gifdecoder.StandardGifDecoder
-import com.bumptech.glide.load.resource.gif.GifBitmapProvider
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -104,6 +104,17 @@ object AnimatedImageConverter {
         }
     }
 
+    private val simpleBitmapProvider = object : GifDecoder.BitmapProvider {
+        override fun obtain(width: Int, height: Int, config: Bitmap.Config): Bitmap {
+            return Bitmap.createBitmap(width, height, config)
+        }
+        override fun release(bitmap: Bitmap) {}
+        override fun obtainByteArray(size: Int): ByteArray = ByteArray(size)
+        override fun release(bytes: ByteArray) {}
+        override fun obtainIntArray(size: Int): IntArray = IntArray(size)
+        override fun release(array: IntArray) {}
+    }
+
     /**
      * Re-encodes/resizes an animated GIF using Glide's StandardGifDecoder.
      */
@@ -113,7 +124,7 @@ object AnimatedImageConverter {
         val header = parser.parseHeader()
         if (header.numFrames <= 0) return false
 
-        val decoder = StandardGifDecoder(GifBitmapProvider(), header, ByteBuffer.wrap(gifBytes))
+        val decoder = StandardGifDecoder(simpleBitmapProvider, header, ByteBuffer.wrap(gifBytes))
         decoder.advance()
 
         val frameCount = decoder.frameCount
