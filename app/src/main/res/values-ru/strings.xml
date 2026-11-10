@@ -93,4 +93,6 @@
     <string name="info_online_removebg_subtitle">Использовать стороннее API вместо обработки на устройстве</string>
     <string name="converting_video">Конвертация видео в стикер&#8230;</string>
     <string name="converting_animated_sticker">Конвертация анимированного стикера&#8230;</string>
+    <string name="trim_video_hint">Выберите 3-секундный отрезок для конвертации в стикер:</string>
+    <string name="trim_video_title">Обрезка видео</string>
 </resources>

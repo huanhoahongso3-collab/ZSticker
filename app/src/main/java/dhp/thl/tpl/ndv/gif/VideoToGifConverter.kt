@@ -41,6 +41,7 @@ object VideoToGifConverter {
         context: Context,
         uri: Uri,
         outputFile: File,
+        startMs: Long = 0L,
         maxDurationMs: Long = MAX_VIDEO_STICKER_DURATION_MS,
         fps: Int = 10,
         onProgress: ((Float) -> Unit)? = null
@@ -50,8 +51,8 @@ object VideoToGifConverter {
             retriever.setDataSource(context, uri)
 
             val durationMs = (retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L)
-                .coerceAtLeast(100L)
-            val actualDurationMs = durationMs.coerceAtMost(maxDurationMs)
+            val availableMs = (durationMs - startMs).coerceAtLeast(100L)
+            val actualDurationMs = availableMs.coerceAtMost(maxDurationMs)
 
             val rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
             val rawW = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 512
@@ -76,8 +77,8 @@ object VideoToGifConverter {
                 encoder.start(fos)
 
                 var frameIndex = 0
-                var timeUs = 0L
-                val endUs = actualDurationMs * 1000L
+                var timeUs = startMs * 1000L
+                val endUs = (startMs + actualDurationMs) * 1000L
 
                 while (timeUs <= endUs && frameIndex < totalFrames) {
                     val rawFrame = retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)

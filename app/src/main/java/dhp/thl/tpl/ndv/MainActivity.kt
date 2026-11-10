@@ -42,8 +42,6 @@ import com.kieronquinn.monetcompat.extensions.views.applyMonet
 import com.kieronquinn.monetcompat.extensions.views.enableStretchOverscroll
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.bumptech.glide.Glide
-import com.gowtham.library.utils.TrimVideo
-import com.gowtham.library.utils.TrimType
 import dhp.thl.tpl.ndv.gif.AnimatedImageConverter
 import dhp.thl.tpl.ndv.gif.VideoToGifConverter
 import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
@@ -87,15 +85,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private val startFileActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK && result.data?.getBooleanExtra("did_import", false) == true) {
             recreate()
-        }
-    }
-
-    private val trimVideoLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == RESULT_OK && result.data != null) {
-            val trimmedPath = TrimVideo.getTrimmedVideoPath(result.data)
-            if (!trimmedPath.isNullOrEmpty()) {
-                processVideoFile(Uri.fromFile(File(trimmedPath)))
-            }
         }
     }
 
@@ -522,7 +511,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             var hasSuccess = false
             var hasUnsupported = false
             var hasFailed = false
-            var needTrimmerUri: Uri? = null
+            var needTrimmer: Pair<Uri, Long>? = null
 
             for ((index, uri) in uris.withIndex()) {
                 val mimeType = contentResolver.getType(uri) ?: ""
@@ -531,7 +520,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 if (isVideo) {
                     val durationMs = VideoToGifConverter.getVideoDurationMs(this, uri)
                     if (durationMs > VideoToGifConverter.MAX_VIDEO_STICKER_DURATION_MS) {
-                        needTrimmerUri = uri
+                        needTrimmer = uri to durationMs
                         break
                     } else {
                         val destFile = File(filesDir, "zsticker_${System.currentTimeMillis()}.gif")
@@ -572,23 +561,48 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 if (hasUnsupported) ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
                 else if (hasFailed) ToastUtils.showToast(this, getString(R.string.failed))
 
-                needTrimmerUri?.let { videoUri ->
-                    TrimVideo.activity(videoUri.toString())
-                        .setTrimType(TrimType.FIXED_DURATION)
-                        .setFixedDuration(3)
-                        .start(this, trimVideoLauncher)
+                needTrimmer?.let { (videoUri, dur) ->
+                    showVideoTrimDialog(videoUri, dur)
                 }
             }
         }
     }
 
-    private fun processVideoFile(videoUri: Uri) {
+    private fun showVideoTrimDialog(videoUri: Uri, durationMs: Long) {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_video_trim, null)
+        val txtRange = dialogView.findViewById<TextView>(R.id.txtTrimRange)
+        val slider = dialogView.findViewById<com.google.android.material.slider.Slider>(R.id.sliderTrim)
+
+        val maxStartSec = ((durationMs - 3000L).toFloat() / 1000f).coerceAtLeast(0.1f)
+        slider.valueFrom = 0.0f
+        slider.valueTo = maxStartSec
+        slider.stepSize = 0.1f
+        slider.value = 0.0f
+
+        slider.addOnChangeListener { _, value, _ ->
+            val endVal = (value + 3.0f).coerceAtMost(durationMs.toFloat() / 1000f)
+            txtRange.text = String.format(Locale.US, "%.1fs – %.1fs", value, endVal)
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(boldTitle(getString(R.string.trim_video_title)))
+            .setView(dialogView)
+            .setPositiveButton(getString(R.string.ok)) { _, _ ->
+                val startMs = (slider.value * 1000L).toLong()
+                processVideoFile(videoUri, startMs)
+            }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .create()
+            .showMonetDialog(this)
+    }
+
+    private fun processVideoFile(videoUri: Uri, startMs: Long = 0L) {
         val progressDialog = ProgressDialog.newInstance(getString(R.string.converting_video))
         progressDialog.show(supportFragmentManager, "convert_video")
 
         thread {
             val destFile = File(filesDir, "zsticker_${System.currentTimeMillis()}.gif")
-            val success = VideoToGifConverter.convertVideoToGif(this, videoUri, destFile, maxDurationMs = 3000L, fps = 10) { progress ->
+            val success = VideoToGifConverter.convertVideoToGif(this, videoUri, destFile, startMs = startMs, maxDurationMs = 3000L, fps = 10) { progress ->
                 runOnUiThread { progressDialog.updateProgress(progress) }
             }
             runOnUiThread {
@@ -610,10 +624,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             if (isVideo) {
                 val durationMs = VideoToGifConverter.getVideoDurationMs(this, src)
                 if (durationMs > VideoToGifConverter.MAX_VIDEO_STICKER_DURATION_MS) {
-                    TrimVideo.activity(src.toString())
-                        .setTrimType(TrimType.FIXED_DURATION)
-                        .setFixedDuration(3)
-                        .start(this, trimVideoLauncher)
+                    runOnUiThread { showVideoTrimDialog(src, durationMs) }
                     return 0
                 } else {
                     val destFile = File(filesDir, "zsticker_${System.currentTimeMillis()}.gif")

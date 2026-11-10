@@ -93,4 +93,6 @@
     <string name="info_online_removebg_subtitle">使用第三方 API,而非设备本地处理</string>
     <string name="converting_video">正在将视频转换为表情&#8230;</string>
     <string name="converting_animated_sticker">正在转换动态表情&#8230;</string>
+    <string name="trim_video_hint">选择 3 秒片段转换为动态表情:</string>
+    <string name="trim_video_title">裁剪视频</string>
 </resources>

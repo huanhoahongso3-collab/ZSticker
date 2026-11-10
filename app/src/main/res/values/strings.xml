@@ -93,4 +93,6 @@
     <string name="crop">Crop</string>
     <string name="converting_video">Converting video to sticker&#8230;</string>
     <string name="converting_animated_sticker">Converting animated sticker&#8230;</string>
+    <string name="trim_video_hint">Select a 3-second segment to convert into an animated sticker:</string>
+    <string name="trim_video_title">Trim Video</string>
 </resources>
