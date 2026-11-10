@@ -113,7 +113,7 @@ import java.util.concurrent.Executors;
 
     private Uri fileUri;
 
-    private TextView txtStartDuration, txtEndDuration;
+    private TextView txtStartDuration, txtCurrentDuration, txtEndDuration;
 
     private CrystalRangeSeekbar seekbar;
 
@@ -145,8 +145,15 @@ import java.util.concurrent.Executors;
                 if (videoPlayer == null || !videoPlayer.getPlayWhenReady())
                     return;
                 float currentSec = videoPlayer.getCurrentPosition() / 1000f;
+                long clampedSec = Math.max(lastMinValue, Math.min(lastMaxValue, (long) currentSec));
+                if (txtCurrentDuration != null) {
+                    txtCurrentDuration.setText(TrimmerUtils.formatSeconds(clampedSec));
+                }
                 if (currentSec > lastMaxValue) {
                     seekTo(lastMinValue);
+                    if (txtCurrentDuration != null) {
+                        txtCurrentDuration.setText(TrimmerUtils.formatSeconds(lastMinValue));
+                    }
                     if (!hidePlayerSeek)
                         seekbarController.setMinStartValue((float) lastMinValue).apply();
                 } else if (currentSec >= lastMinValue) {
@@ -154,6 +161,9 @@ import java.util.concurrent.Executors;
                         seekbarController.setMinStartValue(currentSec).apply();
                 } else {
                     seekTo(lastMinValue);
+                    if (txtCurrentDuration != null) {
+                        txtCurrentDuration.setText(TrimmerUtils.formatSeconds(lastMinValue));
+                    }
                     if (!hidePlayerSeek)
                         seekbarController.setMinStartValue((float) lastMinValue).apply();
                 }
@@ -225,7 +235,25 @@ import java.util.concurrent.Executors;
 
     @Override
     protected void attachBaseContext(@NotNull Context base) {
-        super.attachBaseContext(LocaleHelper.onAttach(base, "en"));
+        String lang = resolveAppLanguage(base);
+        super.attachBaseContext(LocaleHelper.onAttach(base, lang));
+    }
+
+    private static String resolveAppLanguage(Context base) {
+        try {
+            String langCode = base.getSharedPreferences("settings", Context.MODE_PRIVATE).getString("lang", "system");
+            if (langCode != null && !"system".equals(langCode)) {
+                return langCode;
+            }
+            Locale sysLocale = base.getResources().getConfiguration().getLocales().get(0);
+            String sysLang = sysLocale != null ? sysLocale.getLanguage() : "en";
+            for (String supported : new String[]{"en", "vi", "ru", "zh"}) {
+                if (sysLang.startsWith(supported)) {
+                    return supported;
+                }
+            }
+        } catch (Exception ignored) {}
+        return "en";
     }
 
     @Override
@@ -235,6 +263,7 @@ import java.util.concurrent.Executors;
         imagePlayPause = findViewById(R.id.image_play_pause);
         seekbar = findViewById(R.id.range_seek_bar);
         txtStartDuration = findViewById(R.id.txt_start_duration);
+        txtCurrentDuration = findViewById(R.id.txt_current_duration);
         txtEndDuration = findViewById(R.id.txt_end_duration);
         seekbarController = findViewById(R.id.seekbar_controller);
         progressBar = findViewById(R.id.progress_circular);
@@ -329,6 +358,7 @@ import java.util.concurrent.Executors;
                     loadThumbnails();
                     setUpSeekBar();
                     setUpResChanger();
+                    Toast.makeText(ActVideoTrimmer.this, getString(R.string.txt_select_part_toast), Toast.LENGTH_LONG).show();
                 });
             };
             Executors.newSingleThreadExecutor().execute(fileUriRunnable);
@@ -400,7 +430,8 @@ import java.util.concurrent.Executors;
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
         }
-        setLanguage(new Locale(local != null ? local : "en"));
+        String resolvedLang = local != null && !local.isEmpty() ? local : resolveAppLanguage(this);
+        setLanguage(new Locale(resolvedLang));
     }
 
     private void onVideoClicked() {
@@ -496,30 +527,41 @@ import java.util.concurrent.Executors;
     private void setUpSeekBar() {
         seekbar.setVisibility(View.VISIBLE);
         txtStartDuration.setVisibility(View.VISIBLE);
+        if (txtCurrentDuration != null) {
+            txtCurrentDuration.setVisibility(View.VISIBLE);
+        }
         txtEndDuration.setVisibility(View.VISIBLE);
 
+        totalDuration = Math.max(1L, totalDuration);
+        long minClipSec = Math.min(1L, totalDuration);
+        long maxClipSec = Math.min(totalDuration, fixedGap > 0 ? fixedGap : 5L);
+
         seekbarController.setMaxValue(totalDuration).apply();
-        seekbar.setMaxValue(totalDuration).apply();
-        seekbar.setMaxStartValue((float) totalDuration).apply();
+        seekbar.setMinValue(0f).setMaxValue(totalDuration).apply();
         if (trimType == 1) {
-            seekbar.setFixGap(fixedGap).apply();
-            lastMaxValue = Math.min(totalDuration, fixedGap);
-            seekbar.setMaxStartValue((float) lastMaxValue).apply();
+            seekbar.setGap(minClipSec).setFixGap(maxClipSec).apply();
+            lastMaxValue = maxClipSec;
         } else if (trimType == 2) {
-            seekbar.setMaxStartValue((float) minGap);
             seekbar.setGap(minGap).apply();
             lastMaxValue = totalDuration;
         } else if (trimType == 3) {
-            seekbar.setMaxStartValue((float) maxToGap);
-            seekbar.setGap(minFromGap).apply();
-            lastMaxValue = maxToGap;
+            seekbar.setGap(minFromGap).setFixGap(maxToGap).apply();
+            lastMaxValue = Math.min(totalDuration, maxToGap);
         } else {
-            seekbar.setGap(2).apply();
-            lastMaxValue = totalDuration;
+            seekbar.setGap(minClipSec).setFixGap(maxClipSec).apply();
+            lastMaxValue = maxClipSec;
         }
         lastMinValue = 0;
+        seekbar.setRangeValues((float) lastMinValue, (float) lastMaxValue);
+
         txtStartDuration.setText(TrimmerUtils.formatSeconds(lastMinValue));
+        if (txtCurrentDuration != null) {
+            txtCurrentDuration.setText(TrimmerUtils.formatSeconds(lastMinValue));
+        }
         txtEndDuration.setText(TrimmerUtils.formatSeconds(lastMaxValue));
+
+        txtStartDuration.setOnClickListener(v -> showManualTimeDialog(true));
+        txtEndDuration.setOnClickListener(v -> showManualTimeDialog(false));
 
         if (hidePlayerSeek)
             seekbarController.setVisibility(View.GONE);
@@ -534,10 +576,10 @@ import java.util.concurrent.Executors;
         });
 
         seekbar.setOnRangeSeekbarChangeListener((minValue, maxValue) -> {
-            long minVal = (long) minValue;
-            long maxVal = (long) maxValue;
+            long minVal = ((Number) minValue).longValue();
+            long maxVal = ((Number) maxValue).longValue();
             if (lastMinValue != minVal) {
-                seekTo((long) minValue);
+                seekTo(minVal);
                 if (!hidePlayerSeek)
                     seekbarController.setVisibility(View.INVISIBLE);
             }
@@ -545,24 +587,142 @@ import java.util.concurrent.Executors;
             lastMaxValue = maxVal;
             txtStartDuration.setText(TrimmerUtils.formatSeconds(minVal));
             txtEndDuration.setText(TrimmerUtils.formatSeconds(maxVal));
+            if (txtCurrentDuration != null) {
+                long curSec = videoPlayer != null ? Math.max(minVal, Math.min(maxVal, videoPlayer.getCurrentPosition() / 1000L)) : minVal;
+                txtCurrentDuration.setText(TrimmerUtils.formatSeconds(curSec));
+            }
             if (trimType == 3)
                 setDoneColor(minVal, maxVal);
         });
 
         seekbarController.setOnSeekbarFinalValueListener(value -> {
-            long value1 = (long) value;
+            long value1 = ((Number) value).longValue();
             if (value1 < lastMaxValue && value1 > lastMinValue) {
                 seekTo(value1);
+                if (txtCurrentDuration != null) {
+                    txtCurrentDuration.setText(TrimmerUtils.formatSeconds(value1));
+                }
                 return;
             }
-            if (value1 > lastMaxValue)
+            if (value1 > lastMaxValue) {
                 seekbarController.setMinStartValue((int) lastMaxValue).apply();
-            else if (value1 < lastMinValue) {
+                if (txtCurrentDuration != null) {
+                    txtCurrentDuration.setText(TrimmerUtils.formatSeconds(lastMaxValue));
+                }
+            } else if (value1 < lastMinValue) {
                 seekbarController.setMinStartValue((int) lastMinValue).apply();
+                if (txtCurrentDuration != null) {
+                    txtCurrentDuration.setText(TrimmerUtils.formatSeconds(lastMinValue));
+                }
                 if (videoPlayer.getPlayWhenReady())
                     seekTo(lastMinValue);
             }
         });
+    }
+
+    private void showManualTimeDialog(boolean isStart) {
+        try {
+            if (videoPlayer != null) {
+                videoPlayer.setPlayWhenReady(false);
+            }
+            final android.widget.EditText input = new android.widget.EditText(this);
+            input.setSingleLine(true);
+            input.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
+            long currentVal = isStart ? lastMinValue : lastMaxValue;
+            input.setText(TrimmerUtils.formatSeconds(currentVal));
+            input.setHint(getString(R.string.txt_time_input_hint));
+            input.setSelection(input.getText().length());
+
+            android.widget.FrameLayout container = new android.widget.FrameLayout(this);
+            android.widget.FrameLayout.LayoutParams params = new android.widget.FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+            int margin = ViewUtil.dpToPx(20);
+            params.leftMargin = margin;
+            params.rightMargin = margin;
+            params.topMargin = ViewUtil.dpToPx(8);
+            input.setLayoutParams(params);
+            container.addView(input);
+
+            String title = getString(isStart ? R.string.txt_start_time : R.string.txt_end_time)
+                    + " (00:00 - " + TrimmerUtils.formatSeconds(totalDuration) + ")";
+
+            new AlertDialog.Builder(this)
+                    .setTitle(title)
+                    .setMessage(getString(R.string.txt_time_input_hint))
+                    .setView(container)
+                    .setPositiveButton(getString(R.string.txt_ok), (d, which) -> {
+                        long parsed = parseTimeInputToSeconds(input.getText().toString(), currentVal);
+                        applyManualTimeSelection(isStart, parsed);
+                    })
+                    .setNegativeButton(getString(R.string.txt_cancel), null)
+                    .show();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private long parseTimeInputToSeconds(String rawInput, long fallback) {
+        if (rawInput == null) return fallback;
+        String text = rawInput.trim().replace("s", "").replace("S", "").trim();
+        if (text.isEmpty()) return fallback;
+        try {
+            if (text.contains(":")) {
+                String[] parts = text.split(":");
+                long total = 0L;
+                for (String part : parts) {
+                    String clean = part.trim();
+                    long val = clean.isEmpty() ? 0L : Long.parseLong(clean);
+                    total = total * 60L + val;
+                }
+                return Math.max(0L, total);
+            } else {
+                return Math.max(0L, Math.round(Double.parseDouble(text)));
+            }
+        } catch (Exception e) {
+            return fallback;
+        }
+    }
+
+    private void applyManualTimeSelection(boolean isStart, long targetSec) {
+        long minClipSec = Math.min(1L, totalDuration);
+        long maxClipSec = Math.min(totalDuration, fixedGap > 0 ? fixedGap : 5L);
+
+        if (isStart) {
+            long newStart = Math.max(0L, Math.min(targetSec, Math.max(0L, totalDuration - minClipSec)));
+            long newEnd = lastMaxValue;
+            if (newEnd < newStart + minClipSec) {
+                newEnd = Math.min(totalDuration, newStart + minClipSec);
+            }
+            if (newEnd - newStart > maxClipSec) {
+                newEnd = Math.min(totalDuration, newStart + maxClipSec);
+            }
+            lastMinValue = newStart;
+            lastMaxValue = newEnd;
+        } else {
+            long newEnd = Math.max(minClipSec, Math.min(targetSec, totalDuration));
+            long newStart = lastMinValue;
+            if (newEnd < newStart + minClipSec) {
+                newStart = Math.max(0L, newEnd - minClipSec);
+            }
+            if (newEnd - newStart > maxClipSec) {
+                newStart = Math.max(0L, newEnd - maxClipSec);
+            }
+            lastMinValue = newStart;
+            lastMaxValue = newEnd;
+        }
+
+        seekbar.setRangeValues((float) lastMinValue, (float) lastMaxValue);
+        txtStartDuration.setText(TrimmerUtils.formatSeconds(lastMinValue));
+        txtEndDuration.setText(TrimmerUtils.formatSeconds(lastMaxValue));
+        if (txtCurrentDuration != null) {
+            txtCurrentDuration.setText(TrimmerUtils.formatSeconds(lastMinValue));
+        }
+        if (!hidePlayerSeek && seekbarController != null) {
+            seekbarController.setMinStartValue((float) lastMinValue).apply();
+        }
+        seekTo(lastMinValue);
     }
 
     /**
@@ -668,11 +828,17 @@ import java.util.concurrent.Executors;
                 if (videoPlayer != null) {
                     videoPlayer.setPlayWhenReady(false);
                 }
+                long maxAllowedMs = (fixedGap > 0 ? fixedGap : 5L) * 1000L;
+                long startMs = Math.max(0L, lastMinValue * 1000L);
+                long endMs = Math.max(startMs + 1000L, lastMaxValue * 1000L);
+                if (endMs - startMs > maxAllowedMs) {
+                    endMs = startMs + maxAllowedMs;
+                }
                 Intent intent = new Intent();
                 String sourcePath = fileUri != null && fileUri.getPath() != null ? fileUri.getPath() : String.valueOf(fileUri);
                 intent.putExtra(TrimVideo.TRIMMED_VIDEO_PATH, sourcePath);
-                intent.putExtra(TrimVideo.TRIM_START_MS, lastMinValue * 1000L);
-                intent.putExtra(TrimVideo.TRIM_END_MS, lastMaxValue * 1000L);
+                intent.putExtra(TrimVideo.TRIM_START_MS, startMs);
+                intent.putExtra(TrimVideo.TRIM_END_MS, endMs);
                 setResult(RESULT_OK, intent);
                 finish();
                 return;

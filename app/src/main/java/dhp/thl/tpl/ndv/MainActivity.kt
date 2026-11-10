@@ -153,8 +153,9 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         binding.bottomNavigation.selectedItemId = startTab
         updateLayoutVisibility(startTab)
 
-        if (savedInstanceState == null) {
-            handleIncomingShare(intent)
+        savedInstanceState?.getString("current_temp_video_path")?.let { path ->
+            val f = File(path)
+            if (f.exists()) currentTempVideoFile = f
         }
         handleEdgeToEdge()
         updateStatusBar()
@@ -282,10 +283,35 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         windowInsetsController.isAppearanceLightNavigationBars = isLightMode
     }
 
+    override fun onResume() {
+        super.onResume()
+        checkPendingShareIntent()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        currentTempVideoFile?.absolutePath?.let {
+            outState.putString("current_temp_video_path", it)
+        }
+    }
+
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
-        handleIncomingShare(intent)
+        if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+            checkPendingShareIntent()
+        }
+    }
+
+    private fun checkPendingShareIntent() {
+        val currentIntent = intent ?: return
+        if (isFinishing || isDestroyed) return
+        if (currentIntent.getBooleanExtra("zsticker_share_handled", false)) return
+        val action = currentIntent.action
+        if (action == Intent.ACTION_SEND || action == Intent.ACTION_SEND_MULTIPLE || action == Intent.ACTION_VIEW) {
+            currentIntent.putExtra("zsticker_share_handled", true)
+            handleIncomingShare(currentIntent)
+        }
     }
 
     override fun onDestroy() {
@@ -504,28 +530,58 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         adapterRecents.refreshData(this)
     }
 
-    private fun isVideoUri(uri: Uri): Boolean {
+    private fun isVideoUri(uri: Uri, hintMimeType: String? = null): Boolean {
         val mimeType = try { contentResolver.getType(uri) ?: "" } catch (e: Exception) { "" }
-        if (mimeType.startsWith("video/")) return true
-        val uriStr = uri.toString().lowercase()
+        if (mimeType.startsWith("video/", ignoreCase = true)) return true
+        if (hintMimeType != null && hintMimeType.startsWith("video/", ignoreCase = true)) return true
+        val uriStr = Uri.decode(uri.toString()).lowercase()
         val path = (uri.path ?: uriStr).lowercase()
         if (path.endsWith(".mp4") || path.endsWith(".webm") || path.endsWith(".mkv") ||
-            path.endsWith(".3gp") || path.endsWith(".mov") || path.endsWith(".avi") || path.endsWith(".m4v")) return true
+            path.endsWith(".3gp") || path.endsWith(".mov") || path.endsWith(".avi") || path.endsWith(".m4v") ||
+            uriStr.contains("/video/") || uriStr.contains("video:")) return true
+
+        // Check container magic bytes (MP4/MOV/3GP ftyp, WebM/MKV EBML, AVI RIFF)
+        try {
+            openUriInputStream(uri)?.use { stream ->
+                val header = ByteArray(16)
+                val read = stream.read(header)
+                if (read >= 12) {
+                    val boxType = String(header, 4, 4, Charsets.ISO_8859_1)
+                    if (boxType == "ftyp" || boxType == "moov" || boxType == "wide" || boxType == "mdat") {
+                        return true
+                    }
+                    if (header[0] == 0x1A.toByte() && header[1] == 0x45.toByte() &&
+                        header[2] == 0xDF.toByte() && header[3] == 0xA3.toByte()
+                    ) {
+                        return true
+                    }
+                    val riff = String(header, 0, 4, Charsets.ISO_8859_1)
+                    val avi = String(header, 8, 4, Charsets.ISO_8859_1)
+                    if (riff == "RIFF" && avi == "AVI ") {
+                        return true
+                    }
+                }
+            }
+        } catch (e: Exception) {}
+
         val retriever = MediaMetadataRetriever()
         return try {
             if (uri.scheme == "file" || uri.scheme == null) {
                 retriever.setDataSource(uri.path ?: uri.toString())
-                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == "yes"
+                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == "yes" ||
+                    retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH) != null
             } else {
                 val pfd = contentResolver.openFileDescriptor(uri, "r")
                 if (pfd != null) {
                     pfd.use {
                         retriever.setDataSource(it.fileDescriptor)
-                        retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == "yes"
+                        retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == "yes" ||
+                            retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH) != null
                     }
                 } else {
                     retriever.setDataSource(this, uri)
-                    retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == "yes"
+                    retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == "yes" ||
+                        retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH) != null
                 }
             }
         } catch (e: Exception) {
@@ -535,22 +591,43 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         }
     }
 
+    private fun openUriInputStream(srcUri: Uri): java.io.InputStream? {
+        try {
+            if (srcUri.scheme == "file" || srcUri.scheme == null) {
+                val file = File(srcUri.path ?: srcUri.toString())
+                if (file.exists()) return file.inputStream()
+            }
+        } catch (e: Exception) {}
+        try {
+            contentResolver.openInputStream(srcUri)?.let { return it }
+        } catch (e: Exception) {}
+        try {
+            contentResolver.openAssetFileDescriptor(srcUri, "r")?.createInputStream()?.let { return it }
+        } catch (e: Exception) {}
+        return null
+    }
+
     /**
      * Prepares a local video file in cacheDir so that the video trimmer and converter
      * have fast, direct, guaranteed file access without codec or remuxing issues.
      */
     private fun prepareVideoFile(srcUri: Uri): File? {
         return try {
-            val ext = try {
+            val validVideoExts = setOf("mp4", "webm", "mkv", "mov", "3gp", "m4v")
+            val rawExt = try {
                 val mime = contentResolver.getType(srcUri)
-                if (mime != null) MimeTypeMap.getSingleton().getExtensionFromMimeType(mime) else null
-            } catch (e: Exception) { null } ?: "mp4"
+                if (mime != null) MimeTypeMap.getSingleton().getExtensionFromMimeType(mime)?.lowercase() else null
+            } catch (e: Exception) { null }
+            val ext = if (rawExt != null && rawExt in validVideoExts) rawExt else "mp4"
 
             val tempFile = File(cacheDir, "trim_input_${System.currentTimeMillis()}.$ext")
-            contentResolver.openInputStream(srcUri)?.use { input ->
+            openUriInputStream(srcUri)?.use { input ->
                 tempFile.outputStream().use { out -> input.copyTo(out) }
             }
-            if (tempFile.exists() && tempFile.length() > 0) tempFile else null
+            if (tempFile.exists() && tempFile.length() > 0) tempFile else {
+                tempFile.delete()
+                null
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -559,70 +636,83 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
     private var currentTempVideoFile: File? = null
 
-    private fun handleMediaUris(uris: List<Uri>) {
+    private fun handleMediaUris(uris: List<Uri>, intentMimeType: String? = null) {
         if (uris.isEmpty()) return
-        val progressDialog = ProgressDialog.newInstance(getString(R.string.importing_backup))
-        progressDialog.show(supportFragmentManager, "import_media")
 
         thread {
+            val videoMask = uris.map { uri ->
+                isVideoUri(uri, if (uris.size == 1) intentMimeType else null)
+            }
+            val videoCount = videoMask.count { it }
+
+            // Enforce: Only 1 video can be imported at a time (in picker and via intent)
+            if (videoCount > 0 && uris.size > 1) {
+                runOnUiThread {
+                    ToastUtils.showToast(this, getString(R.string.only_one_video_allowed))
+                }
+                return@thread
+            }
+
+            if (videoCount == 1) {
+                val videoUri = uris.first()
+                val progressDialog = ProgressDialog.newInstance(getString(R.string.converting_video))
+                runOnUiThread {
+                    progressDialog.showSafe(supportFragmentManager, "prepare_video")
+                }
+                val tempVideoFile = prepareVideoFile(videoUri)
+                runOnUiThread {
+                    progressDialog.dismissSafe()
+                    if (tempVideoFile != null) {
+                        launchVideoTrimmer(tempVideoFile)
+                    } else {
+                        ToastUtils.showToast(this, getString(R.string.failed))
+                    }
+                }
+                return@thread
+            }
+
+            val progressDialog = ProgressDialog.newInstance(getString(R.string.importing_sticker))
+            runOnUiThread {
+                progressDialog.showSafe(supportFragmentManager, "import_media")
+            }
+
             var hasSuccess = false
             var hasUnsupported = false
             var hasFailed = false
-            var videoToTrim: File? = null
 
             for ((index, uri) in uris.withIndex()) {
-                val mimeType = contentResolver.getType(uri) ?: ""
-                val isVideo = isVideoUri(uri)
-
-                if (isVideo) {
-                    val tempVideoFile = prepareVideoFile(uri)
-                    if (tempVideoFile != null) {
-                        val durationMs = VideoToGifConverter.getVideoDurationMs(this, Uri.fromFile(tempVideoFile))
-                        if (durationMs > VideoToGifConverter.MAX_VIDEO_STICKER_DURATION_MS) {
-                            videoToTrim = tempVideoFile
-                            break
-                        } else {
-                            val destFile = File(filesDir, "zsticker_${System.currentTimeMillis()}.gif")
-                            val success = VideoToGifConverter.convertVideoToGif(
-                                this,
-                                Uri.fromFile(tempVideoFile),
-                                destFile,
-                                onProgress = { p ->
-                                    runOnUiThread { progressDialog.updateProgress((index + p) / uris.size) }
+                val mimeType = try { contentResolver.getType(uri) ?: intentMimeType ?: "" } catch (e: Exception) { "" }
+                val animType = AnimatedImageConverter.detectAnimationType(this, uri)
+                if (animType != AnimatedImageConverter.AnimationType.NONE) {
+                    runOnUiThread { progressDialog.updateMessage(getString(R.string.converting_animated_sticker)) }
+                    val destFile = File(filesDir, "zsticker_${System.currentTimeMillis()}.gif")
+                    val success = AnimatedImageConverter.convertToZaloGif(this, uri, destFile) { p ->
+                        runOnUiThread { progressDialog.updateProgress((index + p) / uris.size) }
+                    }
+                    if (success) hasSuccess = true else hasFailed = true
+                } else if (mimeType.startsWith("image/") || mimeType.isEmpty() || mimeType == "*/*" || mimeType == "application/octet-stream") {
+                    runOnUiThread { progressDialog.updateMessage(getString(R.string.importing_sticker)) }
+                    try {
+                        openUriInputStream(uri)?.use { input ->
+                            val file = File(filesDir, "zsticker_${System.currentTimeMillis()}.png")
+                            FileOutputStream(file).use { out ->
+                                if (input.copyTo(out) > 0) hasSuccess = true else {
+                                    file.delete()
+                                    hasFailed = true
                                 }
-                            )
-                            tempVideoFile.delete()
-                            if (success) hasSuccess = true else hasFailed = true
-                        }
-                    } else {
+                            }
+                        } ?: run { hasFailed = true }
+                    } catch (e: Exception) {
                         hasFailed = true
                     }
                 } else {
-                    val animType = AnimatedImageConverter.detectAnimationType(this, uri)
-                    if (animType != AnimatedImageConverter.AnimationType.NONE) {
-                        val destFile = File(filesDir, "zsticker_${System.currentTimeMillis()}.gif")
-                        val success = AnimatedImageConverter.convertToZaloGif(this, uri, destFile)
-                        if (success) hasSuccess = true else hasFailed = true
-                    } else if (mimeType.startsWith("image/") || mimeType.isEmpty()) {
-                        try {
-                            contentResolver.openInputStream(uri)?.use { input ->
-                                val file = File(filesDir, "zsticker_${System.currentTimeMillis()}.png")
-                                FileOutputStream(file).use { out ->
-                                    if (input.copyTo(out) > 0) hasSuccess = true else hasFailed = true
-                                }
-                            }
-                        } catch (e: Exception) {
-                            hasFailed = true
-                        }
-                    } else {
-                        hasUnsupported = true
-                    }
+                    hasUnsupported = true
                 }
                 runOnUiThread { progressDialog.updateProgress((index + 1).toFloat() / uris.size) }
             }
 
             runOnUiThread {
-                progressDialog.dismiss()
+                progressDialog.dismissSafe()
                 if (hasSuccess) {
                     adapter.refreshData(this)
                     updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
@@ -630,10 +720,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 }
                 if (hasUnsupported) ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
                 else if (hasFailed) ToastUtils.showToast(this, getString(R.string.failed))
-
-                videoToTrim?.let { file ->
-                    launchVideoTrimmer(file)
-                }
             }
         }
     }
@@ -641,12 +727,17 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private fun launchVideoTrimmer(videoFile: File) {
         try {
             currentTempVideoFile = videoFile
-            TrimVideo.activity(Uri.fromFile(videoFile).toString())
+            val lang = getSharedPreferences("settings", MODE_PRIVATE).getString("lang", "system") ?: "system"
+            val builder = TrimVideo.activity(Uri.fromFile(videoFile).toString())
                 .setTrimType(TrimType.FIXED_DURATION)
-                .setFixedDuration(3L)
+                .setFixedDuration(5L)
+                .setTitle(getString(R.string.trim_video_title))
                 .disableCompression()
                 .setHideSeekBar(false)
-                .start(this, videoTrimLauncher)
+            if (lang != "system") {
+                builder.setLocal(lang)
+            }
+            builder.start(this, videoTrimLauncher)
         } catch (e: Exception) {
             e.printStackTrace()
             videoFile.delete()
@@ -663,7 +754,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         extraCleanupFile: File? = null
     ) {
         val progressDialog = ProgressDialog.newInstance(getString(R.string.converting_video))
-        progressDialog.show(supportFragmentManager, "convert_video")
+        progressDialog.showSafe(supportFragmentManager, "convert_video")
 
         thread {
             val destFile = File(filesDir, "zsticker_${System.currentTimeMillis()}.gif")
@@ -690,7 +781,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 e.printStackTrace()
             }
             runOnUiThread {
-                progressDialog.dismiss()
+                progressDialog.dismissSafe()
                 if (success) {
                     adapter.refreshData(this)
                     updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
@@ -705,32 +796,48 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
     private fun handleIncomingShare(intent: Intent?) {
         if (intent == null) return
-        val uris = mutableListOf<Uri>()
+        val uris = LinkedHashSet<Uri>()
         when (intent.action) {
             Intent.ACTION_SEND -> {
-                intent.clipData?.let { clip ->
-                    for (i in 0 until clip.itemCount) clip.getItemAt(i).uri?.let { uris.add(it) }
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.let { uris.add(it) }
+                if (uris.isEmpty()) {
+                    intent.data?.let { uris.add(it) }
                 }
                 if (uris.isEmpty()) {
-                    @Suppress("DEPRECATION")
-                    intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.let { uris.add(it) }
-                    if (uris.isEmpty()) intent.data?.let { uris.add(it) }
+                    intent.clipData?.let { clip ->
+                        for (i in 0 until clip.itemCount) clip.getItemAt(i).uri?.let { uris.add(it) }
+                    }
+                }
+                if (uris.isEmpty()) {
+                    intent.getStringExtra(Intent.EXTRA_STREAM)?.let { str ->
+                        if (str.isNotBlank()) uris.add(Uri.parse(str))
+                    }
                 }
             }
             Intent.ACTION_SEND_MULTIPLE -> {
+                @Suppress("DEPRECATION")
+                intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)?.let { uris.addAll(it) }
                 intent.clipData?.let { clip ->
                     for (i in 0 until clip.itemCount) clip.getItemAt(i).uri?.let { uris.add(it) }
                 }
+            }
+            Intent.ACTION_VIEW -> {
+                intent.data?.let { uris.add(it) }
                 if (uris.isEmpty()) {
                     @Suppress("DEPRECATION")
-                    intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)?.let { uris.addAll(it) }
+                    intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.let { uris.add(it) }
+                }
+                if (uris.isEmpty()) {
+                    intent.clipData?.let { clip ->
+                        for (i in 0 until clip.itemCount) clip.getItemAt(i).uri?.let { uris.add(it) }
+                    }
                 }
             }
-            Intent.ACTION_VIEW -> { intent.data?.let { uris.add(it) } }
         }
 
         if (uris.isNotEmpty()) {
-            handleMediaUris(uris)
+            handleMediaUris(uris.toList(), intent.type)
         }
     }
 

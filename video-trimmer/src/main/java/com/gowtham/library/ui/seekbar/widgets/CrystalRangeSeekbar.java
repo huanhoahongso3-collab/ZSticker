@@ -75,6 +75,8 @@ public class CrystalRangeSeekbar extends View {
     private float steps;
     private float gap;
     private float fixGap;
+    private float rawGap = -1f;
+    private float rawFixGap = NO_FIXED_GAP;
 
     private int mActivePointerId = INVALID_POINTER_ID;
 
@@ -157,6 +159,8 @@ public class CrystalRangeSeekbar extends View {
             steps                  = getSteps(array);
             gap                    = getGap(array);
             fixGap                 = getFixedGap(array);
+            rawGap                 = gap;
+            rawFixGap              = fixGap;
             _barHeight             = getBarHeight(array);
             barColorMode           = getBarColorMode(array);
             barColor               = getBarColor(array);
@@ -201,12 +205,16 @@ public class CrystalRangeSeekbar extends View {
         leftThumbPressed = (leftThumbPressed == null) ? leftThumb : leftThumbPressed;
         rightThumbPressed = (rightThumbPressed == null) ? rightThumb : rightThumbPressed;
 
-        gap = Math.max(0, Math.min(gap, absoluteMaxValue - absoluteMinValue));
-        gap = gap / (absoluteMaxValue - absoluteMinValue) * 100;
-        if(fixGap != NO_FIXED_GAP){
-            fixGap = Math.min(fixGap, absoluteMaxValue);
-            fixGap = fixGap / (absoluteMaxValue - absoluteMinValue) * 100;
+        double range = Math.max(1d, absoluteMaxValue - absoluteMinValue);
+        float sourceGap = rawGap >= 0f ? rawGap : gap;
+        gap = Math.max(0f, Math.min(sourceGap, (float) range));
+        gap = (float) (gap / range * 100d);
+        if (rawFixGap != NO_FIXED_GAP) {
+            fixGap = Math.min(rawFixGap, (float) range);
+            fixGap = (float) (fixGap / range * 100d);
             addFixGap(true);
+        } else {
+            fixGap = NO_FIXED_GAP;
         }
 
         thumbWidth  = getThumbWidth();
@@ -271,12 +279,23 @@ public class CrystalRangeSeekbar extends View {
 
     public CrystalRangeSeekbar setGap(float gap){
         this.gap = gap;
+        this.rawGap = gap;
         return this;
     }
 
     public CrystalRangeSeekbar setFixGap(float fixGap){
         this.fixGap = fixGap;
+        this.rawFixGap = fixGap;
         return this;
+    }
+
+    public void setRangeValues(float minVal, float maxVal) {
+        double range = Math.max(1d, absoluteMaxValue - absoluteMinValue);
+        double normMin = (minVal - absoluteMinValue) / range * 100d;
+        double normMax = (maxVal - absoluteMinValue) / range * 100d;
+        normalizedMinValue = Math.max(0d, Math.min(100d, normMin));
+        normalizedMaxValue = Math.max(normalizedMinValue, Math.min(100d, normMax));
+        invalidate();
     }
 
     public CrystalRangeSeekbar setBarHeight(float height) {
@@ -471,12 +490,16 @@ public class CrystalRangeSeekbar extends View {
         normalizedMinValue = 0d;
         normalizedMaxValue = 100d;
 
-        gap = Math.max(0, Math.min(gap, absoluteMaxValue - absoluteMinValue));
-        gap = gap / (absoluteMaxValue - absoluteMinValue) * 100;
-        if(fixGap != NO_FIXED_GAP){
-            fixGap = Math.min(fixGap, absoluteMaxValue);
-            fixGap = fixGap / (absoluteMaxValue - absoluteMinValue) * 100;
+        double range = Math.max(1d, absoluteMaxValue - absoluteMinValue);
+        float sourceGap = rawGap >= 0f ? rawGap : gap;
+        gap = Math.max(0f, Math.min(sourceGap, (float) range));
+        gap = (float) (gap / range * 100d);
+        if (rawFixGap != NO_FIXED_GAP) {
+            fixGap = Math.min(rawFixGap, (float) range);
+            fixGap = (float) (fixGap / range * 100d);
             addFixGap(true);
+        } else {
+            fixGap = NO_FIXED_GAP;
         }
 
         thumbWidth  = getThumbWidth();
@@ -862,8 +885,13 @@ public class CrystalRangeSeekbar extends View {
         boolean minThumbPressed = isInThumbRange(touchX, normalizedMinValue);
         boolean maxThumbPressed = isInThumbRange(touchX, normalizedMaxValue);
         if (minThumbPressed && maxThumbPressed) {
-            // if both thumbs are pressed (they lie on top of each other), choose the one with more room to drag. this avoids "stalling" the thumbs in a corner, not being able to drag them apart anymore.
-            result = (touchX / getWidth() > 0.5f) ? Thumb.MIN : Thumb.MAX;
+            float screenMinX = normalizedToScreen(normalizedMinValue) + (getThumbWidth() / 2f);
+            float screenMaxX = normalizedToScreen(normalizedMaxValue) + (getThumbWidth() / 2f);
+            if (Math.abs(screenMaxX - screenMinX) > 1f) {
+                result = findClosestThumb(touchX);
+            } else {
+                result = (touchX / getWidth() > 0.5f) ? Thumb.MIN : Thumb.MAX;
+            }
         }
         else if(minThumbPressed){
             result = Thumb.MIN;
@@ -954,18 +982,27 @@ public class CrystalRangeSeekbar extends View {
     }
 
     private void addFixGap(boolean leftThumb){
+        double minSpan = Math.min(gap > 0 ? gap : 0d, fixGap);
         if(leftThumb){
-            normalizedMaxValue = normalizedMinValue + fixGap;
-            if(normalizedMaxValue >= 100){
-                normalizedMaxValue = 100;
-                normalizedMinValue = normalizedMaxValue - fixGap;
+            if ((normalizedMinValue + minSpan) > normalizedMaxValue) {
+                normalizedMaxValue = Math.min(100d, normalizedMinValue + minSpan);
+                if (normalizedMinValue > (normalizedMaxValue - minSpan)) {
+                    normalizedMinValue = Math.max(0d, normalizedMaxValue - minSpan);
+                }
+            }
+            if ((normalizedMaxValue - normalizedMinValue) > fixGap) {
+                normalizedMaxValue = Math.min(100d, normalizedMinValue + fixGap);
             }
         }
         else{
-            normalizedMinValue = normalizedMaxValue - fixGap;
-            if(normalizedMinValue <= 0){
-                normalizedMinValue = 0;
-                normalizedMaxValue = normalizedMinValue + fixGap;
+            if ((normalizedMaxValue - minSpan) < normalizedMinValue) {
+                normalizedMinValue = Math.max(0d, normalizedMaxValue - minSpan);
+                if (normalizedMaxValue < (normalizedMinValue + minSpan)) {
+                    normalizedMaxValue = Math.min(100d, normalizedMinValue + minSpan);
+                }
+            }
+            if ((normalizedMaxValue - normalizedMinValue) > fixGap) {
+                normalizedMinValue = Math.max(0d, normalizedMaxValue - fixGap);
             }
         }
     }

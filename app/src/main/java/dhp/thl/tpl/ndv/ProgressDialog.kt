@@ -86,6 +86,26 @@ class ProgressDialog : DialogFragment() {
         messageState.value = message
     }
 
+    fun showSafe(manager: androidx.fragment.app.FragmentManager, tag: String) {
+        try {
+            if (!isAdded) {
+                manager.beginTransaction().add(this, tag).commitAllowingStateLoss()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun dismissSafe() {
+        try {
+            if (isAdded || fragmentManager != null) {
+                dismissAllowingStateLoss()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     @OptIn(ExperimentalMaterial3ExpressiveApi::class)
     @Composable
     private fun ProgressDialogContent(

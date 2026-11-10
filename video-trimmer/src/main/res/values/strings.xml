@@ -6,12 +6,17 @@
     <string name="txt_trimming_video">Processing Video…</string>
     <string name="txt_failed_to_trim">Failed to trim</string>
     <string name="txt_cancel">Cancel</string>
+    <string name="txt_ok">OK</string>
     <string name="txt_dlah">\\</string>
     <string name="txt_smaller">Video should be smaller than</string>
-    <string name="edit_video">Edit Video</string>
+    <string name="edit_video">Trim Video</string>
     <string name="txt_compress_video">Compressing Video…</string>
-    <string name="txt_edt_video">Edit Video</string>
+    <string name="txt_edt_video">Trim Video</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="open_file_location">Open file location?</string>
+    <string name="txt_start_time">Start time</string>
+    <string name="txt_end_time">End time</string>
+    <string name="txt_time_input_hint">Enter time (MM:SS or seconds, max 5s clip)</string>
+    <string name="txt_select_part_toast">Select the part of the video to make a sticker (max 5s)</string>
 </resources>

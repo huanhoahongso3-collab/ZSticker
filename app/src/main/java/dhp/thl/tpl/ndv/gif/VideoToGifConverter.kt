@@ -11,7 +11,7 @@ import java.io.FileOutputStream
 object VideoToGifConverter {
 
     private const val MAX_STICKER_SIZE = 512
-    const val MAX_VIDEO_STICKER_DURATION_MS = 3000L // 3.0 seconds
+    const val MAX_VIDEO_STICKER_DURATION_MS = 5000L // 5.0 seconds
 
     /**
      * Reads the duration of the video in milliseconds.

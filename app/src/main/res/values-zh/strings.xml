@@ -93,6 +93,8 @@
     <string name="info_online_removebg_subtitle">使用第三方 API,而非设备本地处理</string>
     <string name="converting_video">正在将视频转换为表情&#8230;</string>
     <string name="converting_animated_sticker">正在转换动态表情&#8230;</string>
-    <string name="trim_video_hint">选择 3 秒片段转换为动态表情:</string>
+    <string name="importing_sticker">正在导入贴纸&#8230;</string>
+    <string name="trim_video_hint">请选择要制作贴纸的视频片段（最多 5 秒）</string>
     <string name="trim_video_title">裁剪视频</string>
+    <string name="only_one_video_allowed">每次只能导入 1 个视频</string>
 </resources>

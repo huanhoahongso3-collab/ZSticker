@@ -93,6 +93,8 @@
     <string name="info_online_removebg_subtitle">Dùng API bên thứ ba thay vì xử lý trên thiết bị</string>
     <string name="converting_video">Đang chuyển đổi video sang sticker&#8230;</string>
     <string name="converting_animated_sticker">Đang chuyển đổi sticker động&#8230;</string>
-    <string name="trim_video_hint">Chọn phân đoạn 3 giây để chuyển đổi thành sticker động:</string>
+    <string name="importing_sticker">Đang nhập nhãn dán&#8230;</string>
+    <string name="trim_video_hint">Chọn phần video để tạo nhãn dán (tối đa 5 giây)</string>
     <string name="trim_video_title">Cắt video</string>
+    <string name="only_one_video_allowed">Chỉ có thể nhập 1 video mỗi lần</string>
 </resources>

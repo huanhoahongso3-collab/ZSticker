@@ -34,32 +34,50 @@ public class TrimmerUtils {
         return ContextCompat.getColor(context, color);
     }
 
+    private static void setDataSourceSafe(Context context, MediaMetadataRetriever retriever, Uri videoPath) throws Exception {
+        if (videoPath == null) return;
+        String scheme = videoPath.getScheme();
+        if (scheme == null || "file".equalsIgnoreCase(scheme)) {
+            String path = videoPath.getPath() != null ? videoPath.getPath() : videoPath.toString();
+            retriever.setDataSource(path);
+            return;
+        }
+        try (android.os.ParcelFileDescriptor pfd = context.getContentResolver().openFileDescriptor(videoPath, "r")) {
+            if (pfd != null) {
+                retriever.setDataSource(pfd.getFileDescriptor());
+                return;
+            }
+        } catch (Exception ignored) {}
+        retriever.setDataSource(context, videoPath);
+    }
+
     public static long getDuration(Activity context, Uri videoPath) {
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
         try {
-            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-            retriever.setDataSource(context, videoPath);
+            setDataSourceSafe(context, retriever, videoPath);
             String time = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
             long timeInMillisec = Long.parseLong(time);
-            retriever.release();
-            return timeInMillisec / 1000;
+            return Math.max(1L, Math.round(timeInMillisec / 1000.0));
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            try { retriever.release(); } catch (Exception ignored) {}
         }
-        return 0;
+        return 1L;
     }
 
     public static long getDurationMillis(Activity context, Uri videoPath) {
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
         try {
-            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-            retriever.setDataSource(context, videoPath);
+            setDataSourceSafe(context, retriever, videoPath);
             String time = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
-            long timeInMillisec = Long.parseLong(time);
-            retriever.release();
-            return timeInMillisec;
+            return Long.parseLong(time);
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            try { retriever.release(); } catch (Exception ignored) {}
         }
-        return 0;
+        return 1000L;
     }
 
     public static int getTrimType(TrimType trimType) {
