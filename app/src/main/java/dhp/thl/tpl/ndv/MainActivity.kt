@@ -574,10 +574,13 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         val slider = dialogView.findViewById<com.google.android.material.slider.Slider>(R.id.sliderTrim)
 
         val maxStartSec = ((durationMs - 3000L).toFloat() / 1000f).coerceAtLeast(0.1f)
+        slider.stepSize = 0.0f
         slider.valueFrom = 0.0f
         slider.valueTo = maxStartSec
-        slider.stepSize = 0.1f
         slider.value = 0.0f
+
+        val initialEnd = (3.0f).coerceAtMost(durationMs.toFloat() / 1000f)
+        txtRange.text = String.format(Locale.US, "%.1fs – %.1fs", 0.0f, initialEnd)
 
         slider.addOnChangeListener { _, value, _ ->
             val endVal = (value + 3.0f).coerceAtMost(durationMs.toFloat() / 1000f)
@@ -618,40 +621,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         }
     }
 
-    private fun importToApp(src: Uri): Int {
-        try {
-            val isVideo = isVideoUri(src)
-            if (isVideo) {
-                val durationMs = VideoToGifConverter.getVideoDurationMs(this, src)
-                if (durationMs > VideoToGifConverter.MAX_VIDEO_STICKER_DURATION_MS) {
-                    runOnUiThread { showVideoTrimDialog(src, durationMs) }
-                    return 0
-                } else {
-                    val destFile = File(filesDir, "zsticker_${System.currentTimeMillis()}.gif")
-                    val success = VideoToGifConverter.convertVideoToGif(this, src, destFile)
-                    return if (success) 0 else 2
-                }
-            }
-
-            val animType = AnimatedImageConverter.detectAnimationType(this, src)
-            if (animType != AnimatedImageConverter.AnimationType.NONE) {
-                val destFile = File(filesDir, "zsticker_${System.currentTimeMillis()}.gif")
-                val success = AnimatedImageConverter.convertToZaloGif(this, src, destFile)
-                return if (success) 0 else 2
-            }
-
-            val mimeType = contentResolver.getType(src) ?: "application/octet-stream"
-            if (!mimeType.startsWith("image/")) return 1
-
-            contentResolver.openInputStream(src)?.use { input ->
-                val file = File(filesDir, "zsticker_${System.currentTimeMillis()}.png")
-                FileOutputStream(file).use { out ->
-                    if (input.copyTo(out) > 0) return 0 else return 2
-                }
-            }
-            return 2
-        } catch (e: Exception) { return 2 }
-    }
 
     private fun handleIncomingShare(intent: Intent?) {
         if (intent == null) return
