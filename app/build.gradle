@@ -122,4 +122,7 @@ dependencies {
 
     // Offline background removal (Google MediaPipe Tasks Vision - Apache 2.0, fully open source)
     implementation 'com.google.mediapipe:tasks-vision:1.0.0'
+
+    // Video trimmer with Media3 preview & timeline (MIT License, no ffmpeg)
+    implementation 'com.github.a914-gowtham:android-video-trimmer:1.8.3.3'
 }

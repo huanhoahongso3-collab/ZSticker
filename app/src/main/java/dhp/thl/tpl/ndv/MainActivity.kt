@@ -44,6 +44,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.bumptech.glide.Glide
 import dhp.thl.tpl.ndv.gif.AnimatedImageConverter
 import dhp.thl.tpl.ndv.gif.VideoToGifConverter
+import com.gowtham.library.utils.TrimVideo
+import com.gowtham.library.utils.TrimType
 import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
 import java.io.File
 import java.io.FileOutputStream
@@ -561,45 +563,28 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 if (hasUnsupported) ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
                 else if (hasFailed) ToastUtils.showToast(this, getString(R.string.failed))
 
-                needTrimmer?.let { (videoUri, dur) ->
-                    showVideoTrimDialog(videoUri, dur)
+                needTrimmer?.let { (videoUri, _) ->
+                    launchVideoTrimmer(videoUri)
                 }
             }
         }
     }
 
-    private fun showVideoTrimDialog(videoUri: Uri, durationMs: Long) {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_video_trim, null)
-        val txtRange = dialogView.findViewById<TextView>(R.id.txtTrimRange)
-        val slider = dialogView.findViewById<com.google.android.material.slider.Slider>(R.id.sliderTrim)
-
-        val maxStartSec = ((durationMs - 3000L).toFloat() / 1000f).coerceAtLeast(0.1f)
-        slider.stepSize = 0.0f
-        slider.valueFrom = 0.0f
-        slider.valueTo = maxStartSec
-        slider.value = 0.0f
-
-        val initialEnd = (3.0f).coerceAtMost(durationMs.toFloat() / 1000f)
-        txtRange.text = String.format(Locale.US, "%.1fs – %.1fs", 0.0f, initialEnd)
-
-        slider.addOnChangeListener { _, value, _ ->
-            val endVal = (value + 3.0f).coerceAtMost(durationMs.toFloat() / 1000f)
-            txtRange.text = String.format(Locale.US, "%.1fs – %.1fs", value, endVal)
+    private fun launchVideoTrimmer(videoUri: Uri) {
+        try {
+            TrimVideo.activity(videoUri.toString())
+                .setTrimType(TrimType.MIN_MAX_DURATION)
+                .setMinToMax(1L, 3L)
+                .disableCompression()
+                .setHideSeekBar(true)
+                .start(this, videoTrimLauncher)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ToastUtils.showToast(this, getString(R.string.failed))
         }
-
-        MaterialAlertDialogBuilder(this)
-            .setTitle(boldTitle(getString(R.string.trim_video_title)))
-            .setView(dialogView)
-            .setPositiveButton(getString(R.string.ok)) { _, _ ->
-                val startMs = (slider.value * 1000L).toLong()
-                processVideoFile(videoUri, startMs)
-            }
-            .setNegativeButton(getString(R.string.cancel), null)
-            .create()
-            .showMonetDialog(this)
     }
 
-    private fun processVideoFile(videoUri: Uri, startMs: Long = 0L) {
+    private fun processVideoFile(videoUri: Uri, startMs: Long = 0L, isTempFile: Boolean = false) {
         val progressDialog = ProgressDialog.newInstance(getString(R.string.converting_video))
         progressDialog.show(supportFragmentManager, "convert_video")
 
@@ -607,6 +592,13 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             val destFile = File(filesDir, "zsticker_${System.currentTimeMillis()}.gif")
             val success = VideoToGifConverter.convertVideoToGif(this, videoUri, destFile, startMs = startMs, maxDurationMs = 3000L, fps = 10) { progress ->
                 runOnUiThread { progressDialog.updateProgress(progress) }
+            }
+            if (isTempFile) {
+                try {
+                    videoUri.path?.let { File(it).delete() }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
             runOnUiThread {
                 progressDialog.dismiss()
@@ -654,6 +646,12 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     }
 
     private fun removeBackground(uri: Uri) {
+        val fileName = uri.lastPathSegment?.lowercase() ?: ""
+        if (fileName.endsWith(".gif") || isVideoUri(uri)) {
+            ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
+            return
+        }
+
         // UI Setup for loading state
         val surfaceColor = getThemeColor(com.google.android.material.R.attr.colorSurface)
         binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(surfaceColor, 153)) // 60% alpha
@@ -991,7 +989,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
     override fun onStickerLongClick(uri: Uri, isRecent: Boolean, entry: String?) {
         val fileName = uri.lastPathSegment ?: ""
-        val isAnimated = fileName.endsWith(".gif", ignoreCase = true)
+        val isAnimated = fileName.endsWith(".gif", ignoreCase = true) || isVideoUri(uri)
         val title = getString(if (isRecent) R.string.recent_options_title else R.string.sticker_options_title)
         val options = mutableListOf<OptionItem>()
         // Regular single export/share
@@ -1073,6 +1071,12 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     }
 
     private fun stickify(uri: Uri) {
+        val fileName = uri.lastPathSegment?.lowercase() ?: ""
+        if (fileName.endsWith(".gif") || isVideoUri(uri)) {
+            ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
+            return
+        }
+
         val file = File(filesDir, uri.lastPathSegment ?: "")
         if (!file.exists()) return
 
@@ -1121,6 +1125,12 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     }
 
     private fun startCrop(uri: Uri) {
+        val fileName = uri.lastPathSegment?.lowercase() ?: ""
+        if (fileName.endsWith(".gif") || isVideoUri(uri)) {
+            ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
+            return
+        }
+
         val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
         val primary = if (materialColorEnabled) MonetCompat.getInstance().getAccentColor(this) else getColor(R.color.orange_primary)
         
@@ -1180,6 +1190,16 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private val pickImages = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
         if (uris.isNotEmpty()) {
             handleMediaUris(uris)
+        }
+    }
+
+    private val videoTrimLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK && result.data != null) {
+            val trimmedPath = TrimVideo.getTrimmedVideoPath(result.data!!)
+            if (!trimmedPath.isNullOrEmpty()) {
+                val trimmedUri = if (trimmedPath.startsWith("/")) Uri.fromFile(File(trimmedPath)) else Uri.parse(trimmedPath)
+                processVideoFile(trimmedUri, isTempFile = trimmedPath.startsWith("/"))
+            }
         }
     }
 
