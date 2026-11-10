@@ -19,7 +19,7 @@ object VideoToGifConverter {
     fun getVideoDurationMs(context: Context, uri: Uri): Long {
         val retriever = MediaMetadataRetriever()
         return try {
-            retriever.setDataSource(context, uri)
+            setRetrieverDataSource(context, retriever, uri)
             val durationStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
             durationStr?.toLongOrNull() ?: 0L
         } catch (e: Exception) {
@@ -29,6 +29,23 @@ object VideoToGifConverter {
             try {
                 retriever.release()
             } catch (e: Exception) {}
+        }
+    }
+
+    private fun setRetrieverDataSource(context: Context, retriever: MediaMetadataRetriever, uri: Uri) {
+        if (uri.scheme == "file") {
+            retriever.setDataSource(uri.path)
+        } else {
+            try {
+                val pfd = context.contentResolver.openFileDescriptor(uri, "r")
+                if (pfd != null) {
+                    pfd.use { retriever.setDataSource(it.fileDescriptor) }
+                    return
+                }
+            } catch (e: Exception) {
+                // fallback
+            }
+            retriever.setDataSource(context, uri)
         }
     }
 
@@ -48,7 +65,7 @@ object VideoToGifConverter {
     ): Boolean {
         val retriever = MediaMetadataRetriever()
         return try {
-            retriever.setDataSource(context, uri)
+            setRetrieverDataSource(context, retriever, uri)
 
             val durationMs = (retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L)
             val availableMs = (durationMs - startMs).coerceAtLeast(100L)

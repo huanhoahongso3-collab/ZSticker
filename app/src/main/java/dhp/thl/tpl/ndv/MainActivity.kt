@@ -46,6 +46,12 @@ import dhp.thl.tpl.ndv.gif.AnimatedImageConverter
 import dhp.thl.tpl.ndv.gif.VideoToGifConverter
 import com.gowtham.library.utils.TrimVideo
 import com.gowtham.library.utils.TrimType
+import android.media.MediaCodec
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import android.media.MediaMetadataRetriever
+import android.media.MediaMuxer
+import java.nio.ByteBuffer
 import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
 import java.io.File
 import java.io.FileOutputStream
@@ -501,8 +507,107 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         val mimeType = contentResolver.getType(uri) ?: ""
         if (mimeType.startsWith("video/")) return true
         val path = uri.path?.lowercase() ?: ""
-        return path.endsWith(".mp4") || path.endsWith(".webm") || path.endsWith(".mkv") || path.endsWith(".3gp") || path.endsWith(".mov")
+        if (path.endsWith(".mp4") || path.endsWith(".webm") || path.endsWith(".mkv") || path.endsWith(".3gp") || path.endsWith(".mov")) return true
+        val retriever = MediaMetadataRetriever()
+        return try {
+            val pfd = contentResolver.openFileDescriptor(uri, "r")
+            if (pfd != null) {
+                pfd.use {
+                    retriever.setDataSource(it.fileDescriptor)
+                    retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == "yes"
+                }
+            } else {
+                retriever.setDataSource(this, uri)
+                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == "yes"
+            }
+        } catch (e: Exception) {
+            false
+        } finally {
+            try { retriever.release() } catch (e: Exception) {}
+        }
     }
+
+    /**
+     * Prepares a local MP4 file in cacheDir with the audio track removed
+     * so that the video trimmer preview is silent and has fast, direct file access.
+     */
+    private fun prepareVideoFile(srcUri: Uri): File? {
+        val tempFile = File(cacheDir, "trim_input_${System.currentTimeMillis()}.mp4")
+
+        var muxerSuccess = false
+        var extractor: MediaExtractor? = null
+        var muxer: MediaMuxer? = null
+        try {
+            extractor = MediaExtractor()
+            val pfd = contentResolver.openFileDescriptor(srcUri, "r")
+            if (pfd != null) {
+                pfd.use { extractor.setDataSource(it.fileDescriptor) }
+            } else {
+                extractor.setDataSource(this, srcUri, null)
+            }
+
+            var videoTrackIndex = -1
+            for (i in 0 until extractor.trackCount) {
+                val format = extractor.getTrackFormat(i)
+                val mime = format.getString(MediaFormat.KEY_MIME) ?: ""
+                if (mime.startsWith("video/")) {
+                    videoTrackIndex = i
+                    break
+                }
+            }
+
+            if (videoTrackIndex >= 0) {
+                extractor.selectTrack(videoTrackIndex)
+                val videoFormat = extractor.getTrackFormat(videoTrackIndex)
+                muxer = MediaMuxer(tempFile.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+                val muxerTrackIndex = muxer.addTrack(videoFormat)
+                muxer.start()
+
+                val buffer = ByteBuffer.allocate(1024 * 1024)
+                val bufferInfo = MediaCodec.BufferInfo()
+
+                while (true) {
+                    val sampleSize = extractor.readSampleData(buffer, 0)
+                    if (sampleSize < 0) break
+                    bufferInfo.offset = 0
+                    bufferInfo.size = sampleSize
+                    bufferInfo.presentationTimeUs = extractor.sampleTime
+                    bufferInfo.flags = extractor.sampleFlags
+                    muxer.writeSampleData(muxerTrackIndex, buffer, bufferInfo)
+                    extractor.advance()
+                }
+                muxerSuccess = true
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            muxerSuccess = false
+        } finally {
+            try { muxer?.stop() } catch (e: Exception) {}
+            try { muxer?.release() } catch (e: Exception) {}
+            try { extractor?.release() } catch (e: Exception) {}
+        }
+
+        if (muxerSuccess && tempFile.exists() && tempFile.length() > 0) {
+            return tempFile
+        }
+
+        // Fallback: Copy raw stream directly to tempFile
+        try {
+            tempFile.delete()
+            contentResolver.openInputStream(srcUri)?.use { input ->
+                tempFile.outputStream().use { out -> input.copyTo(out) }
+            }
+            if (tempFile.exists() && tempFile.length() > 0) {
+                return tempFile
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        return null
+    }
+
+    private var currentTempVideoFile: File? = null
 
     private fun handleMediaUris(uris: List<Uri>) {
         if (uris.isEmpty()) return
@@ -513,21 +618,27 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             var hasSuccess = false
             var hasUnsupported = false
             var hasFailed = false
-            var needTrimmer: Pair<Uri, Long>? = null
+            var videoToTrim: File? = null
 
             for ((index, uri) in uris.withIndex()) {
                 val mimeType = contentResolver.getType(uri) ?: ""
                 val isVideo = isVideoUri(uri)
 
                 if (isVideo) {
-                    val durationMs = VideoToGifConverter.getVideoDurationMs(this, uri)
-                    if (durationMs > VideoToGifConverter.MAX_VIDEO_STICKER_DURATION_MS) {
-                        needTrimmer = uri to durationMs
-                        break
+                    val tempVideoFile = prepareVideoFile(uri)
+                    if (tempVideoFile != null) {
+                        val durationMs = VideoToGifConverter.getVideoDurationMs(this, Uri.fromFile(tempVideoFile))
+                        if (durationMs > VideoToGifConverter.MAX_VIDEO_STICKER_DURATION_MS) {
+                            videoToTrim = tempVideoFile
+                            break
+                        } else {
+                            val destFile = File(filesDir, "zsticker_${System.currentTimeMillis()}.gif")
+                            val success = VideoToGifConverter.convertVideoToGif(this, Uri.fromFile(tempVideoFile), destFile)
+                            tempVideoFile.delete()
+                            if (success) hasSuccess = true else hasFailed = true
+                        }
                     } else {
-                        val destFile = File(filesDir, "zsticker_${System.currentTimeMillis()}.gif")
-                        val success = VideoToGifConverter.convertVideoToGif(this, uri, destFile)
-                        if (success) hasSuccess = true else hasFailed = true
+                        hasFailed = true
                     }
                 } else {
                     val animType = AnimatedImageConverter.detectAnimationType(this, uri)
@@ -563,23 +674,26 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 if (hasUnsupported) ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
                 else if (hasFailed) ToastUtils.showToast(this, getString(R.string.failed))
 
-                needTrimmer?.let { (videoUri, _) ->
-                    launchVideoTrimmer(videoUri)
+                videoToTrim?.let { file ->
+                    launchVideoTrimmer(file)
                 }
             }
         }
     }
 
-    private fun launchVideoTrimmer(videoUri: Uri) {
+    private fun launchVideoTrimmer(videoFile: File) {
         try {
-            TrimVideo.activity(videoUri.toString())
-                .setTrimType(TrimType.MIN_MAX_DURATION)
-                .setMinToMax(1L, 3L)
+            currentTempVideoFile = videoFile
+            TrimVideo.activity(videoFile.absolutePath)
+                .setTrimType(TrimType.FIXED_DURATION)
+                .setFixedDuration(3L)
                 .disableCompression()
                 .setHideSeekBar(true)
                 .start(this, videoTrimLauncher)
         } catch (e: Exception) {
             e.printStackTrace()
+            videoFile.delete()
+            currentTempVideoFile = null
             ToastUtils.showToast(this, getString(R.string.failed))
         }
     }
@@ -1194,13 +1308,16 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     }
 
     private val videoTrimLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val inputTemp = currentTempVideoFile
+        currentTempVideoFile = null
         if (result.resultCode == RESULT_OK && result.data != null) {
             val trimmedPath = TrimVideo.getTrimmedVideoPath(result.data!!)
             if (!trimmedPath.isNullOrEmpty()) {
                 val trimmedUri = if (trimmedPath.startsWith("/")) Uri.fromFile(File(trimmedPath)) else Uri.parse(trimmedPath)
-                processVideoFile(trimmedUri, isTempFile = trimmedPath.startsWith("/"))
+                processVideoFile(trimmedUri, isTempFile = true)
             }
         }
+        inputTemp?.delete()
     }
 
 
