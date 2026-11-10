@@ -212,7 +212,6 @@ class AnimatedGifEncoder {
         return minPos
     }
 
-    @Throws(IOException)
     private fun writeGraphicCtrlExt() {
         out!!.write(0x21) // Extension introducer
         out!!.write(0xf9) // GCE label
@@ -235,7 +234,6 @@ class AnimatedGifEncoder {
         out!!.write(0)                                // Block terminator
     }
 
-    @Throws(IOException)
     private fun writeImageDesc() {
         out!!.write(0x2c) // Image separator
         writeShort(0)     // Left
@@ -249,7 +247,6 @@ class AnimatedGifEncoder {
         }
     }
 
-    @Throws(IOException)
     private fun writeLSD() {
         writeShort(width)
         writeShort(height)
@@ -258,7 +255,6 @@ class AnimatedGifEncoder {
         out!!.write(0) // Pixel aspect ratio
     }
 
-    @Throws(IOException)
     private fun writeNetscapeExt() {
         out!!.write(0x21) // Extension introducer
         out!!.write(0xff) // Application extension
@@ -270,7 +266,6 @@ class AnimatedGifEncoder {
         out!!.write(0)    // Block terminator
     }
 
-    @Throws(IOException)
     private fun writePalette() {
         out!!.write(colorTab!!, 0, colorTab!!.size)
         val n = (3 * 256) - colorTab!!.size
@@ -279,19 +274,16 @@ class AnimatedGifEncoder {
         }
     }
 
-    @Throws(IOException)
     private fun writePixels() {
         val encoder = LZWEncoder(width, height, indexedPixels!!, colorDepth)
         encoder.encode(out!!)
     }
 
-    @Throws(IOException)
     private fun writeShort(value: Int) {
         out!!.write(value and 0xff)
         out!!.write((value shr 8) and 0xff)
     }
 
-    @Throws(IOException)
     private fun writeString(s: String) {
         for (element in s) {
             out!!.write(element.code)
@@ -566,7 +558,6 @@ class AnimatedGifEncoder {
         private val accum = ByteArray(256)
         private var a_count = 0
 
-        @Throws(IOException)
         fun encode(os: OutputStream) {
             os.write(initCodeSize)
             remaining = imgW * imgH
@@ -575,7 +566,6 @@ class AnimatedGifEncoder {
             os.write(0)
         }
 
-        @Throws(IOException)
         private fun compress(init_bits: Int, outs: OutputStream) {
             var n_bits = init_bits
             var maxcode = (1 shl n_bits) - 1
@@ -653,7 +643,6 @@ class AnimatedGifEncoder {
             return pix
         }
 
-        @Throws(IOException)
         private fun output(code: Int, outs: OutputStream, n_bits: Int) {
             cur_accum = cur_accum or (code shl cur_bits)
             cur_bits += n_bits
