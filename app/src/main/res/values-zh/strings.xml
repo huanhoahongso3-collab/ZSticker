@@ -91,4 +91,6 @@
     <string name="crop">裁剪</string>
     <string name="info_online_removebg_title">在线抠图</string>
     <string name="info_online_removebg_subtitle">使用第三方 API,而非设备本地处理</string>
+    <string name="converting_video">正在将视频转换为表情&#8230;</string>
+    <string name="converting_animated_sticker">正在转换动态表情&#8230;</string>
 </resources>

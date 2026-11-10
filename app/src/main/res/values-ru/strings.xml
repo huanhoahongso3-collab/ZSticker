@@ -91,4 +91,6 @@
     <string name="crop">Обрезать</string>
     <string name="info_online_removebg_title">Удаление фона онлайн</string>
     <string name="info_online_removebg_subtitle">Использовать стороннее API вместо обработки на устройстве</string>
+    <string name="converting_video">Конвертация видео в стикер&#8230;</string>
+    <string name="converting_animated_sticker">Конвертация анимированного стикера&#8230;</string>
 </resources>

@@ -41,6 +41,11 @@ import com.kieronquinn.monetcompat.extensions.views.applyMonetRecursively
 import com.kieronquinn.monetcompat.extensions.views.applyMonet
 import com.kieronquinn.monetcompat.extensions.views.enableStretchOverscroll
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.bumptech.glide.Glide
+import com.gowtham.library.utils.TrimVideo
+import com.gowtham.library.utils.TrimType
+import dhp.thl.tpl.ndv.gif.AnimatedImageConverter
+import dhp.thl.tpl.ndv.gif.VideoToGifConverter
 import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
 import java.io.File
 import java.io.FileOutputStream
@@ -82,6 +87,15 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private val startFileActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK && result.data?.getBooleanExtra("did_import", false) == true) {
             recreate()
+        }
+    }
+
+    private val trimVideoLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK && result.data != null) {
+            val trimmedPath = TrimVideo.getTrimmedVideoPath(result.data)
+            if (!trimmedPath.isNullOrEmpty()) {
+                processVideoFile(Uri.fromFile(File(trimmedPath)))
+            }
         }
     }
 
@@ -257,7 +271,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
 
         binding.addButton.setOnClickListener {
-            pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
         }
     }
 
@@ -492,10 +506,131 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         adapterRecents.refreshData(this)
     }
 
+    private fun isVideoUri(uri: Uri): Boolean {
+        val mimeType = contentResolver.getType(uri) ?: ""
+        if (mimeType.startsWith("video/")) return true
+        val path = uri.path?.lowercase() ?: ""
+        return path.endsWith(".mp4") || path.endsWith(".webm") || path.endsWith(".mkv") || path.endsWith(".3gp") || path.endsWith(".mov")
+    }
+
+    private fun handleMediaUris(uris: List<Uri>) {
+        if (uris.isEmpty()) return
+        val progressDialog = ProgressDialog.newInstance(getString(R.string.importing_backup))
+        progressDialog.show(supportFragmentManager, "import_media")
+
+        thread {
+            var hasSuccess = false
+            var hasUnsupported = false
+            var hasFailed = false
+            var needTrimmerUri: Uri? = null
+
+            for ((index, uri) in uris.withIndex()) {
+                val mimeType = contentResolver.getType(uri) ?: ""
+                val isVideo = isVideoUri(uri)
+
+                if (isVideo) {
+                    val durationMs = VideoToGifConverter.getVideoDurationMs(this, uri)
+                    if (durationMs > VideoToGifConverter.MAX_VIDEO_STICKER_DURATION_MS) {
+                        needTrimmerUri = uri
+                        break
+                    } else {
+                        val destFile = File(filesDir, "zsticker_${System.currentTimeMillis()}.gif")
+                        val success = VideoToGifConverter.convertVideoToGif(this, uri, destFile)
+                        if (success) hasSuccess = true else hasFailed = true
+                    }
+                } else {
+                    val animType = AnimatedImageConverter.detectAnimationType(this, uri)
+                    if (animType != AnimatedImageConverter.AnimationType.NONE) {
+                        val destFile = File(filesDir, "zsticker_${System.currentTimeMillis()}.gif")
+                        val success = AnimatedImageConverter.convertToZaloGif(this, uri, destFile)
+                        if (success) hasSuccess = true else hasFailed = true
+                    } else if (mimeType.startsWith("image/") || mimeType.isEmpty()) {
+                        try {
+                            contentResolver.openInputStream(uri)?.use { input ->
+                                val file = File(filesDir, "zsticker_${System.currentTimeMillis()}.png")
+                                FileOutputStream(file).use { out ->
+                                    if (input.copyTo(out) > 0) hasSuccess = true else hasFailed = true
+                                }
+                            }
+                        } catch (e: Exception) {
+                            hasFailed = true
+                        }
+                    } else {
+                        hasUnsupported = true
+                    }
+                }
+                runOnUiThread { progressDialog.updateProgress((index + 1).toFloat() / uris.size) }
+            }
+
+            runOnUiThread {
+                progressDialog.dismiss()
+                if (hasSuccess) {
+                    adapter.refreshData(this)
+                    updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
+                    ToastUtils.showToast(this, getString(R.string.success))
+                }
+                if (hasUnsupported) ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
+                else if (hasFailed) ToastUtils.showToast(this, getString(R.string.failed))
+
+                needTrimmerUri?.let { videoUri ->
+                    TrimVideo.activity(videoUri.toString())
+                        .setTrimType(TrimType.FIXED_DURATION)
+                        .setFixedDuration(3)
+                        .start(this, trimVideoLauncher)
+                }
+            }
+        }
+    }
+
+    private fun processVideoFile(videoUri: Uri) {
+        val progressDialog = ProgressDialog.newInstance(getString(R.string.converting_video))
+        progressDialog.show(supportFragmentManager, "convert_video")
+
+        thread {
+            val destFile = File(filesDir, "zsticker_${System.currentTimeMillis()}.gif")
+            val success = VideoToGifConverter.convertVideoToGif(this, videoUri, destFile, maxDurationMs = 3000L, fps = 10) { progress ->
+                runOnUiThread { progressDialog.updateProgress(progress) }
+            }
+            runOnUiThread {
+                progressDialog.dismiss()
+                if (success) {
+                    adapter.refreshData(this)
+                    updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
+                    ToastUtils.showToast(this, getString(R.string.success))
+                } else {
+                    ToastUtils.showToast(this, getString(R.string.failed))
+                }
+            }
+        }
+    }
+
     private fun importToApp(src: Uri): Int {
         try {
+            val isVideo = isVideoUri(src)
+            if (isVideo) {
+                val durationMs = VideoToGifConverter.getVideoDurationMs(this, src)
+                if (durationMs > VideoToGifConverter.MAX_VIDEO_STICKER_DURATION_MS) {
+                    TrimVideo.activity(src.toString())
+                        .setTrimType(TrimType.FIXED_DURATION)
+                        .setFixedDuration(3)
+                        .start(this, trimVideoLauncher)
+                    return 0
+                } else {
+                    val destFile = File(filesDir, "zsticker_${System.currentTimeMillis()}.gif")
+                    val success = VideoToGifConverter.convertVideoToGif(this, src, destFile)
+                    return if (success) 0 else 2
+                }
+            }
+
+            val animType = AnimatedImageConverter.detectAnimationType(this, src)
+            if (animType != AnimatedImageConverter.AnimationType.NONE) {
+                val destFile = File(filesDir, "zsticker_${System.currentTimeMillis()}.gif")
+                val success = AnimatedImageConverter.convertToZaloGif(this, src, destFile)
+                return if (success) 0 else 2
+            }
+
             val mimeType = contentResolver.getType(src) ?: "application/octet-stream"
-            if (!mimeType.startsWith("image/") || mimeType == "image/gif") return 1
+            if (!mimeType.startsWith("image/")) return 1
 
             contentResolver.openInputStream(src)?.use { input ->
                 val file = File(filesDir, "zsticker_${System.currentTimeMillis()}.png")
@@ -534,25 +669,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         }
 
         if (uris.isNotEmpty()) {
-            var hasUnsupported = false
-            var hasFailed = false
-            var hasSuccess = false
-
-            uris.forEach { uri ->
-                when (importToApp(uri)) {
-                    0 -> hasSuccess = true
-                    1 -> hasUnsupported = true
-                    2 -> hasFailed = true
-                }
-            }
-
-            if (hasSuccess) {
-                adapter.refreshData(this)
-                updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
-            }
-            
-            if (hasUnsupported) ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
-            else if (hasFailed) ToastUtils.showToast(this, getString(R.string.failed))
+            handleMediaUris(uris)
         }
     }
 
@@ -857,12 +974,18 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             val file = File(filesDir, uri.lastPathSegment ?: "")
             if (!file.exists()) return
 
+            val isAnimated = file.name.endsWith(".gif", ignoreCase = true)
+
             // Resize for Zalo (max width 512px)
-            val compressedFile = ImageUtils.getZaloSticker(this, file)
+            val shareFile = if (isAnimated) {
+                ImageUtils.getZaloAnimatedSticker(this, file)
+            } else {
+                ImageUtils.getZaloSticker(this, file)
+            }
             
-            val contentUri = FileProvider.getUriForFile(this, "$packageName.provider", compressedFile)
+            val contentUri = FileProvider.getUriForFile(this, "$packageName.provider", shareFile)
             val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "image/png"
+                type = if (isAnimated) "image/gif" else "image/png"
                 putExtra(Intent.EXTRA_STREAM, contentUri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 putExtra("is_sticker", true)
@@ -887,12 +1010,14 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     }
 
     override fun onStickerLongClick(uri: Uri, isRecent: Boolean, entry: String?) {
+        val fileName = uri.lastPathSegment ?: ""
+        val isAnimated = fileName.endsWith(".gif", ignoreCase = true)
         val title = getString(if (isRecent) R.string.recent_options_title else R.string.sticker_options_title)
         val options = mutableListOf<OptionItem>()
         // Regular single export/share
         options.add(OptionItem(R.drawable.ic_export_gallery, getString(R.string.export)))
         
-        if (!isRecent) {
+        if (!isRecent && !isAnimated) {
             options.add(OptionItem(R.drawable.ic_remove_bg, getString(R.string.remove_bg)))
             options.add(OptionItem(R.drawable.ic_border_sticker, getString(R.string.border_sticker)))
             options.add(OptionItem(R.drawable.ic_crop, getString(R.string.crop)))
@@ -1043,7 +1168,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private fun viewFullSticker(uri: Uri) {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_view_full, null)
         val imageView = dialogView.findViewById<ImageView>(R.id.img_full_sticker)
-        imageView.setImageURI(uri)
+        Glide.with(this).load(uri).into(imageView)
         
         MaterialAlertDialogBuilder(this)
             .setView(dialogView)
@@ -1074,14 +1199,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
     private val pickImages = registerForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
         if (uris.isNotEmpty()) {
-            var hasSuccess = false; var hasUnsupported = false; var hasFailed = false
-            uris.forEach { when (importToApp(it)) { 0 -> hasSuccess = true; 1 -> hasUnsupported = true; 2 -> hasFailed = true } }
-            if (hasSuccess) {
-                adapter.refreshData(this)
-                updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
-            }
-            if (hasUnsupported) ToastUtils.showToast(this, getString(R.string.unsupported_file_type))
-            else if (hasFailed) ToastUtils.showToast(this, getString(R.string.failed))
+            handleMediaUris(uris)
         }
     }
 

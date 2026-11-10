@@ -25,5 +25,20 @@
             android:scaleType="centerCrop"
             android:background="?attr/selectableItemBackground"
             android:contentDescription="@null" />
+
+        <TextView
+            android:id="@+id/badgeGif"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="6dp"
+            android:background="@drawable/bg_gif_badge"
+            android:paddingHorizontal="6dp"
+            android:paddingVertical="2dp"
+            android:text="GIF"
+            android:textColor="#FFFFFF"
+            android:textSize="9sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
     </com.google.android.material.card.MaterialCardView>
 </androidx.constraintlayout.widget.ConstraintLayout>

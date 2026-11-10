@@ -91,4 +91,6 @@
     <string name="exporting_backup">Exporting backup&#8230;</string>
     <string name="exporting_to_gallery">Exporting to Gallery&#8230;</string>
     <string name="crop">Crop</string>
+    <string name="converting_video">Converting video to sticker&#8230;</string>
+    <string name="converting_animated_sticker">Converting animated sticker&#8230;</string>
 </resources>

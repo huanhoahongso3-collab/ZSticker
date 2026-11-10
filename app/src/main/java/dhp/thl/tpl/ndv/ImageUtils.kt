@@ -19,6 +19,42 @@ object ImageUtils {
     private const val CACHE_DIR_NAME = "zalo_cache"
 
     /**
+     * Prepares an animated sticker for Zalo sharing (max 512px).
+     * If already <= 512px, uses it directly; otherwise re-encodes and caches the result.
+     */
+    fun getZaloAnimatedSticker(context: Context, originalFile: File): File {
+        val cacheDir = File(context.filesDir, CACHE_DIR_NAME)
+        if (!cacheDir.exists()) {
+            cacheDir.mkdirs()
+        }
+
+        val cachedFileName = "zalo_512_${originalFile.name}"
+        val cachedFile = File(cacheDir, cachedFileName)
+
+        if (cachedFile.exists() && cachedFile.lastModified() >= originalFile.lastModified()) {
+            return cachedFile
+        }
+
+        return try {
+            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(originalFile.absolutePath, options)
+            if (options.outWidth <= TARGET_WIDTH && options.outHeight <= TARGET_WIDTH && options.outWidth > 0) {
+                originalFile
+            } else {
+                val success = dhp.thl.tpl.ndv.gif.AnimatedImageConverter.convertToZaloGif(
+                    context,
+                    Uri.fromFile(originalFile),
+                    cachedFile
+                )
+                if (success && cachedFile.exists() && cachedFile.length() > 0) cachedFile else originalFile
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            originalFile
+        }
+    }
+
+    /**
      * Resizes a sticker for Zalo sharing to 512px.
      * Keeps the original aspect ratio and resizes to [TARGET_WIDTH].
      * Caches the result to avoid redundant processing.

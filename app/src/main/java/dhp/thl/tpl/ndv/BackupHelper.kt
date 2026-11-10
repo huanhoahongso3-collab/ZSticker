@@ -235,11 +235,12 @@ object BackupHelper {
         for ((index, file) in stickerFiles.withIndex()) {
             if (isCancelled()) return count
             try {
+                val mimeType = if (file.name.endsWith(".gif", ignoreCase = true)) "image/gif" else "image/png"
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     val resolver = context.contentResolver
                     val contentValues = ContentValues().apply {
                         put(MediaStore.MediaColumns.DISPLAY_NAME, "sticker_${file.name}")
-                        put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                        put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
                         put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/ZSticker")
                         put(MediaStore.MediaColumns.IS_PENDING, 1)
                     }
@@ -272,11 +273,12 @@ object BackupHelper {
 
     fun exportSingleStickerToGallery(context: Context, file: File): Boolean {
         try {
+            val mimeType = if (file.name.endsWith(".gif", ignoreCase = true)) "image/gif" else "image/png"
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val resolver = context.contentResolver
                 val contentValues = ContentValues().apply {
                     put(MediaStore.MediaColumns.DISPLAY_NAME, "sticker_${file.name}")
-                    put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                    put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
                     put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/ZSticker")
                     put(MediaStore.MediaColumns.IS_PENDING, 1)
                 }

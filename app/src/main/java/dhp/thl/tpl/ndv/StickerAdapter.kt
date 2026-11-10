@@ -54,6 +54,8 @@ class StickerAdapter(
             }
         } else if (holder is StickerViewHolder && (item is File || item is RecentSticker)) {
             val file = if (item is RecentSticker) item.file else item as File
+            val isGif = file.name.endsWith(".gif", ignoreCase = true)
+            holder.badgeGif.visibility = if (isGif) View.VISIBLE else View.GONE
             Glide.with(holder.image).load(file).into(holder.image)
             
             holder.itemView.setOnClickListener {
@@ -102,6 +104,7 @@ class StickerAdapter(
     class StickerViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val image: ImageView = view.findViewById(R.id.stickerImage)
         val card: com.google.android.material.card.MaterialCardView = view.findViewById(R.id.stickerCard)
+        val badgeGif: TextView = view.findViewById(R.id.badgeGif)
     }
 
     companion object {
@@ -110,7 +113,7 @@ class StickerAdapter(
             val folder = context.filesDir
             
             val files = folder.listFiles { file ->
-                file.name.startsWith("zsticker_") && file.name.endsWith(".png")
+                file.name.startsWith("zsticker_") && (file.name.endsWith(".png") || file.name.endsWith(".gif"))
             }?.sortedByDescending { file ->
                 file.name.removePrefix("zsticker_").removePrefix("rb_").substringBefore(".").toLongOrNull() ?: 0L
             } ?: emptyList()

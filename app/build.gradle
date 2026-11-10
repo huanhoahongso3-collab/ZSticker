@@ -124,4 +124,7 @@ dependencies {
 
     // Offline background removal (Google MediaPipe Tasks Vision - Apache 2.0, fully open source)
     implementation 'com.google.mediapipe:tasks-vision:1.0.0'
+
+    // Video Trimmer for trimming videos longer than 3 seconds
+    implementation 'com.github.a914-gowtham:android-video-trimmer:1.7.19'
 }
