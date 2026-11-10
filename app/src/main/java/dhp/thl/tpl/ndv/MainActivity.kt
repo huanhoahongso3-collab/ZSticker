@@ -56,6 +56,7 @@ import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
+import android.webkit.MimeTypeMap
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
@@ -504,21 +505,28 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     }
 
     private fun isVideoUri(uri: Uri): Boolean {
-        val mimeType = contentResolver.getType(uri) ?: ""
+        val mimeType = try { contentResolver.getType(uri) ?: "" } catch (e: Exception) { "" }
         if (mimeType.startsWith("video/")) return true
-        val path = uri.path?.lowercase() ?: ""
-        if (path.endsWith(".mp4") || path.endsWith(".webm") || path.endsWith(".mkv") || path.endsWith(".3gp") || path.endsWith(".mov")) return true
+        val uriStr = uri.toString().lowercase()
+        val path = (uri.path ?: uriStr).lowercase()
+        if (path.endsWith(".mp4") || path.endsWith(".webm") || path.endsWith(".mkv") ||
+            path.endsWith(".3gp") || path.endsWith(".mov") || path.endsWith(".avi") || path.endsWith(".m4v")) return true
         val retriever = MediaMetadataRetriever()
         return try {
-            val pfd = contentResolver.openFileDescriptor(uri, "r")
-            if (pfd != null) {
-                pfd.use {
-                    retriever.setDataSource(it.fileDescriptor)
+            if (uri.scheme == "file" || uri.scheme == null) {
+                retriever.setDataSource(uri.path ?: uri.toString())
+                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == "yes"
+            } else {
+                val pfd = contentResolver.openFileDescriptor(uri, "r")
+                if (pfd != null) {
+                    pfd.use {
+                        retriever.setDataSource(it.fileDescriptor)
+                        retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == "yes"
+                    }
+                } else {
+                    retriever.setDataSource(this, uri)
                     retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == "yes"
                 }
-            } else {
-                retriever.setDataSource(this, uri)
-                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO) == "yes"
             }
         } catch (e: Exception) {
             false
@@ -528,83 +536,25 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     }
 
     /**
-     * Prepares a local MP4 file in cacheDir with the audio track removed
-     * so that the video trimmer preview is silent and has fast, direct file access.
+     * Prepares a local video file in cacheDir so that the video trimmer and converter
+     * have fast, direct, guaranteed file access without codec or remuxing issues.
      */
     private fun prepareVideoFile(srcUri: Uri): File? {
-        val tempFile = File(cacheDir, "trim_input_${System.currentTimeMillis()}.mp4")
+        return try {
+            val ext = try {
+                val mime = contentResolver.getType(srcUri)
+                if (mime != null) MimeTypeMap.getSingleton().getExtensionFromMimeType(mime) else null
+            } catch (e: Exception) { null } ?: "mp4"
 
-        var muxerSuccess = false
-        var extractor: MediaExtractor? = null
-        var muxer: MediaMuxer? = null
-        try {
-            extractor = MediaExtractor()
-            val pfd = contentResolver.openFileDescriptor(srcUri, "r")
-            if (pfd != null) {
-                pfd.use { extractor.setDataSource(it.fileDescriptor) }
-            } else {
-                extractor.setDataSource(this, srcUri, null)
-            }
-
-            var videoTrackIndex = -1
-            for (i in 0 until extractor.trackCount) {
-                val format = extractor.getTrackFormat(i)
-                val mime = format.getString(MediaFormat.KEY_MIME) ?: ""
-                if (mime.startsWith("video/")) {
-                    videoTrackIndex = i
-                    break
-                }
-            }
-
-            if (videoTrackIndex >= 0) {
-                extractor.selectTrack(videoTrackIndex)
-                val videoFormat = extractor.getTrackFormat(videoTrackIndex)
-                muxer = MediaMuxer(tempFile.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
-                val muxerTrackIndex = muxer.addTrack(videoFormat)
-                muxer.start()
-
-                val buffer = ByteBuffer.allocate(1024 * 1024)
-                val bufferInfo = MediaCodec.BufferInfo()
-
-                while (true) {
-                    val sampleSize = extractor.readSampleData(buffer, 0)
-                    if (sampleSize < 0) break
-                    bufferInfo.offset = 0
-                    bufferInfo.size = sampleSize
-                    bufferInfo.presentationTimeUs = extractor.sampleTime
-                    bufferInfo.flags = extractor.sampleFlags
-                    muxer.writeSampleData(muxerTrackIndex, buffer, bufferInfo)
-                    extractor.advance()
-                }
-                muxerSuccess = true
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            muxerSuccess = false
-        } finally {
-            try { muxer?.stop() } catch (e: Exception) {}
-            try { muxer?.release() } catch (e: Exception) {}
-            try { extractor?.release() } catch (e: Exception) {}
-        }
-
-        if (muxerSuccess && tempFile.exists() && tempFile.length() > 0) {
-            return tempFile
-        }
-
-        // Fallback: Copy raw stream directly to tempFile
-        try {
-            tempFile.delete()
+            val tempFile = File(cacheDir, "trim_input_${System.currentTimeMillis()}.$ext")
             contentResolver.openInputStream(srcUri)?.use { input ->
                 tempFile.outputStream().use { out -> input.copyTo(out) }
             }
-            if (tempFile.exists() && tempFile.length() > 0) {
-                return tempFile
-            }
+            if (tempFile.exists() && tempFile.length() > 0) tempFile else null
         } catch (e: Exception) {
             e.printStackTrace()
+            null
         }
-
-        return null
     }
 
     private var currentTempVideoFile: File? = null
@@ -684,11 +634,11 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     private fun launchVideoTrimmer(videoFile: File) {
         try {
             currentTempVideoFile = videoFile
-            TrimVideo.activity(videoFile.absolutePath)
+            TrimVideo.activity(Uri.fromFile(videoFile).toString())
                 .setTrimType(TrimType.FIXED_DURATION)
                 .setFixedDuration(3L)
                 .disableCompression()
-                .setHideSeekBar(true)
+                .setHideSeekBar(false)
                 .start(this, videoTrimLauncher)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -1313,8 +1263,11 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         if (result.resultCode == RESULT_OK && result.data != null) {
             val trimmedPath = TrimVideo.getTrimmedVideoPath(result.data!!)
             if (!trimmedPath.isNullOrEmpty()) {
-                val trimmedUri = if (trimmedPath.startsWith("/")) Uri.fromFile(File(trimmedPath)) else Uri.parse(trimmedPath)
+                val trimmedFile = File(trimmedPath)
+                val trimmedUri = if (trimmedFile.exists()) Uri.fromFile(trimmedFile) else (if (trimmedPath.startsWith("/")) Uri.fromFile(File(trimmedPath)) else Uri.parse(trimmedPath))
                 processVideoFile(trimmedUri, isTempFile = true)
+            } else {
+                ToastUtils.showToast(this, getString(R.string.failed))
             }
         }
         inputTemp?.delete()

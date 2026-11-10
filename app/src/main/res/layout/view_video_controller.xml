@@ -41,7 +41,7 @@
         app:bar_highlight_color="@android:color/transparent"
         app:thumb_image="@drawable/ic_vertical_line"
         android:id="@+id/seekbar_controller"
-        android:elevation="2dp"
+        android:elevation="4dp"
         android:padding="8dp"
         />
 

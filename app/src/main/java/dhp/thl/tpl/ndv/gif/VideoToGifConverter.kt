@@ -33,8 +33,9 @@ object VideoToGifConverter {
     }
 
     private fun setRetrieverDataSource(context: Context, retriever: MediaMetadataRetriever, uri: Uri) {
-        if (uri.scheme == "file") {
-            retriever.setDataSource(uri.path)
+        if (uri.scheme == "file" || uri.scheme == null) {
+            val path = uri.path ?: uri.toString()
+            retriever.setDataSource(path)
         } else {
             try {
                 val pfd = context.contentResolver.openFileDescriptor(uri, "r")
@@ -94,6 +95,7 @@ object VideoToGifConverter {
                 encoder.start(fos)
 
                 var frameIndex = 0
+                var framesAdded = 0
                 var timeUs = startMs * 1000L
                 val endUs = (startMs + actualDurationMs) * 1000L
 
@@ -120,6 +122,7 @@ object VideoToGifConverter {
                         }
 
                         encoder.addFrame(scaledFrame)
+                        framesAdded++
                         scaledFrame.recycle()
                     }
 
@@ -128,10 +131,33 @@ object VideoToGifConverter {
                     onProgress?.invoke(frameIndex.toFloat() / totalFrames)
                 }
 
+                if (framesAdded == 0) {
+                    val fallback = retriever.getFrameAtTime(startMs * 1000L, MediaMetadataRetriever.OPTION_CLOSEST)
+                        ?: retriever.getFrameAtTime(0L, MediaMetadataRetriever.OPTION_CLOSEST)
+                    if (fallback != null) {
+                        val oriented = if (rotation != 0) {
+                            val matrix = Matrix().apply { postRotate(rotation.toFloat()) }
+                            val rotated = Bitmap.createBitmap(fallback, 0, 0, fallback.width, fallback.height, matrix, true)
+                            if (rotated != fallback) fallback.recycle()
+                            rotated
+                        } else fallback
+                        val scaled = Bitmap.createScaledBitmap(oriented, targetW, targetH, true)
+                        if (scaled != oriented) oriented.recycle()
+                        encoder.addFrame(scaled)
+                        scaled.recycle()
+                        framesAdded++
+                    }
+                }
+
                 encoder.finish()
             }
 
-            outputFile.exists() && outputFile.length() > 0
+            if (outputFile.exists() && outputFile.length() > 0) {
+                true
+            } else {
+                outputFile.delete()
+                false
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             false
