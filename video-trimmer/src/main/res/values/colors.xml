@@ -1,45 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Material 3 Brand & Surface Tokens matching ZSticker -->
-    <color name="trimmer_orange_primary">#F57C00</color>
-    <color name="trimmer_orange_primary_dark">#FFB74D</color>
-    <color name="trimmer_orange_container">#FFE0B2</color>
-    <color name="trimmer_on_orange_container">#4E2600</color>
+    <!-- Material 3 Perceptual Tonal Tokens matching ZSticker Stock Orange (#F57C00) -->
+    <color name="trimmer_orange_primary">#924700</color>
+    <color name="trimmer_orange_primary_dark">#FFB381</color>
+    <color name="trimmer_orange_container">#FFDAC3</color>
+    <color name="trimmer_on_orange_container">#301200</color>
 
-    <color name="trimmer_light_surface">#FFFBFE</color>
-    <color name="trimmer_light_surface_container">#F5F5F5</color>
-    <color name="trimmer_light_surface_container_high">#EBEBEB</color>
-    <color name="trimmer_light_on_surface">#1C1B1F</color>
-    <color name="trimmer_light_on_surface_variant">#53433E</color>
+    <color name="trimmer_light_surface">#FFF8F3</color>
+    <color name="trimmer_light_surface_container">#F5ECE7</color>
+    <color name="trimmer_light_surface_container_high">#EFE6E1</color>
+    <color name="trimmer_light_on_surface">#201A16</color>
+    <color name="trimmer_light_on_surface_variant">#51443C</color>
 
-    <color name="trimmer_dark_surface">#1C1B1F</color>
-    <color name="trimmer_dark_surface_container">#26242A</color>
-    <color name="trimmer_dark_surface_container_high">#322F37</color>
-    <color name="trimmer_dark_on_surface">#E6E1E5</color>
-    <color name="trimmer_dark_on_surface_variant">#D7C2B9</color>
-    <color name="trimmer_dark_orange_container">#4A3422</color>
-    <color name="trimmer_dark_on_orange_container">#FFB74D</color>
+    <color name="trimmer_dark_surface">#18120E</color>
+    <color name="trimmer_dark_surface_container">#241E1A</color>
+    <color name="trimmer_dark_surface_container_high">#2F2824</color>
+    <color name="trimmer_dark_on_surface">#E9E1DB</color>
+    <color name="trimmer_dark_on_surface_variant">#D3C3BA</color>
+    <color name="trimmer_dark_orange_container">#6F3400</color>
+    <color name="trimmer_dark_on_orange_container">#FFDAC3</color>
 
     <!-- Legacy Compatibility Colors -->
-    <color name="colorTrimmerPrimary">#F57C00</color>
-    <color name="colorTrimmerPrimaryDark">#1C1B1F</color>
-    <color name="colorAccent">#F57C00</color>
-    <color name="colorTheme">#F57C00</color>
+    <color name="colorTrimmerPrimary">#924700</color>
+    <color name="colorTrimmerPrimaryDark">#18120E</color>
+    <color name="colorAccent">#924700</color>
+    <color name="colorTheme">#924700</color>
     <color name="colorSkyTheme">#4A90E2</color>
     <color name="colorWhite">#FFFFFF</color>
     <color name="colorBlack">#000000</color>
-    <color name="colorTxt">#1C1B1F</color>
+    <color name="colorTxt">#201A16</color>
     <color name="colorHint">#707070</color>
     <color name="colorPrimaryLt">#615C5585</color>
     <color name="colorBlackLt">#80000000</color>
     <color name="colorWhiteLt">#80FFFFFF</color>
     <color name="colorThemeRed">#F00606</color>
-    <color name="colorDefaultBg">#F8F9FA</color>
+    <color name="colorDefaultBg">#FFF8F3</color>
     <color name="colorGreyLt">#AD87868A</color>
 
     <color name="background_video_color">#2F3031</color>
     <color name="background_progress_color">#6C6D6D</color>
-    <color name="progress_color">#F57C00</color>
+    <color name="progress_color">#924700</color>
     <color name="line_color">#FFFFFF</color>
     <color name="shadow_color">#FF000000</color>
     <color name="line_button">#565758</color>

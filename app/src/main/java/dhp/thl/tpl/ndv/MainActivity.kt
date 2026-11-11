@@ -12,38 +12,30 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.animation.doOnEnd
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
-import androidx.recyclerview.widget.GridLayoutManager
-import com.kieronquinn.monetcompat.extensions.views.enableStretchOverscroll
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import dhp.thl.tpl.ndv.data.StickerRepository
 import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
 import dhp.thl.tpl.ndv.domain.MediaImportManager
 import dhp.thl.tpl.ndv.domain.StickerActionsController
 import dhp.thl.tpl.ndv.ui.BottomNavController
 import dhp.thl.tpl.ndv.ui.MainThemeApplier
-import dhp.thl.tpl.ndv.ui.SettingsSectionController
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
 
 /**
- * Slim coordinator Activity delegating UI, navigation, theme/Monet, settings,
- * media import, and per-sticker operations to dedicated single-responsibility controllers.
+ * Lightweight multi-screen host Activity coordinating:
+ * - Child screen Fragments (`HomeFragment`, `RecentsFragment`, `OptionsFragment`)
+ * - Material 3 Expressive header + borderless floating capsule navbar
+ * - Shared media picker, trimmer, uCrop, and incoming share intents
  */
 class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var adapter: StickerAdapter
-    private lateinit var adapterRecents: StickerAdapter
-
     private lateinit var themeApplier: MainThemeApplier
     private lateinit var bottomNavController: BottomNavController
-    private lateinit var settingsController: SettingsSectionController
     private lateinit var mediaImportManager: MediaImportManager
     private lateinit var stickerActionsController: StickerActionsController
-
-    private val startFileActivity = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == RESULT_OK && result.data?.getBooleanExtra("did_import", false) == true) {
-            recreate()
-        }
-    }
 
     private val cropImage = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -80,11 +72,24 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        initControllers()
-        setupStickerGrids(materialColorEnabled)
+        StickerRepository.refreshAll(this)
+
+        themeApplier = MainThemeApplier(this, binding)
+        bottomNavController = BottomNavController(this, binding)
+        mediaImportManager = MediaImportManager(
+            activity = this,
+            videoTrimLauncherProvider = { videoTrimLauncher },
+            onStickerAdded = { bottomNavController.getHomeFragment()?.scrollToTop() }
+        )
+        stickerActionsController = StickerActionsController(
+            activity = this,
+            binding = binding,
+            isVideoUri = { uri -> mediaImportManager.isVideoUri(uri) },
+            cropLauncherProvider = { cropImage },
+            onStickerCreated = { bottomNavController.getHomeFragment()?.scrollToTop() }
+        )
 
         bottomNavController.setup()
-        settingsController.setup()
 
         val startTab = if (savedInstanceState == null) {
             R.id.nav_home
@@ -97,95 +102,30 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
         themeApplier.handleEdgeToEdge()
         themeApplier.updateStatusBar()
-        bottomNavController.applyStyle(animateNewSelection = false)
-        themeApplier.applyMainThemeAsync(
+        themeApplier.applyExpressiveTheme(
             materialColorEnabled = materialColorEnabled,
-            bottomNavController = bottomNavController,
-            adapter = adapter,
-            adapterRecents = adapterRecents
+            bottomNavController = bottomNavController
         )
 
         binding.addButton.setOnClickListener {
-            pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
+            launchMediaPicker()
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                combine(
+                    StickerRepository.homeCount,
+                    StickerRepository.recentCount
+                ) { homeCount, recentCount -> homeCount to recentCount }
+                    .collect {
+                        bottomNavController.updateHeaderTitleAndBadge()
+                    }
+            }
         }
     }
 
-    private fun initControllers() {
-        themeApplier = MainThemeApplier(this, binding)
-
-        bottomNavController = BottomNavController(
-            activity = this,
-            binding = binding,
-            adapterProvider = { adapter },
-            recentsAdapterProvider = { adapterRecents },
-            onUpdateEmptyState = { isEmpty, msg -> themeApplier.updateEmptyState(isEmpty, msg) }
-        )
-
-        mediaImportManager = MediaImportManager(
-            activity = this,
-            adapterProvider = { adapter },
-            onUpdateEmptyState = { isEmpty, msg -> themeApplier.updateEmptyState(isEmpty, msg) },
-            videoTrimLauncherProvider = { videoTrimLauncher }
-        )
-
-        stickerActionsController = StickerActionsController(
-            activity = this,
-            binding = binding,
-            adapterProvider = { adapter },
-            recentsAdapterProvider = { adapterRecents },
-            currentTabIdProvider = { bottomNavController.currentTabId },
-            getThemeColor = { attr -> themeApplier.getThemeColor(attr) },
-            isVideoUri = { uri -> mediaImportManager.isVideoUri(uri) },
-            onUpdateEmptyState = { isEmpty, msg -> themeApplier.updateEmptyState(isEmpty, msg) },
-            cropLauncherProvider = { cropImage }
-        )
-
-        settingsController = SettingsSectionController(
-            activity = this,
-            binding = binding,
-            adapterProvider = { adapter },
-            recentsAdapterProvider = { adapterRecents },
-            onUpdateEmptyState = { isEmpty, msg -> themeApplier.updateEmptyState(isEmpty, msg) },
-            onSyncRecentsAfterDeletion = { stickerActionsController.syncRecentsAfterDeletion() },
-            onLaunchFileActivity = { intent -> startFileActivity.launch(intent) }
-        )
-    }
-
-    private fun setupStickerGrids(materialColorEnabled: Boolean) {
-        val displayMetrics = resources.displayMetrics
-        val columns = (displayMetrics.widthPixels / displayMetrics.density / 120).toInt().coerceAtLeast(3)
-
-        adapter = StickerAdapter(
-            StickerAdapter.loadOrdered(this),
-            this,
-            materialColorEnabled = materialColorEnabled
-        )
-        binding.recycler.layoutManager = GridLayoutManager(this, columns).apply {
-            spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-                override fun getSpanSize(pos: Int): Int =
-                    if (adapter.getItemViewType(pos) == 0) columns else 1
-            }
-        }
-        binding.recycler.adapter = adapter
-
-        adapterRecents = StickerAdapter(
-            StickerAdapter.loadRecents(this),
-            this,
-            isRecents = true,
-            materialColorEnabled = materialColorEnabled
-        )
-        binding.recyclerRecents.layoutManager = GridLayoutManager(this, columns).apply {
-            spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-                override fun getSpanSize(pos: Int): Int =
-                    if (adapterRecents.getItemViewType(pos) == 0) columns else 1
-            }
-        }
-        binding.recyclerRecents.adapter = adapterRecents
-
-        if (materialColorEnabled) {
-            binding.recycler.enableStretchOverscroll()
-            binding.recyclerRecents.enableStretchOverscroll()
-        }
+    fun launchMediaPicker() {
+        pickImages.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
     }
 
     private fun configureSplashExitAnimation(splashScreen: androidx.core.splashscreen.SplashScreen) {
@@ -196,9 +136,9 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 val zoomY = ObjectAnimator.ofFloat(iconView, View.SCALE_Y, 1.0f, 5.0f)
                 val alpha = ObjectAnimator.ofFloat(splashScreenView.view, View.ALPHA, 1.0f, 0.0f)
 
-                zoomX.duration = 500L
-                zoomY.duration = 500L
-                alpha.duration = 500L
+                zoomX.duration = 450L
+                zoomY.duration = 450L
+                alpha.duration = 450L
 
                 zoomX.interpolator = AnticipateInterpolator()
                 zoomY.interpolator = AnticipateInterpolator()

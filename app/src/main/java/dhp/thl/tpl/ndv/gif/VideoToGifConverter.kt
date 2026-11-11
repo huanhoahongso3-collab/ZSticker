@@ -10,6 +10,7 @@ import android.graphics.Rect
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
+import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
 
@@ -57,8 +58,8 @@ object VideoToGifConverter {
 
     /**
      * Converts a short video (or video segment) into a Zalo animated GIF sticker.
-     * Primary path uses sequential GPU OES Surface decoding (VideoSurfaceFrameExtractor) to avoid
-     * 4K/10-bit/stride green-stripe artifacts from MediaMetadataRetriever's CPU YUV converter.
+     * Primary path streams zero-Bitmap RGB888 frames from GPU OES Surface decoding directly into
+     * [AnimatedGifEncoder.ParallelOpaqueSession] across CPU cores.
      */
     fun convertVideoToGif(
         context: Context,
@@ -93,7 +94,7 @@ object VideoToGifConverter {
             val (targetW, targetH) = calculateScaledEvenDimensions(videoW, videoH, MAX_STICKER_SIZE)
             val frameIntervalMs = (1000L / fps.coerceAtLeast(1)).coerceAtLeast(40L)
 
-            // 1. Primary GPU Surface (MediaCodec + EGL + GL_TEXTURE_EXTERNAL_OES) pass
+            // 1. Primary Zero-Bitmap GPU Surface + Multi-Core Parallel GIF Pipeline
             var framesAdded = encodeViaGpuSurface(
                 context = context,
                 uri = uri,
@@ -158,35 +159,40 @@ object VideoToGifConverter {
         fallbackRotation: Int,
         onProgress: ((Float) -> Unit)?
     ): Int {
-        var added = 0
         return try {
-            FileOutputStream(outputFile).use { fos ->
-                val encoder = AnimatedGifEncoder().apply {
-                    setRepeat(0)
-                    setSize(targetW, targetH)
-                    setDelay(frameIntervalMs.toInt())
-                }
-                if (!encoder.start(fos)) return 0
-
-                VideoSurfaceFrameExtractor.extractFrames(
-                    context = context,
-                    uri = uri,
-                    startMs = startMs,
-                    durationMs = actualDurationMs,
-                    fps = fps,
-                    targetW = targetW,
-                    targetH = targetH,
-                    fallbackRotation = fallbackRotation
-                ) { frameIndex, totalFrames, frameBitmap ->
-                    if (encoder.addFrame(frameBitmap)) {
-                        added++
+            BufferedOutputStream(FileOutputStream(outputFile), 65536).use { bos ->
+                val session = AnimatedGifEncoder.ParallelOpaqueSession(
+                    rawOut = bos,
+                    width = targetW,
+                    height = targetH,
+                    delayMs = frameIntervalMs.toInt()
+                )
+                try {
+                    VideoSurfaceFrameExtractor.extractRgbFrames(
+                        context = context,
+                        uri = uri,
+                        startMs = startMs,
+                        durationMs = actualDurationMs,
+                        fps = fps,
+                        targetW = targetW,
+                        targetH = targetH,
+                        fallbackRotation = fallbackRotation
+                    ) { frameIndex, totalFrames, rgbBytes ->
+                        session.submitFrame(rgbBytes)
+                        // Reserve the final 8% of progress for draining parallel LZW futures
+                        val p = ((frameIndex + 1).toFloat() / totalFrames.toFloat()) * 0.92f
+                        onProgress?.invoke(p.coerceIn(0f, 0.95f))
                     }
-                    onProgress?.invoke(((frameIndex + 1).toFloat() / totalFrames.toFloat()).coerceIn(0f, 1f))
+                    val total = session.finish()
+                    if (total > 0) {
+                        onProgress?.invoke(1.0f)
+                    }
+                    total
+                } finally {
+                    // Idempotent cleanup if an exception occurred mid-stream
+                    session.finish()
                 }
-
-                encoder.finish()
             }
-            added
         } catch (e: Exception) {
             e.printStackTrace()
             0
@@ -222,8 +228,8 @@ object VideoToGifConverter {
         }
 
         var framesAdded = 0
-        FileOutputStream(outputFile).use { fos ->
-            if (!encoder.start(fos)) return 0
+        BufferedOutputStream(FileOutputStream(outputFile), 65536).use { bos ->
+            if (!encoder.start(bos)) return 0
 
             var frameIndex = 0
             var timeUs = startMs * 1000L

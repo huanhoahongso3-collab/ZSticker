@@ -13,10 +13,11 @@ import com.gowtham.library.utils.TrimVideo
 import dhp.thl.tpl.ndv.BaseActivity
 import dhp.thl.tpl.ndv.ProgressDialog
 import dhp.thl.tpl.ndv.R
-import dhp.thl.tpl.ndv.StickerAdapter
 import dhp.thl.tpl.ndv.ToastUtils
+import dhp.thl.tpl.ndv.data.StickerRepository
 import dhp.thl.tpl.ndv.gif.AnimatedImageConverter
 import dhp.thl.tpl.ndv.gif.VideoToGifConverter
+import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -24,13 +25,12 @@ import kotlin.concurrent.thread
 
 /**
  * Handles media importing, share/view intents, video container detection,
- * video trimmer launching, and video-to-GIF sticker conversion.
+ * zero-copy video trimmer launching, and parallel video-to-GIF sticker conversion.
  */
 class MediaImportManager(
     private val activity: BaseActivity,
-    private val adapterProvider: () -> StickerAdapter,
-    private val onUpdateEmptyState: (isEmpty: Boolean, message: String) -> Unit,
-    private val videoTrimLauncherProvider: () -> ActivityResultLauncher<Intent>
+    private val videoTrimLauncherProvider: () -> ActivityResultLauncher<Intent>,
+    private val onStickerAdded: (() -> Unit)? = null
 ) {
     var currentTempVideoFile: File? = null
 
@@ -161,6 +161,32 @@ class MediaImportManager(
         }
     }
 
+    private fun isSeekableVideoUri(srcUri: Uri): Boolean {
+        return try {
+            if (srcUri.scheme == "file" || srcUri.scheme == null) {
+                val f = File(srcUri.path ?: srcUri.toString())
+                f.exists() && f.canRead() && f.length() > 0L
+            } else {
+                activity.contentResolver.openFileDescriptor(srcUri, "r")?.use { pfd ->
+                    pfd.statSize > 0L
+                } == true
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun isOwnedTempFile(file: File): Boolean {
+        return try {
+            val path = file.canonicalPath
+            val cachePath = activity.cacheDir.canonicalPath
+            val extTrimPath = activity.getExternalFilesDir("TrimmedVideo")?.canonicalPath
+            path.startsWith(cachePath) || (extTrimPath != null && path.startsWith(extTrimPath))
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     fun openUriInputStream(srcUri: Uri): InputStream? {
         try {
             if (srcUri.scheme == "file" || srcUri.scheme == null) {
@@ -188,7 +214,9 @@ class MediaImportManager(
 
             val tempFile = File(activity.cacheDir, "trim_input_${System.currentTimeMillis()}.$ext")
             openUriInputStream(srcUri)?.use { input ->
-                tempFile.outputStream().use { out -> input.copyTo(out) }
+                BufferedOutputStream(FileOutputStream(tempFile), 65536).use { out ->
+                    input.copyTo(out, bufferSize = 65536)
+                }
             }
             if (tempFile.exists() && tempFile.length() > 0) tempFile else {
                 tempFile.delete()
@@ -218,6 +246,15 @@ class MediaImportManager(
 
             if (videoCount == 1) {
                 val videoUri = uris.first()
+                // Zero-copy fast path: open locally seekable content:// or file:// video directly in trimmer (0ms copy!)
+                if (isSeekableVideoUri(videoUri)) {
+                    activity.runOnUiThread {
+                        launchVideoTrimmerUri(videoUri, ownedTempFile = null)
+                    }
+                    return@thread
+                }
+
+                // Streamed/remote URI fallback: stage to local cache first
                 val progressDialog = ProgressDialog.newInstance(activity.getString(R.string.converting_video))
                 activity.runOnUiThread {
                     progressDialog.showSafe(activity.supportFragmentManager, "prepare_video")
@@ -226,7 +263,7 @@ class MediaImportManager(
                 activity.runOnUiThread {
                     progressDialog.dismissSafe()
                     if (tempVideoFile != null) {
-                        launchVideoTrimmer(tempVideoFile)
+                        launchVideoTrimmerUri(Uri.fromFile(tempVideoFile), ownedTempFile = tempVideoFile)
                     } else {
                         ToastUtils.showToast(activity, activity.getString(R.string.failed))
                     }
@@ -269,8 +306,8 @@ class MediaImportManager(
                     try {
                         openUriInputStream(uri)?.use { input ->
                             val file = File(activity.filesDir, "zsticker_${System.currentTimeMillis()}.png")
-                            FileOutputStream(file).use { out ->
-                                if (input.copyTo(out) > 0) hasSuccess = true else {
+                            BufferedOutputStream(FileOutputStream(file), 65536).use { out ->
+                                if (input.copyTo(out, bufferSize = 65536) > 0) hasSuccess = true else {
                                     file.delete()
                                     hasFailed = true
                                 }
@@ -288,9 +325,9 @@ class MediaImportManager(
             activity.runOnUiThread {
                 progressDialog.dismissSafe()
                 if (hasSuccess) {
-                    val adapter = adapterProvider()
-                    adapter.refreshData(activity)
-                    onUpdateEmptyState(adapter.itemCount == 0, activity.getString(R.string.no_stickers_found))
+                    StickerRepository.refreshHome(activity) {
+                        onStickerAdded?.invoke()
+                    }
                     ToastUtils.showToast(activity, activity.getString(R.string.success))
                 }
                 if (hasUnsupported) ToastUtils.showToast(activity, activity.getString(R.string.unsupported_file_type))
@@ -299,12 +336,12 @@ class MediaImportManager(
         }
     }
 
-    private fun launchVideoTrimmer(videoFile: File) {
+    private fun launchVideoTrimmerUri(videoUri: Uri, ownedTempFile: File?) {
         try {
-            currentTempVideoFile = videoFile
+            currentTempVideoFile = ownedTempFile
             val lang = activity.getSharedPreferences("settings", Context.MODE_PRIVATE)
                 .getString("lang", "system") ?: "system"
-            val builder = TrimVideo.activity(Uri.fromFile(videoFile).toString())
+            val builder = TrimVideo.activity(videoUri.toString())
                 .setTrimType(TrimType.FIXED_DURATION)
                 .setFixedDuration(5L)
                 .setTitle(activity.getString(R.string.trim_video_title))
@@ -316,7 +353,7 @@ class MediaImportManager(
             builder.start(activity, videoTrimLauncherProvider())
         } catch (e: Exception) {
             e.printStackTrace()
-            videoFile.delete()
+            ownedTempFile?.delete()
             currentTempVideoFile = null
             ToastUtils.showToast(activity, activity.getString(R.string.failed))
         }
@@ -337,21 +374,40 @@ class MediaImportManager(
             }
 
             if (!trimmedPath.isNullOrEmpty()) {
-                val trimmedFile = File(trimmedPath)
-                val trimmedUri = if (trimmedFile.exists()) {
-                    Uri.fromFile(trimmedFile)
-                } else if (inputTemp != null && inputTemp.exists()) {
-                    Uri.fromFile(inputTemp)
-                } else if (trimmedPath.startsWith("/")) {
-                    Uri.fromFile(File(trimmedPath))
-                } else {
-                    Uri.parse(trimmedPath)
+                val resolvedUri: Uri
+                val shouldDeleteResolved: Boolean
+
+                when {
+                    trimmedPath.startsWith("content://", ignoreCase = true) -> {
+                        resolvedUri = Uri.parse(trimmedPath)
+                        shouldDeleteResolved = false
+                    }
+                    trimmedPath.startsWith("file://", ignoreCase = true) -> {
+                        val parsed = Uri.parse(trimmedPath)
+                        val f = File(parsed.path ?: "")
+                        resolvedUri = parsed
+                        shouldDeleteResolved = isOwnedTempFile(f)
+                    }
+                    else -> {
+                        val f = File(trimmedPath)
+                        if (f.exists()) {
+                            resolvedUri = Uri.fromFile(f)
+                            shouldDeleteResolved = isOwnedTempFile(f)
+                        } else if (inputTemp != null && inputTemp.exists()) {
+                            resolvedUri = Uri.fromFile(inputTemp)
+                            shouldDeleteResolved = true
+                        } else {
+                            resolvedUri = Uri.parse(trimmedPath)
+                            shouldDeleteResolved = false
+                        }
+                    }
                 }
+
                 processVideoFile(
-                    videoUri = trimmedUri,
+                    videoUri = resolvedUri,
                     startMs = startMs,
                     maxDurationMs = clipDurationMs,
-                    isTempFile = true,
+                    isTempFile = shouldDeleteResolved,
                     extraCleanupFile = inputTemp
                 )
             } else if (inputTemp != null && inputTemp.exists()) {
@@ -392,24 +448,27 @@ class MediaImportManager(
             ) { progress ->
                 activity.runOnUiThread { progressDialog.updateProgress(progress) }
             }
-            if (isTempFile) {
+            if (isTempFile && (videoUri.scheme == null || videoUri.scheme.equals("file", ignoreCase = true))) {
                 try {
-                    videoUri.path?.let { File(it).delete() }
+                    videoUri.path?.let { path ->
+                        val f = File(path)
+                        if (isOwnedTempFile(f)) f.delete()
+                    }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
             }
             try {
-                extraCleanupFile?.delete()
+                extraCleanupFile?.takeIf { isOwnedTempFile(it) }?.delete()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
             activity.runOnUiThread {
                 progressDialog.dismissSafe()
                 if (success) {
-                    val adapter = adapterProvider()
-                    adapter.refreshData(activity)
-                    onUpdateEmptyState(adapter.itemCount == 0, activity.getString(R.string.no_stickers_found))
+                    StickerRepository.refreshHome(activity) {
+                        onStickerAdded?.invoke()
+                    }
                     ToastUtils.showToast(activity, activity.getString(R.string.success))
                 } else {
                     ToastUtils.showToast(activity, activity.getString(R.string.failed))

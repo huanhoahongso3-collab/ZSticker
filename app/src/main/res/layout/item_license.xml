@@ -1,73 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardLicenseItem"
+    style="@style/Widget.Material3.CardView.Filled"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
+    android:layout_marginBottom="3dp"
     app:cardCornerRadius="24dp"
     app:cardElevation="0dp"
-    app:strokeWidth="0dp"
-    android:backgroundTint="?attr/colorSurfaceContainer"
-    style="@style/Widget.Material3.CardView.Filled">
+    app:strokeWidth="0dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="20dp">
+        android:padding="18dp">
 
         <androidx.constraintlayout.helper.widget.Flow
             android:id="@+id/flowHeader"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:flow_wrapMode="chain"
-            app:flow_horizontalStyle="packed"
+            app:constraint_referenced_ids="txtName,txtLicenseName"
+            app:flow_horizontalAlign="start"
             app:flow_horizontalBias="0"
             app:flow_horizontalGap="8dp"
-            app:flow_verticalGap="4dp"
-            app:flow_horizontalAlign="start"
-            app:constraint_referenced_ids="txtName,txtLicenseName"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:flow_horizontalStyle="packed"
+            app:flow_verticalGap="6dp"
+            app:flow_wrapMode="chain"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
             android:id="@+id/txtName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textStyle="bold"
-            android:textSize="18sp"
-            android:textAlignment="viewStart"
             android:gravity="start"
-            android:textColor="?attr/colorOnSurface" />
+            android:textAlignment="viewStart"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="17sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/txtLicenseName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:gravity="start"
+            android:letterSpacing="0.04"
             android:paddingHorizontal="10dp"
             android:paddingVertical="4dp"
-            android:background="@drawable/bg_circle_icon"
-            android:backgroundTint="?attr/colorPrimary"
-            android:textColor="?attr/colorOnPrimary"
-            android:textSize="11sp"
-            android:textStyle="bold"
             android:textAlignment="viewStart"
-            android:gravity="start"
-            android:textAllCaps="true" />
+            android:textAllCaps="true"
+            android:textSize="11sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/txtLicenseText"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:textSize="13sp"
-            android:alpha="0.7"
-            android:textAlignment="viewStart"
+            android:layout_marginTop="10dp"
             android:gravity="start"
+            android:lineSpacingExtra="2dp"
+            android:textAlignment="viewStart"
             android:textColor="?attr/colorOnSurfaceVariant"
-            app:layout_constraintTop_toBottomOf="@+id/flowHeader"
+            android:textSize="13sp"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintTop_toBottomOf="@+id/flowHeader" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

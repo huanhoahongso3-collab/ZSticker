@@ -2,111 +2,49 @@ package dhp.thl.tpl.ndv.ui
 
 import android.content.Context
 import android.content.res.ColorStateList
-import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.RippleDrawable
-import android.util.TypedValue
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
-import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.kieronquinn.monetcompat.core.MonetCompat
-import com.kieronquinn.monetcompat.extensions.views.applyMonetRecursively
 import dhp.thl.tpl.ndv.BaseActivity
 import dhp.thl.tpl.ndv.OptionItem
 import dhp.thl.tpl.ndv.R
+import dhp.thl.tpl.ndv.ui.theme.ExpressiveMotion
+import dhp.thl.tpl.ndv.ui.theme.ExpressivePalette
+import dhp.thl.tpl.ndv.ui.theme.ExpressiveThemeManager
+import dhp.thl.tpl.ndv.ui.theme.ExpressiveThemeManager.GroupPosition
 
-class OptionAdapter(context: Context, objects: List<OptionItem>) : ArrayAdapter<OptionItem>(context, 0, objects) {
-    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.item_icon_text, parent, false)
-        val item = getItem(position)!!
-        val textView = view.findViewById<TextView>(R.id.item_text)
-        val iconView = view.findViewById<ImageView>(R.id.item_icon)
-        textView.text = item.text
-        iconView.setImageResource(item.iconRes)
-
-        val materialColorEnabled = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-            .getBoolean("material_color_enabled", false)
-        val primary = if (materialColorEnabled) {
-            MonetCompat.getInstance().getAccentColor(context)
-        } else {
-            ContextCompat.getColor(context, R.color.orange_primary)
-        }
-
-        if (item.text == context.getString(R.string.delete) || item.text == context.getString(R.string.delete_history)) {
-            val red = Color.parseColor("#FF3b30")
-            textView.setTextColor(red)
-            iconView.setColorFilter(red)
-            iconView.background = ContextCompat.getDrawable(context, R.drawable.bg_circle_icon)
-            iconView.backgroundTintList = ColorStateList.valueOf(ColorUtils.setAlphaComponent(red, 30))
-        } else {
-            val isFlag = item.iconRes == R.drawable.ic_flag_en ||
-                item.iconRes == R.drawable.ic_flag_vi ||
-                item.iconRes == R.drawable.ic_flag_ru ||
-                item.iconRes == R.drawable.ic_flag_zh
-            if (!isFlag) iconView.setColorFilter(primary) else iconView.clearColorFilter()
-            iconView.background = ContextCompat.getDrawable(context, R.drawable.bg_circle_icon)
-            iconView.backgroundTintList = ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 30))
-        }
-        return view
-    }
+private fun isFlagIcon(iconRes: Int): Boolean {
+    return iconRes == R.drawable.ic_flag_en ||
+        iconRes == R.drawable.ic_flag_vi ||
+        iconRes == R.drawable.ic_flag_ru ||
+        iconRes == R.drawable.ic_flag_zh
 }
 
-class ThemeAdapter(
-    context: Context,
-    objects: List<OptionItem>,
-    private val selectedIndex: Int
-) : ArrayAdapter<OptionItem>(context, 0, objects) {
-    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.item_radio_icon_text, parent, false)
-        val item = getItem(position)!!
-        val iconView = view.findViewById<ImageView>(R.id.item_icon)
-        val radioButton = view.findViewById<RadioButton>(R.id.item_radio)
-        val textView = view.findViewById<TextView>(R.id.item_text)
-        iconView.setImageResource(item.iconRes)
-        textView.text = item.text
-        radioButton.isChecked = (position == selectedIndex)
-
-        val materialColorEnabled = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-            .getBoolean("material_color_enabled", false)
-        val primary = if (materialColorEnabled) {
-            MonetCompat.getInstance().getAccentColor(context)
-        } else {
-            ContextCompat.getColor(context, R.color.orange_primary)
-        }
-
-        radioButton.buttonTintList = ColorStateList(
-            arrayOf(
-                intArrayOf(android.R.attr.state_checked),
-                intArrayOf(-android.R.attr.state_checked)
-            ),
-            intArrayOf(primary, Color.GRAY)
-        )
-        val isFlag = item.iconRes == R.drawable.ic_flag_en ||
-            item.iconRes == R.drawable.ic_flag_vi ||
-            item.iconRes == R.drawable.ic_flag_ru ||
-            item.iconRes == R.drawable.ic_flag_zh
-        if (!isFlag) iconView.setColorFilter(primary) else iconView.clearColorFilter()
-        iconView.background = ContextCompat.getDrawable(context, R.drawable.bg_circle_icon)
-        iconView.backgroundTintList = ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 30))
-        return view
-    }
-}
-
+/**
+ * Displays an Android 16 Material 3 Expressive Segmented Grouped List Dialog.
+ * Works identically for both Dynamic Wallpaper Color and Stock Orange (`#F57C00` seed).
+ */
 fun BaseActivity.showPaneDialog(
     title: String,
     items: List<OptionItem>,
     selectedIndex: Int = -1,
     onItemClick: (Int) -> Unit
 ) {
+    val palette = ExpressiveThemeManager.resolvePalette(this)
+    val density = resources.displayMetrics.density
+    val gapPx = (3f * density).toInt()
+
     val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_list_pane, null)
     val container = dialogView.findViewById<ViewGroup>(R.id.dialog_item_container)
     val dialog = MaterialAlertDialogBuilder(this)
@@ -115,99 +53,171 @@ fun BaseActivity.showPaneDialog(
         .setNegativeButton(getString(R.string.cancel), null)
         .create()
 
-    val materialColorEnabled = getSharedPreferences("settings", Context.MODE_PRIVATE)
-        .getBoolean("material_color_enabled", false)
-    val primary = if (materialColorEnabled) {
-        MonetCompat.getInstance().getAccentColor(this)
-    } else {
-        getColor(R.color.orange_primary)
-    }
+    items.forEachIndexed { index, item ->
+        val isDestructive = item.text == getString(R.string.delete) ||
+            item.text == getString(R.string.delete_history)
+        val isSelected = selectedIndex != -1 && index == selectedIndex
 
-    items.forEachIndexed { index, _ ->
-        val itemView = if (selectedIndex != -1) {
-            ThemeAdapter(this, items, selectedIndex).getView(index, null, container)
-        } else {
-            OptionAdapter(this, items).getView(index, null, container)
+        val groupPos = when {
+            items.size == 1 -> GroupPosition.SINGLE
+            index == 0 -> GroupPosition.TOP
+            index == items.lastIndex -> GroupPosition.BOTTOM
+            else -> GroupPosition.MIDDLE
         }
-        itemView.background = RippleDrawable(
-            ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 30)),
-            itemView.background,
-            null
+
+        val card = MaterialCardView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                if (index > 0) topMargin = gapPx
+            }
+            isClickable = true
+            isFocusable = true
+        }
+
+        val rowContainerColor = if (isSelected) palette.secondaryContainer else palette.surfaceContainerLow
+        val rowRippleColor = if (isDestructive) palette.error else palette.primary
+        ExpressiveThemeManager.styleSegmentedCard(
+            card = card,
+            position = groupPos,
+            palette = palette,
+            containerColor = rowContainerColor,
+            rippleBaseColor = rowRippleColor
         )
-        itemView.setOnClickListener {
+        ExpressiveMotion.attachPressSpring(card, pressedScale = 0.97f)
+
+        val rowView = if (selectedIndex != -1) {
+            LayoutInflater.from(this).inflate(R.layout.item_radio_icon_text, card, false).also { v ->
+                v.background = null
+                val iconView = v.findViewById<ImageView>(R.id.item_icon)
+                val radioButton = v.findViewById<RadioButton>(R.id.item_radio)
+                val textView = v.findViewById<TextView>(R.id.item_text)
+
+                iconView.setImageResource(item.iconRes)
+                textView.text = item.text
+                textView.setTextColor(if (isSelected) palette.onSecondaryContainer else palette.onSurface)
+                radioButton.isChecked = isSelected
+                radioButton.buttonTintList = ColorStateList(
+                    arrayOf(
+                        intArrayOf(android.R.attr.state_checked),
+                        intArrayOf(-android.R.attr.state_checked)
+                    ),
+                    intArrayOf(palette.primary, palette.outline)
+                )
+
+                val flag = isFlagIcon(item.iconRes)
+                ExpressiveThemeManager.styleSquircleIcon(
+                    imageView = iconView,
+                    badgeBgColor = if (isSelected) palette.surfaceContainerLowest else palette.secondaryContainer,
+                    iconTint = palette.onSecondaryContainer,
+                    tintIcon = !flag
+                )
+            }
+        } else {
+            LayoutInflater.from(this).inflate(R.layout.item_icon_text, card, false).also { v ->
+                v.background = null
+                val iconView = v.findViewById<ImageView>(R.id.item_icon)
+                val textView = v.findViewById<TextView>(R.id.item_text)
+                val padH = (16f * density).toInt()
+                val padV = (12f * density).toInt()
+                v.setPadding(padH, padV, padH, padV)
+
+                iconView.setImageResource(item.iconRes)
+                textView.text = item.text
+
+                if (isDestructive) {
+                    textView.setTextColor(palette.error)
+                    ExpressiveThemeManager.styleSquircleIcon(
+                        imageView = iconView,
+                        badgeBgColor = palette.errorContainer,
+                        iconTint = palette.onErrorContainer
+                    )
+                } else {
+                    textView.setTextColor(palette.onSurface)
+                    val flag = isFlagIcon(item.iconRes)
+                    ExpressiveThemeManager.styleSquircleIcon(
+                        imageView = iconView,
+                        badgeBgColor = palette.secondaryContainer,
+                        iconTint = palette.onSecondaryContainer,
+                        tintIcon = !flag
+                    )
+                }
+            }
+        }
+
+        card.addView(rowView)
+        card.setOnClickListener {
             onItemClick(index)
             dialog.dismiss()
         }
-        container.addView(itemView)
-        if (index < items.size - 1) {
-            val tv = TypedValue()
-            theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurfaceVariant, tv, true)
-            container.addView(View(this).apply {
-                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1)
-                setBackgroundColor(tv.data)
-                alpha = 0.1f
-            })
-        }
+        container.addView(card)
     }
+
     dialog.showMonetDialog(this)
 }
 
-fun AlertDialog.showMonetDialog(context: Context) {
-    val materialColorEnabled = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-        .getBoolean("material_color_enabled", false)
-    if (materialColorEnabled) window?.decorView?.applyMonetRecursively()
-    show()
-    val primary = if (materialColorEnabled) {
-        MonetCompat.getInstance().getAccentColor(context)
-    } else {
-        ContextCompat.getColor(context, R.color.orange_primary)
+private fun AlertDialog.applyExpressiveWindowChrome(context: Context, palette: ExpressivePalette) {
+    val density = context.resources.displayMetrics.density
+    val bgShape = GradientDrawable().apply {
+        shape = GradientDrawable.RECTANGLE
+        cornerRadius = 28f * density
+        setColor(palette.surfaceContainerHigh)
     }
+    val insetPx = (16f * density).toInt()
+    window?.setBackgroundDrawable(InsetDrawable(bgShape, insetPx))
+    window?.setDimAmount(0.42f)
 
-    val rippleColor = ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 30))
+    findViewById<TextView>(androidx.appcompat.R.id.alertTitle)?.setTextColor(palette.onSurface)
+    findViewById<TextView>(android.R.id.message)?.setTextColor(palette.onSurfaceVariant)
+}
+
+fun AlertDialog.showMonetDialog(context: Context) {
+    val palette = ExpressiveThemeManager.resolvePalette(context)
+    show()
+    applyExpressiveWindowChrome(context, palette)
+
+    val rippleColor = ColorStateList.valueOf(
+        ColorUtils.setAlphaComponent(palette.primary, if (palette.isDark) 52 else 36)
+    )
     listOf(AlertDialog.BUTTON_POSITIVE, AlertDialog.BUTTON_NEGATIVE, AlertDialog.BUTTON_NEUTRAL).forEach { which ->
         val btn = getButton(which)
-        btn?.setTextColor(primary)
+        btn?.setTextColor(palette.primary)
         if (btn is MaterialButton) {
             btn.rippleColor = rippleColor
         } else if (btn?.background is RippleDrawable) {
             (btn.background as RippleDrawable).setColor(rippleColor)
         }
     }
-    window?.setDimAmount(0.35f)
 }
 
 fun AlertDialog.showDestructiveDialog(context: Context) {
-    val materialColorEnabled = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-        .getBoolean("material_color_enabled", false)
-    if (materialColorEnabled) window?.decorView?.applyMonetRecursively()
+    val palette = ExpressiveThemeManager.resolvePalette(context)
     show()
-    val red = Color.parseColor("#FF3b30")
-    val primary = if (materialColorEnabled) {
-        MonetCompat.getInstance().getAccentColor(context)
-    } else {
-        ContextCompat.getColor(context, R.color.orange_primary)
-    }
+    applyExpressiveWindowChrome(context, palette)
 
-    val ripplePrimary = ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 30))
-    val rippleRed = ColorStateList.valueOf(ColorUtils.setAlphaComponent(red, 30))
+    val ripplePrimary = ColorStateList.valueOf(
+        ColorUtils.setAlphaComponent(palette.primary, if (palette.isDark) 52 else 36)
+    )
+    val rippleError = ColorStateList.valueOf(
+        ColorUtils.setAlphaComponent(palette.error, if (palette.isDark) 52 else 36)
+    )
 
     getButton(AlertDialog.BUTTON_POSITIVE)?.let { btn ->
-        btn.setTextColor(red)
+        btn.setTextColor(palette.error)
         if (btn is MaterialButton) {
-            btn.rippleColor = rippleRed
+            btn.rippleColor = rippleError
         } else if (btn.background is RippleDrawable) {
-            (btn.background as RippleDrawable).setColor(rippleRed)
+            (btn.background as RippleDrawable).setColor(rippleError)
         }
     }
 
     getButton(AlertDialog.BUTTON_NEGATIVE)?.let { btn ->
-        btn.setTextColor(primary)
+        btn.setTextColor(palette.primary)
         if (btn is MaterialButton) {
             btn.rippleColor = ripplePrimary
         } else if (btn.background is RippleDrawable) {
             (btn.background as RippleDrawable).setColor(ripplePrimary)
         }
     }
-
-    window?.setDimAmount(0.35f)
 }

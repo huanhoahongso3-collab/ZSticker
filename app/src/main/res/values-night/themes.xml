@@ -1,25 +1,39 @@
 <resources>
     <style name="Theme.ZSticker" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Custom Orange Colors for Dark Theme -->
-        <item name="colorPrimary">@color/orange_primary_light</item>
+        <!-- Stock Orange (#F57C00) M3 Tonal Roles (Dark) -->
+        <item name="colorPrimary">@color/dark_orange_primary</item>
+        <item name="colorOnPrimary">@color/dark_orange_on_primary</item>
         <item name="colorPrimaryContainer">@color/dark_orange_container</item>
         <item name="colorOnPrimaryContainer">@color/dark_orange_on_container</item>
-        <item name="colorSecondary">@color/orange_primary</item>
-        <item name="colorSecondaryContainer">@color/dark_orange_container</item>
-        <item name="colorOnSecondaryContainer">@color/dark_orange_on_container</item>
-        
-        <!-- Surface Colors -->
+
+        <item name="colorSecondary">@color/dark_orange_secondary</item>
+        <item name="colorOnSecondary">@color/dark_orange_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/dark_orange_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/dark_orange_on_secondary_container</item>
+
+        <item name="colorTertiary">@color/dark_orange_tertiary</item>
+        <item name="colorOnTertiary">@color/dark_orange_on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/dark_orange_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/dark_orange_on_tertiary_container</item>
+
+        <!-- M3 Surface Container Hierarchy -->
         <item name="colorSurface">@color/dark_surface</item>
+        <item name="colorSurfaceContainerLowest">@color/dark_surface_container_lowest</item>
+        <item name="colorSurfaceContainerLow">@color/dark_surface_container_low</item>
         <item name="colorSurfaceContainer">@color/dark_surface_container</item>
         <item name="colorSurfaceContainerHigh">@color/dark_surface_container_high</item>
+        <item name="colorSurfaceContainerHighest">@color/dark_surface_container_highest</item>
         <item name="colorOnSurface">@color/dark_on_surface</item>
+        <item name="colorOnSurfaceVariant">@color/dark_on_surface_variant</item>
+        <item name="colorOutline">@color/dark_outline</item>
+        <item name="colorOutlineVariant">@color/dark_outline_variant</item>
         <item name="android:colorBackground">@color/dark_background</item>
-        
+
         <!-- System Bars (Edge-to-Edge managed via enableEdgeToEdge) -->
         <item name="titleTextAppearance">@style/ToolbarBoldTitle</item>
     </style>
 
-    <style name="ToolbarBoldTitle" parent="TextAppearance.Material3.TitleLarge">
+    <style name="ToolbarBoldTitle" parent="TextAppearance.Material3.HeadlineSmall">
         <item name="android:textStyle">bold</item>
     </style>
 
@@ -29,7 +43,7 @@
     </style>
 
     <style name="ShapeAppearance.ZSticker.MediumComponent" parent="ShapeAppearance.Material3.MediumComponent">
-        <item name="cornerSize">16dp</item>
+        <item name="cornerSize">20dp</item>
     </style>
 
     <style name="ShapeAppearance.ZSticker.FullCircle" parent="">
@@ -41,12 +55,13 @@
         <item name="cornerSizeBottomRight">50%</item>
     </style>
 
+    <!-- Borderless floating capsule navbar (0dp stroke) -->
     <style name="FloatingNavCardStyle" parent="Widget.Material3.CardView.Filled">
         <item name="cardBackgroundColor">@android:color/transparent</item>
         <item name="cardCornerRadius">32dp</item>
         <item name="cardElevation">0dp</item>
-        <item name="strokeWidth">1dp</item>
-        <item name="strokeColor">@color/floating_nav_stroke_dark</item>
+        <item name="strokeWidth">0dp</item>
+        <item name="strokeColor">@android:color/transparent</item>
     </style>
 
     <style name="InfoItemStyle">
@@ -59,9 +74,9 @@
     </style>
 
     <style name="InfoIconStyle">
-        <item name="android:layout_width">36dp</item>
-        <item name="android:layout_height">36dp</item>
-        <item name="android:padding">6dp</item>
+        <item name="android:layout_width">40dp</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="android:padding">9dp</item>
         <item name="android:layout_marginEnd">16dp</item>
         <item name="android:background">@drawable/bg_circle_icon</item>
         <item name="android:tint">?attr/colorPrimary</item>
@@ -74,4 +89,3 @@
         <item name="android:orientation">vertical</item>
     </style>
 </resources>
-

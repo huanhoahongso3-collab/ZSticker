@@ -245,12 +245,42 @@ public class ActVideoTrimmer extends LocalizationActivity {
         try {
             isMonetEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false);
             if (isMonetEnabled) {
-                primaryColor = MonetCompat.getInstance().getAccentColor(this, null);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    primaryColor = ContextCompat.getColor(
+                            this,
+                            isDark ? android.R.color.system_accent1_200 : android.R.color.system_accent1_600
+                    );
+                } else {
+                    primaryColor = MonetCompat.getInstance().getAccentColor(this, null);
+                }
             } else {
                 primaryColor = ContextCompat.getColor(this, isDark ? R.color.trimmer_orange_primary_dark : R.color.trimmer_orange_primary);
             }
         } catch (Exception e) {
             primaryColor = ContextCompat.getColor(this, isDark ? R.color.trimmer_orange_primary_dark : R.color.trimmer_orange_primary);
+        }
+
+        if (isMonetEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            int n1_10 = ContextCompat.getColor(this, android.R.color.system_neutral1_10);
+            int n1_50 = ContextCompat.getColor(this, android.R.color.system_neutral1_50);
+            int n1_100 = ContextCompat.getColor(this, android.R.color.system_neutral1_100);
+            int n1_800 = ContextCompat.getColor(this, android.R.color.system_neutral1_800);
+            int n1_900 = ContextCompat.getColor(this, android.R.color.system_neutral1_900);
+            int n1_1000 = ContextCompat.getColor(this, android.R.color.system_neutral1_1000);
+
+            int surface = isDark
+                    ? ColorUtils.blendARGB(n1_900, n1_1000, 0.40f)
+                    : ColorUtils.blendARGB(n1_10, n1_50, 0.25f);
+            int surfaceContainer = isDark
+                    ? ColorUtils.blendARGB(n1_900, n1_800, 0.20f)
+                    : ColorUtils.blendARGB(n1_50, n1_100, 0.20f);
+
+            View rootView = findViewById(R.id.root_view);
+            if (rootView != null) rootView.setBackgroundColor(surface);
+            View appBar = findViewById(R.id.app_bar_layout);
+            if (appBar != null) appBar.setBackgroundColor(surface);
+            com.google.android.material.card.MaterialCardView bottomCard = findViewById(R.id.bottom_control_card);
+            if (bottomCard != null) bottomCard.setCardBackgroundColor(surfaceContainer);
         }
 
         WindowInsetsControllerCompat insetsController = new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
@@ -1129,7 +1159,19 @@ public class ActVideoTrimmer extends LocalizationActivity {
                 videoPlayer.setPlayWhenReady(false);
             }
             Intent intent = new Intent();
-            String sourcePath = (fileUri != null && fileUri.getPath() != null) ? fileUri.getPath() : String.valueOf(fileUri);
+            String sourcePath;
+            if (fileUri != null) {
+                String scheme = fileUri.getScheme();
+                if ((scheme == null || "file".equalsIgnoreCase(scheme)) && fileUri.getPath() != null) {
+                    sourcePath = fileUri.getPath();
+                } else {
+                    sourcePath = fileUri.toString();
+                    intent.setData(fileUri);
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                }
+            } else {
+                sourcePath = "";
+            }
             intent.putExtra(TrimVideo.TRIMMED_VIDEO_PATH, sourcePath);
             intent.putExtra(TrimVideo.TRIM_START_MS, startMs);
             intent.putExtra(TrimVideo.TRIM_END_MS, endMs);

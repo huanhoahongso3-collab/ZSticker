@@ -35,8 +35,40 @@ import java.nio.FloatBuffer
  */
 object VideoSurfaceFrameExtractor {
 
-    private const val TIMEOUT_US = 15_000L
+    private const val TIMEOUT_US = 12_000L
     private const val FRAME_WAIT_MS = 1_500L
+
+    /**
+     * Zero-Bitmap fast path: extracts scaled, oriented, SDR-tone-mapped top-down RGB888 frames
+     * directly from the OpenGL ES pbuffer in a single pass per frame.
+     *
+     * Note: The [rgbBytes] array passed to [onFrameRgb] is immutable after emission and safe
+     * to hand off directly to background worker threads without copying.
+     */
+    fun extractRgbFrames(
+        context: Context,
+        uri: Uri,
+        startMs: Long,
+        durationMs: Long,
+        fps: Int,
+        targetW: Int,
+        targetH: Int,
+        fallbackRotation: Int,
+        onFrameRgb: (frameIndex: Int, totalFrames: Int, rgbBytes: ByteArray) -> Unit
+    ): Int {
+        return runExtractionPipeline(
+            context = context,
+            uri = uri,
+            startMs = startMs,
+            durationMs = durationMs,
+            fps = fps,
+            targetW = targetW,
+            targetH = targetH,
+            fallbackRotation = fallbackRotation,
+            captureFrame = { glOutput -> glOutput.drawImageAndReadRgb() },
+            emitFrame = onFrameRgb
+        )
+    }
 
     fun extractFrames(
         context: Context,
@@ -48,6 +80,42 @@ object VideoSurfaceFrameExtractor {
         targetH: Int,
         fallbackRotation: Int,
         onFrame: (frameIndex: Int, totalFrames: Int, bitmap: Bitmap) -> Unit
+    ): Int {
+        val reusableBitmap = Bitmap.createBitmap(targetW, targetH, Bitmap.Config.ARGB_8888)
+        return try {
+            runExtractionPipeline(
+                context = context,
+                uri = uri,
+                startMs = startMs,
+                durationMs = durationMs,
+                fps = fps,
+                targetW = targetW,
+                targetH = targetH,
+                fallbackRotation = fallbackRotation,
+                captureFrame = { glOutput ->
+                    glOutput.drawImageAndReadPixels(reusableBitmap)
+                    reusableBitmap
+                },
+                emitFrame = onFrame
+            )
+        } finally {
+            try {
+                reusableBitmap.recycle()
+            } catch (_: Exception) {}
+        }
+    }
+
+    private fun <T> runExtractionPipeline(
+        context: Context,
+        uri: Uri,
+        startMs: Long,
+        durationMs: Long,
+        fps: Int,
+        targetW: Int,
+        targetH: Int,
+        fallbackRotation: Int,
+        captureFrame: (OffscreenGlSurface) -> T,
+        emitFrame: (frameIndex: Int, totalFrames: Int, frame: T) -> Unit
     ): Int {
         val extractor = MediaExtractor()
         var pfd: android.os.ParcelFileDescriptor? = null
@@ -92,6 +160,11 @@ object VideoSurfaceFrameExtractor {
                     MediaFormat.COLOR_TRANSFER_SDR_VIDEO
                 )
             }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                // Hint decoder to run at maximum throughput instead of real-time pacing
+                format.setInteger(MediaFormat.KEY_OPERATING_RATE, Short.MAX_VALUE.toInt())
+                format.setInteger(MediaFormat.KEY_PRIORITY, 0)
+            }
 
             glOutput = OffscreenGlSurface(targetW, targetH)
             glOutput.makeCurrent()
@@ -120,43 +193,41 @@ object VideoSurfaceFrameExtractor {
             var postInputIdleSpins = 0
             val toleranceUs = frameIntervalUs / 3L
 
-            val reusableBitmap = Bitmap.createBitmap(targetW, targetH, Bitmap.Config.ARGB_8888)
-
             while (!outputDone && framesExtracted < totalFrames) {
-                if (!inputDone) {
-                    val inIndex = codec.dequeueInputBuffer(TIMEOUT_US)
-                    if (inIndex >= 0) {
-                        val inputBuffer = codec.getInputBuffer(inIndex)
-                        if (inputBuffer != null) {
-                            val sampleSize = extractor.readSampleData(inputBuffer, 0)
-                            val sampleTimeUs = extractor.sampleTime
-                            if (sampleSize < 0) {
+                // Feed as many available input buffers as possible without blocking
+                while (!inputDone) {
+                    val inIndex = codec.dequeueInputBuffer(if (framesExtracted == 0) 2_500L else 0L)
+                    if (inIndex < 0) break
+                    val inputBuffer = codec.getInputBuffer(inIndex)
+                    if (inputBuffer == null) break
+
+                    val sampleSize = extractor.readSampleData(inputBuffer, 0)
+                    val sampleTimeUs = extractor.sampleTime
+                    if (sampleSize < 0) {
+                        codec.queueInputBuffer(
+                            inIndex,
+                            0,
+                            0,
+                            0L,
+                            MediaCodec.BUFFER_FLAG_END_OF_STREAM
+                        )
+                        inputDone = true
+                    } else {
+                        codec.queueInputBuffer(inIndex, 0, sampleSize, sampleTimeUs, 0)
+                        extractor.advance()
+                        if (sampleTimeUs > endUs + frameIntervalUs) {
+                            val eosIndex = codec.dequeueInputBuffer(TIMEOUT_US)
+                            if (eosIndex >= 0) {
                                 codec.queueInputBuffer(
-                                    inIndex,
+                                    eosIndex,
                                     0,
                                     0,
                                     0L,
                                     MediaCodec.BUFFER_FLAG_END_OF_STREAM
                                 )
                                 inputDone = true
-                            } else {
-                                codec.queueInputBuffer(inIndex, 0, sampleSize, sampleTimeUs, 0)
-                                extractor.advance()
-                                if (sampleTimeUs > endUs + frameIntervalUs) {
-                                    // Feed one EOS after passing endUs so B-frames flush cleanly
-                                    val eosIndex = codec.dequeueInputBuffer(TIMEOUT_US)
-                                    if (eosIndex >= 0) {
-                                        codec.queueInputBuffer(
-                                            eosIndex,
-                                            0,
-                                            0,
-                                            0L,
-                                            MediaCodec.BUFFER_FLAG_END_OF_STREAM
-                                        )
-                                        inputDone = true
-                                    }
-                                }
                             }
+                            break
                         }
                     }
                 }
@@ -178,13 +249,13 @@ object VideoSurfaceFrameExtractor {
 
                         if (shouldCapture) {
                             if (glOutput.awaitNewImage(FRAME_WAIT_MS)) {
-                                glOutput.drawImageAndReadPixels(reusableBitmap)
-                                onFrame(framesExtracted, totalFrames, reusableBitmap)
+                                val captured = captureFrame(glOutput)
+                                emitFrame(framesExtracted, totalFrames, captured)
                                 framesExtracted++
                                 nextTargetUs += frameIntervalUs
                                 while (nextTargetUs <= ptsUs - toleranceUs && framesExtracted < totalFrames) {
-                                    // Low-FPS source: duplicate frame to preserve real-time GIF speed
-                                    onFrame(framesExtracted, totalFrames, reusableBitmap)
+                                    // Low-FPS source: duplicate frame reference to preserve real-time GIF speed
+                                    emitFrame(framesExtracted, totalFrames, captured)
                                     framesExtracted++
                                     nextTargetUs += frameIntervalUs
                                 }
@@ -206,7 +277,6 @@ object VideoSurfaceFrameExtractor {
                 }
             }
 
-            reusableBitmap.recycle()
             framesExtracted
         } catch (e: Exception) {
             e.printStackTrace()
@@ -254,7 +324,6 @@ object VideoSurfaceFrameExtractor {
             }
         } catch (_: Exception) {}
 
-        // Fallback: try any matching decoder from MediaCodecList (including software c2.android.*)
         val codecList = MediaCodecList(MediaCodecList.ALL_CODECS)
         for (info in codecList.codecInfos) {
             if (info.isEncoder) continue
@@ -302,7 +371,7 @@ object VideoSurfaceFrameExtractor {
         private val pixelByteBuffer: ByteBuffer =
             ByteBuffer.allocateDirect(width * height * 4).order(ByteOrder.LITTLE_ENDIAN)
         private val rgbaBytes = ByteArray(width * height * 4)
-        private val argbPixels = IntArray(width * height)
+        private var argbPixels: IntArray? = null
 
         val surfaceTexture: SurfaceTexture
         val surface: Surface
@@ -314,7 +383,6 @@ object VideoSurfaceFrameExtractor {
             .apply {
                 put(
                     floatArrayOf(
-                        // X, Y, Z, U, V
                         -1.0f, -1.0f, 0f, 0f, 0f,
                         1.0f, -1.0f, 0f, 1f, 0f,
                         -1.0f, 1.0f, 0f, 0f, 1f,
@@ -504,11 +572,8 @@ object VideoSurfaceFrameExtractor {
             return true
         }
 
-        fun drawImageAndReadPixels(outBitmap: Bitmap) {
+        private fun renderQuadAndReadRgba() {
             GLES20.glViewport(0, 0, width, height)
-            GLES20.glClearColor(0f, 0f, 0f, 1f)
-            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
-
             GLES20.glUseProgram(programId)
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
             GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId)
@@ -525,7 +590,6 @@ object VideoSurfaceFrameExtractor {
             GLES20.glUniformMatrix4fv(uSTMatrixLoc, 1, false, stMatrix, 0)
 
             GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
-            GLES20.glFinish()
 
             pixelByteBuffer.rewind()
             GLES20.glReadPixels(
@@ -539,21 +603,50 @@ object VideoSurfaceFrameExtractor {
             )
             pixelByteBuffer.rewind()
             pixelByteBuffer.get(rgbaBytes)
+        }
 
-            // Flip OpenGL bottom-up rows into Android Bitmap top-down opaque ARGB_8888
+        /**
+         * Single-pass GPU readback directly into top-down RGB888 ByteArray (skips Bitmap/IntArray completely).
+         */
+        fun drawImageAndReadRgb(): ByteArray {
+            renderQuadAndReadRgba()
+
+            val outRgb = ByteArray(width * height * 3)
+            val srcRowStride = width * 4
+            val src = rgbaBytes
+            var dstIdx = 0
+            for (y in (height - 1) downTo 0) {
+                var srcIdx = y * srcRowStride
+                val rowEnd = srcIdx + srcRowStride
+                while (srcIdx < rowEnd) {
+                    outRgb[dstIdx] = src[srcIdx]
+                    outRgb[dstIdx + 1] = src[srcIdx + 1]
+                    outRgb[dstIdx + 2] = src[srcIdx + 2]
+                    dstIdx += 3
+                    srcIdx += 4
+                }
+            }
+            return outRgb
+        }
+
+        fun drawImageAndReadPixels(outBitmap: Bitmap) {
+            renderQuadAndReadRgba()
+
+            val argb = argbPixels ?: IntArray(width * height).also { argbPixels = it }
             val rowStride = width * 4
+            val src = rgbaBytes
             for (y in 0 until height) {
                 var srcIdx = (height - 1 - y) * rowStride
                 var dstIdx = y * width
                 for (x in 0 until width) {
-                    val r = rgbaBytes[srcIdx].toInt() and 0xFF
-                    val g = rgbaBytes[srcIdx + 1].toInt() and 0xFF
-                    val b = rgbaBytes[srcIdx + 2].toInt() and 0xFF
-                    argbPixels[dstIdx++] = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
+                    val r = src[srcIdx].toInt() and 0xFF
+                    val g = src[srcIdx + 1].toInt() and 0xFF
+                    val b = src[srcIdx + 2].toInt() and 0xFF
+                    argb[dstIdx++] = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
                     srcIdx += 4
                 }
             }
-            outBitmap.setPixels(argbPixels, 0, width, 0, 0, width, height)
+            outBitmap.setPixels(argb, 0, width, 0, 0, width, height)
         }
 
         fun release() {

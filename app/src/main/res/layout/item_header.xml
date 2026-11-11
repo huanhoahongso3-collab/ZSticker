@@ -1,11 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TextView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/headerText"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="12dp"
-    android:textAllCaps="true"
-    android:textSize="12sp"
-    android:textStyle="bold"
-    android:textColor="?attr/colorPrimary"
-    android:alpha="0.7" />
+    android:paddingStart="6dp"
+    android:paddingEnd="6dp"
+    android:paddingTop="14dp"
+    android:paddingBottom="6dp">
+
+    <TextView
+        android:id="@+id/headerText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="5dp"
+        android:textSize="12sp"
+        android:letterSpacing="0.04"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSecondaryContainer" />
+</FrameLayout>

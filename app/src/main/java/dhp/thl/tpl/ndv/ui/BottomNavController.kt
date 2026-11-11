@@ -2,7 +2,6 @@ package dhp.thl.tpl.ndv.ui
 
 import android.content.Context
 import android.content.res.ColorStateList
-import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Outline
 import android.graphics.PorterDuff
@@ -21,37 +20,47 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.graphics.ColorUtils
 import androidx.core.widget.ImageViewCompat
+import androidx.fragment.app.Fragment
 import com.google.android.material.shape.RelativeCornerSize
 import com.google.android.material.shape.ShapeAppearanceModel
-import com.kieronquinn.monetcompat.core.MonetCompat
 import dhp.thl.tpl.ndv.BaseActivity
 import dhp.thl.tpl.ndv.R
-import dhp.thl.tpl.ndv.StickerAdapter
+import dhp.thl.tpl.ndv.data.StickerRepository
 import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
+import dhp.thl.tpl.ndv.ui.home.HomeFragment
+import dhp.thl.tpl.ndv.ui.options.OptionsFragment
+import dhp.thl.tpl.ndv.ui.recents.RecentsFragment
+import dhp.thl.tpl.ndv.ui.theme.ExpressiveMotion
+import dhp.thl.tpl.ndv.ui.theme.ExpressivePalette
+import dhp.thl.tpl.ndv.ui.theme.ExpressiveThemeManager
 
 /**
- * Manages the Google Photos-inspired Material 3 Expressive Floating Bottom Navigation Bar:
- * - 74% opacity (alpha = 189 / 0xBD) capsule container
- * - Rounded stadium/circle RippleDrawables on every tab (eliminating square press/hover boxes)
- * - SRC_IN uniform icon tinting so idle Home, Recents, and Options match identically in Dark Mode
- * - True 50% circular Add Sticker button spaced 22dp away from the main capsule
- * - Smooth M3 Emphasized Decelerate morph + icon spring pop + coordinated FAB reveal/hide
+ * Manages the Material 3 Expressive Floating Bottom Navigation Bar + Fragment Screen Switching:
+ * - Zero colored border (`strokeWidth = 0`, `Color.TRANSPARENT` stroke) around the 74%-translucent capsule
+ * - Identical M3 tonal styling for both Dynamic Wallpaper Color and Stock Orange (`#F57C00` seed)
+ * - Rounded stadium RippleDrawables + physics-based `SpringAnimation` icon pop & FAB bounce
+ * - Hosts `HomeFragment`, `RecentsFragment`, and `OptionsFragment` cleanly while preserving scroll state
  */
 class BottomNavController(
     private val activity: BaseActivity,
-    private val binding: ActivityMainBinding,
-    private val adapterProvider: () -> StickerAdapter,
-    private val recentsAdapterProvider: () -> StickerAdapter,
-    private val onUpdateEmptyState: (isEmpty: Boolean, message: String) -> Unit
+    private val binding: ActivityMainBinding
 ) {
     var currentTabId: Int = R.id.nav_home
         private set
 
     private val m3EmphasizedInterpolator = PathInterpolator(0.2f, 0f, 0f, 1f)
-    private val iconPopInterpolator = OvershootInterpolator(1.75f)
+    private val fabOvershootInterpolator = OvershootInterpolator(1.32f)
+
+    private var currentPalette: ExpressivePalette? = null
 
     fun setup() {
         enforceCircularAddButton()
+        ExpressiveMotion.attachPressSpring(binding.addButton, pressedScale = 0.90f)
+        ExpressiveMotion.attachPressSpring(binding.navTabHome, pressedScale = 0.94f)
+        ExpressiveMotion.attachPressSpring(binding.navTabRecents, pressedScale = 0.94f)
+        ExpressiveMotion.attachPressSpring(binding.navTabOptions, pressedScale = 0.94f)
+
+        ensureFragmentsAttached()
 
         binding.navTabHome.setOnClickListener {
             selectTab(R.id.nav_home, animate = true)
@@ -63,6 +72,37 @@ class BottomNavController(
             selectTab(R.id.nav_options, animate = true)
         }
     }
+
+    private fun ensureFragmentsAttached() {
+        val fm = activity.supportFragmentManager
+        var tx: androidx.fragment.app.FragmentTransaction? = null
+
+        val home = fm.findFragmentByTag(TAG_HOME)
+        val recents = fm.findFragmentByTag(TAG_RECENTS)
+        val options = fm.findFragmentByTag(TAG_OPTIONS)
+
+        if (home == null) {
+            tx = (tx ?: fm.beginTransaction()).add(R.id.fragmentContainer, HomeFragment(), TAG_HOME)
+        }
+        if (recents == null) {
+            val f = RecentsFragment()
+            tx = (tx ?: fm.beginTransaction()).add(R.id.fragmentContainer, f, TAG_RECENTS).hide(f)
+        }
+        if (options == null) {
+            val f = OptionsFragment()
+            tx = (tx ?: fm.beginTransaction()).add(R.id.fragmentContainer, f, TAG_OPTIONS).hide(f)
+        }
+        tx?.commitNowAllowingStateLoss()
+    }
+
+    fun getHomeFragment(): HomeFragment? =
+        activity.supportFragmentManager.findFragmentByTag(TAG_HOME) as? HomeFragment
+
+    fun getRecentsFragment(): RecentsFragment? =
+        activity.supportFragmentManager.findFragmentByTag(TAG_RECENTS) as? RecentsFragment
+
+    fun getOptionsFragment(): OptionsFragment? =
+        activity.supportFragmentManager.findFragmentByTag(TAG_OPTIONS) as? OptionsFragment
 
     private fun enforceCircularAddButton() {
         val circleModel = ShapeAppearanceModel.builder()
@@ -83,21 +123,15 @@ class BottomNavController(
     fun selectTab(tabId: Int, animate: Boolean = true) {
         val previousTabId = currentTabId
         if (animate && previousTabId == tabId) {
-            // Subtle tactile pulse when re-tapping active tab
             val activeIcon = when (tabId) {
                 R.id.nav_home -> binding.iconNavHome
                 R.id.nav_recents -> binding.iconNavRecents
                 else -> binding.iconNavOptions
             }
-            activeIcon.animate().cancel()
-            activeIcon.scaleX = 0.86f
-            activeIcon.scaleY = 0.86f
-            activeIcon.animate()
-                .scaleX(1f)
-                .scaleY(1f)
-                .setDuration(220L)
-                .setInterpolator(iconPopInterpolator)
-                .start()
+            ExpressiveMotion.springPopIn(activeIcon, initialScale = 0.80f)
+            if (tabId == R.id.nav_home) {
+                getHomeFragment()?.scrollToTop()
+            }
             return
         }
 
@@ -113,18 +147,18 @@ class BottomNavController(
                 ordering = TransitionSet.ORDERING_TOGETHER
                 addTransition(
                     ChangeBounds().apply {
-                        duration = 300L
+                        duration = 310L
                         interpolator = m3EmphasizedInterpolator
                     }
                 )
                 addTransition(
                     Fade(Fade.OUT).apply {
-                        duration = 110L
+                        duration = 100L
                     }
                 )
                 addTransition(
                     Fade(Fade.IN).apply {
-                        startDelay = 50L
+                        startDelay = 45L
                         duration = 210L
                         interpolator = m3EmphasizedInterpolator
                     }
@@ -133,58 +167,95 @@ class BottomNavController(
             TransitionManager.beginDelayedTransition(binding.floatingBottomRow, navTransition)
         }
 
-        updateScreenVisibility(tabId, animate && previousTabId != tabId)
-        applyStyle(animateNewSelection = animate && previousTabId != tabId)
+        val palette = currentPalette ?: ExpressiveThemeManager.resolvePalette(activity)
+        switchFragmentScreen(tabId, animate && previousTabId != tabId)
+        updateHeaderTitleAndBadge(palette)
+        applyStyle(palette = palette, animateNewSelection = animate && previousTabId != tabId)
     }
 
-    private fun updateScreenVisibility(itemId: Int, animateContent: Boolean) {
-        val targetView: View = when (itemId) {
+    private fun switchFragmentScreen(itemId: Int, animateContent: Boolean) {
+        ensureFragmentsAttached()
+        val fm = activity.supportFragmentManager
+        val home = fm.findFragmentByTag(TAG_HOME)
+        val recents = fm.findFragmentByTag(TAG_RECENTS)
+        val options = fm.findFragmentByTag(TAG_OPTIONS)
+
+        val targetFragment: Fragment? = when (itemId) {
+            R.id.nav_home -> home
+            R.id.nav_recents -> recents
+            else -> options
+        }
+
+        val tx = fm.beginTransaction()
+        listOfNotNull(home, recents, options).forEach { frag ->
+            if (frag === targetFragment) {
+                tx.show(frag)
+            } else {
+                tx.hide(frag)
+            }
+        }
+        tx.commitNowAllowingStateLoss()
+
+        animateAddButtonVisibility(show = itemId == R.id.nav_home, animate = animateContent)
+        if (itemId == R.id.nav_recents) {
+            StickerRepository.refreshRecents(activity)
+        }
+
+        val rootView = targetFragment?.view ?: binding.fragmentContainer
+        if (animateContent) {
+            val offsetPx = 10f * activity.resources.displayMetrics.density
+            rootView.animate().cancel()
+            rootView.alpha = 0f
+            rootView.translationY = offsetPx
+            rootView.animate()
+                .alpha(1f)
+                .setDuration(190L)
+                .setInterpolator(m3EmphasizedInterpolator)
+                .start()
+            ExpressiveMotion.springTranslationY(rootView, 0f, dampingRatio = 0.74f, stiffness = 420f)
+        } else {
+            rootView.alpha = 1f
+            rootView.translationY = 0f
+        }
+    }
+
+    fun updateHeaderTitleAndBadge(
+        palette: ExpressivePalette = currentPalette ?: ExpressiveThemeManager.resolvePalette(activity)
+    ) {
+        val density = activity.resources.displayMetrics.density
+        when (currentTabId) {
             R.id.nav_home -> {
-                binding.toolbar.title = activity.boldTitle(activity.getString(R.string.nav_home))
-                binding.recycler.visibility = View.VISIBLE
-                binding.recyclerRecents.visibility = View.GONE
-                binding.infoLayout.visibility = View.GONE
-                animateAddButtonVisibility(show = true, animate = animateContent)
-                val adapter = adapterProvider()
-                onUpdateEmptyState(adapter.itemCount == 0, activity.getString(R.string.no_stickers_found))
-                binding.recycler
+                binding.txtToolbarTitle.text = activity.getString(R.string.nav_home)
+                val count = StickerRepository.homeCount.value
+                if (count > 0) {
+                    binding.txtToolbarBadge.visibility = View.VISIBLE
+                    binding.txtToolbarBadge.text = count.toString()
+                } else {
+                    binding.txtToolbarBadge.visibility = View.GONE
+                }
             }
             R.id.nav_recents -> {
-                binding.toolbar.title = activity.boldTitle(activity.getString(R.string.nav_recents))
-                binding.recycler.visibility = View.GONE
-                binding.recyclerRecents.visibility = View.VISIBLE
-                binding.infoLayout.visibility = View.GONE
-                animateAddButtonVisibility(show = false, animate = animateContent)
-                val recentsAdapter = recentsAdapterProvider()
-                recentsAdapter.refreshData(activity)
-                onUpdateEmptyState(recentsAdapter.itemCount == 0, activity.getString(R.string.no_history_found))
-                binding.recyclerRecents
+                binding.txtToolbarTitle.text = activity.getString(R.string.nav_recents)
+                val count = StickerRepository.recentCount.value
+                if (count > 0) {
+                    binding.txtToolbarBadge.visibility = View.VISIBLE
+                    binding.txtToolbarBadge.text = count.toString()
+                } else {
+                    binding.txtToolbarBadge.visibility = View.GONE
+                }
             }
             else -> {
-                binding.toolbar.title = activity.boldTitle(activity.getString(R.string.nav_options))
-                binding.recycler.visibility = View.GONE
-                binding.recyclerRecents.visibility = View.GONE
-                binding.infoLayout.visibility = View.VISIBLE
-                animateAddButtonVisibility(show = false, animate = animateContent)
-                binding.emptyLayout.visibility = View.GONE
-                binding.infoLayout
+                binding.txtToolbarTitle.text = activity.getString(R.string.nav_options)
+                binding.txtToolbarBadge.visibility = View.GONE
             }
         }
 
-        if (animateContent) {
-            val offsetPx = 6f * activity.resources.displayMetrics.density
-            targetView.animate().cancel()
-            targetView.alpha = 0f
-            targetView.translationY = offsetPx
-            targetView.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setDuration(220L)
-                .setInterpolator(m3EmphasizedInterpolator)
-                .start()
-        } else {
-            targetView.alpha = 1f
-            targetView.translationY = 0f
+        binding.txtToolbarTitle.setTextColor(palette.onSurface)
+        binding.txtToolbarBadge.setTextColor(palette.onSecondaryContainer)
+        binding.txtToolbarBadge.background = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = 999f * density
+            setColor(palette.secondaryContainer)
         }
     }
 
@@ -213,8 +284,8 @@ class BottomNavController(
                 .scaleY(1f)
                 .alpha(1f)
                 .rotation(0f)
-                .setDuration(280L)
-                .setInterpolator(OvershootInterpolator(1.25f))
+                .setDuration(290L)
+                .setInterpolator(fabOvershootInterpolator)
                 .start()
         } else if (fab.visibility == View.VISIBLE) {
             fab.animate()
@@ -237,71 +308,34 @@ class BottomNavController(
         }
     }
 
-    fun applyStyle(animateNewSelection: Boolean = false) {
+    fun applyStyle(
+        palette: ExpressivePalette = ExpressiveThemeManager.resolvePalette(activity),
+        animateNewSelection: Boolean = false
+    ) {
+        currentPalette = palette
         enforceCircularAddButton()
-
-        val prefs = activity.getSharedPreferences("settings", Context.MODE_PRIVATE)
-        val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
-        val isDark = (activity.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-            Configuration.UI_MODE_NIGHT_YES
-
-        val primaryColor: Int
-        val baseSurfaceColor: Int
-        val activePillColor: Int
-        val activeContentColor: Int
-        val inactiveIconColor: Int
-        val fabBgColor: Int
-        val fabIconColor: Int
-
-        if (materialColorEnabled) {
-            val monetInstance = MonetCompat.getInstance()
-            val monetPrimary = try { monetInstance.getAccentColor(activity) } catch (_: Exception) { null }
-            val monetSurface = try { monetInstance.getBackgroundColor(activity) } catch (_: Exception) { null }
-            primaryColor = monetPrimary ?: activity.getColor(
-                if (isDark) R.color.orange_primary_light else R.color.orange_primary
-            )
-            val fallbackSurface = activity.getColor(
-                if (isDark) R.color.dark_surface_container_high else R.color.light_surface_container_high
-            )
-            val surface = monetSurface ?: fallbackSurface
-            baseSurfaceColor = ColorUtils.blendARGB(surface, primaryColor, if (isDark) 0.16f else 0.10f)
-            activePillColor = ColorUtils.setAlphaComponent(primaryColor, if (isDark) 76 else 52)
-            activeContentColor = if (isDark) {
-                ColorUtils.blendARGB(primaryColor, Color.WHITE, 0.38f)
-            } else {
-                ColorUtils.blendARGB(primaryColor, Color.BLACK, 0.25f)
-            }
-            inactiveIconColor = if (isDark) Color.parseColor("#E6E1E5") else Color.parseColor("#313033")
-            fabBgColor = ColorUtils.setAlphaComponent(primaryColor, 235)
-            fabIconColor = if (ColorUtils.calculateLuminance(primaryColor) > 0.5) Color.parseColor("#1C1B1F") else Color.WHITE
-        } else {
-            primaryColor = activity.getColor(if (isDark) R.color.orange_primary_light else R.color.orange_primary)
-            baseSurfaceColor = activity.getColor(
-                if (isDark) R.color.dark_surface_container_high else R.color.light_surface_container_high
-            )
-            activePillColor = activity.getColor(if (isDark) R.color.dark_orange_container else R.color.orange_container)
-            activeContentColor = activity.getColor(
-                if (isDark) R.color.dark_orange_on_container else R.color.orange_on_container
-            )
-            inactiveIconColor = activity.getColor(if (isDark) R.color.dark_on_surface else R.color.light_on_surface)
-            fabBgColor = ColorUtils.setAlphaComponent(activePillColor, 235)
-            fabIconColor = activeContentColor
-        }
+        updateHeaderTitleAndBadge(palette)
 
         // 74% opacity = (255 * 0.74).roundToInt() = 189
         val navBar74Alpha = 189
-        val translucentNavBg = ColorUtils.setAlphaComponent(baseSurfaceColor, navBar74Alpha)
-        val strokeTint = ColorUtils.setAlphaComponent(primaryColor, if (isDark) 76 else 48)
-        val rippleTint = ColorStateList.valueOf(ColorUtils.setAlphaComponent(primaryColor, if (isDark) 64 else 44))
+        val translucentNavBg = ColorUtils.setAlphaComponent(palette.surfaceContainerHigh, navBar74Alpha)
+        val rippleTint = ColorStateList.valueOf(
+            ColorUtils.setAlphaComponent(palette.primary, if (palette.isDark) 60 else 40)
+        )
 
+        // Zero colored border around bottom navbar — clean translucent capsule only
         binding.floatingNavCard.setCardBackgroundColor(translucentNavBg)
-        binding.floatingNavCard.strokeColor = strokeTint
+        binding.floatingNavCard.strokeWidth = 0
+        binding.floatingNavCard.strokeColor = Color.TRANSPARENT
         binding.floatingNavCard.cardElevation = 0f
 
+        // Expressive circular '+' FAB in vibrant M3 primary container / primary role
+        val fabBgColor = ColorUtils.setAlphaComponent(palette.primary, 242)
+        val fabIconColor = palette.onPrimary
         binding.addButton.backgroundTintList = ColorStateList.valueOf(fabBgColor)
         binding.addButton.imageTintList = ColorStateList.valueOf(fabIconColor)
         binding.addButton.setRippleColor(
-            ColorStateList.valueOf(ColorUtils.setAlphaComponent(fabIconColor, 40))
+            ColorStateList.valueOf(ColorUtils.setAlphaComponent(fabIconColor, 44))
         )
 
         val density = activity.resources.displayMetrics.density
@@ -329,7 +363,6 @@ class BottomNavController(
                 setColor(Color.WHITE)
             }
 
-            // Clear any legacy SRC_ATOP colorFilter so ImageViewCompat SRC_IN tint renders pure & uniform
             iconView.clearColorFilter()
             ImageViewCompat.setImageTintMode(iconView, PorterDuff.Mode.SRC_IN)
 
@@ -337,26 +370,18 @@ class BottomNavController(
                 val activeFill = GradientDrawable().apply {
                     shape = GradientDrawable.RECTANGLE
                     cornerRadius = pillCornerPx
-                    setColor(activePillColor)
+                    setColor(palette.secondaryContainer)
                 }
                 tabLayout.background = RippleDrawable(rippleTint, activeFill, maskDrawable)
                 tabLayout.setPadding(activePaddingH, 0, activePaddingH, 0)
 
                 textView.visibility = View.VISIBLE
-                textView.setTextColor(activeContentColor)
-                ImageViewCompat.setImageTintList(iconView, ColorStateList.valueOf(activeContentColor))
+                textView.setTextColor(palette.onSecondaryContainer)
+                ImageViewCompat.setImageTintList(iconView, ColorStateList.valueOf(palette.onSecondaryContainer))
                 iconView.alpha = 1.0f
 
                 if (animateNewSelection) {
-                    iconView.animate().cancel()
-                    iconView.scaleX = 0.78f
-                    iconView.scaleY = 0.78f
-                    iconView.animate()
-                        .scaleX(1f)
-                        .scaleY(1f)
-                        .setDuration(300L)
-                        .setInterpolator(iconPopInterpolator)
-                        .start()
+                    ExpressiveMotion.springPopIn(iconView, initialScale = 0.76f)
 
                     textView.animate().cancel()
                     textView.alpha = 0f
@@ -364,7 +389,7 @@ class BottomNavController(
                     textView.animate()
                         .alpha(1f)
                         .translationX(0f)
-                        .setDuration(240L)
+                        .setDuration(230L)
                         .setInterpolator(m3EmphasizedInterpolator)
                         .start()
                 } else {
@@ -383,8 +408,9 @@ class BottomNavController(
                 tabLayout.setPadding(inactivePaddingH, 0, inactivePaddingH, 0)
 
                 textView.visibility = View.GONE
-                ImageViewCompat.setImageTintList(iconView, ColorStateList.valueOf(inactiveIconColor))
-                iconView.alpha = if (isDark) 0.88f else 0.75f
+                val idleTint = if (palette.isDark) palette.onSurface else palette.onSurfaceVariant
+                ImageViewCompat.setImageTintList(iconView, ColorStateList.valueOf(idleTint))
+                iconView.alpha = if (palette.isDark) 0.90f else 0.82f
                 iconView.scaleX = 1f
                 iconView.scaleY = 1f
             }
@@ -393,5 +419,11 @@ class BottomNavController(
         styleTab(binding.navTabHome, binding.iconNavHome, binding.txtNavHome, currentTabId == R.id.nav_home)
         styleTab(binding.navTabRecents, binding.iconNavRecents, binding.txtNavRecents, currentTabId == R.id.nav_recents)
         styleTab(binding.navTabOptions, binding.iconNavOptions, binding.txtNavOptions, currentTabId == R.id.nav_options)
+    }
+
+    companion object {
+        const val TAG_HOME = "screen_home"
+        const val TAG_RECENTS = "screen_recents"
+        const val TAG_OPTIONS = "screen_options"
     }
 }

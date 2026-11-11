@@ -98,4 +98,8 @@
     <string name="trim_video_title">Cắt video</string>
     <string name="only_one_video_allowed">Chỉ có thể nhập 1 video mỗi lần</string>
     <string name="thank_you_toast">Cảm ơn bạn đã sử dụng ứng dụng này!</string>
+    <string name="section_storage">Dữ liệu &amp; Bộ nhớ</string>
+    <string name="add_first_sticker">Thêm nhãn dán</string>
+    <string name="empty_stickers_subtitle">Chọn ảnh, GIF hoặc video ngắn để tạo nhãn dán Zalo đầu tiên của bạn</string>
+    <string name="empty_history_subtitle">Các nhãn dán bạn gửi qua Zalo sẽ hiển thị tại đây theo ngày</string>
 </resources>

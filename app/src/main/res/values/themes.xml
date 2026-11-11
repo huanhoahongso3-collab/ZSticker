@@ -1,27 +1,41 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Theme.ZSticker" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Custom Orange Colors -->
+        <!-- Stock Orange (#F57C00) M3 Tonal Roles (Light) -->
         <item name="colorPrimary">@color/orange_primary</item>
+        <item name="colorOnPrimary">@color/orange_on_primary</item>
         <item name="colorPrimaryContainer">@color/orange_container</item>
         <item name="colorOnPrimaryContainer">@color/orange_on_container</item>
-        <item name="colorSecondary">@color/orange_primary_dark</item>
-        <item name="colorSecondaryContainer">@color/orange_container</item>
-        <item name="colorOnSecondaryContainer">@color/orange_on_container</item>
-        
-        <!-- Surface Colors -->
+
+        <item name="colorSecondary">@color/orange_secondary</item>
+        <item name="colorOnSecondary">@color/orange_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/orange_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/orange_on_secondary_container</item>
+
+        <item name="colorTertiary">@color/orange_tertiary</item>
+        <item name="colorOnTertiary">@color/orange_on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/orange_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/orange_on_tertiary_container</item>
+
+        <!-- M3 Surface Container Hierarchy -->
         <item name="colorSurface">@color/light_surface</item>
+        <item name="colorSurfaceContainerLowest">@color/light_surface_container_lowest</item>
+        <item name="colorSurfaceContainerLow">@color/light_surface_container_low</item>
         <item name="colorSurfaceContainer">@color/light_surface_container</item>
         <item name="colorSurfaceContainerHigh">@color/light_surface_container_high</item>
+        <item name="colorSurfaceContainerHighest">@color/light_surface_container_highest</item>
         <item name="colorOnSurface">@color/light_on_surface</item>
+        <item name="colorOnSurfaceVariant">@color/light_on_surface_variant</item>
+        <item name="colorOutline">@color/light_outline</item>
+        <item name="colorOutlineVariant">@color/light_outline_variant</item>
         <item name="android:colorBackground">@color/light_background</item>
-        
+
         <!-- System Bars (Edge-to-Edge managed via enableEdgeToEdge) -->
         <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
         <item name="titleTextAppearance">@style/ToolbarBoldTitle</item>
     </style>
 
-    <style name="ToolbarBoldTitle" parent="TextAppearance.Material3.TitleLarge">
+    <style name="ToolbarBoldTitle" parent="TextAppearance.Material3.HeadlineSmall">
         <item name="android:textStyle">bold</item>
     </style>
 
@@ -31,7 +45,7 @@
     </style>
 
     <style name="ShapeAppearance.ZSticker.MediumComponent" parent="ShapeAppearance.Material3.MediumComponent">
-        <item name="cornerSize">16dp</item>
+        <item name="cornerSize">20dp</item>
     </style>
 
     <style name="ShapeAppearance.ZSticker.FullCircle" parent="">
@@ -43,15 +57,14 @@
         <item name="cornerSizeBottomRight">50%</item>
     </style>
 
+    <!-- Borderless floating capsule navbar (0dp stroke) -->
     <style name="FloatingNavCardStyle" parent="Widget.Material3.CardView.Filled">
         <item name="cardBackgroundColor">@android:color/transparent</item>
         <item name="cardCornerRadius">32dp</item>
         <item name="cardElevation">0dp</item>
-        <item name="strokeWidth">1dp</item>
-        <item name="strokeColor">@color/floating_nav_stroke_light</item>
+        <item name="strokeWidth">0dp</item>
+        <item name="strokeColor">@android:color/transparent</item>
     </style>
-    
-
 
     <style name="InfoItemStyle">
         <item name="android:layout_width">match_parent</item>
@@ -63,13 +76,21 @@
     </style>
 
     <style name="InfoIconStyle">
-        <item name="android:layout_width">36dp</item>
-        <item name="android:layout_height">36dp</item>
-        <item name="android:padding">6dp</item>
+        <item name="android:layout_width">40dp</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="android:padding">9dp</item>
         <item name="android:layout_marginEnd">16dp</item>
         <item name="android:background">@drawable/bg_circle_icon</item>
-        <item name="android:tint">?attr/colorPrimary</item> 
+        <item name="android:tint">?attr/colorPrimary</item>
     </style>
+
+    <style name="InfoTextStyle">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:orientation">vertical</item>
+    </style>
+
     <style name="Theme.ZSticker.Dialog" parent="Theme.Material3.DayNight.Dialog">
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowFrame">@null</item>

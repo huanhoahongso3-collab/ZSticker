@@ -4,9 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
-import android.content.res.Configuration
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
@@ -20,7 +18,6 @@ import com.bumptech.glide.Glide
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.kieronquinn.monetcompat.core.MonetCompat
 import com.yalantis.ucrop.UCrop
 import dhp.thl.tpl.ndv.BackupHelper
 import dhp.thl.tpl.ndv.BaseActivity
@@ -29,11 +26,12 @@ import dhp.thl.tpl.ndv.MediaPipeBackgroundRemover
 import dhp.thl.tpl.ndv.OptionItem
 import dhp.thl.tpl.ndv.ProgressDialog
 import dhp.thl.tpl.ndv.R
-import dhp.thl.tpl.ndv.StickerAdapter
 import dhp.thl.tpl.ndv.ToastUtils
+import dhp.thl.tpl.ndv.data.StickerRepository
 import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
 import dhp.thl.tpl.ndv.ui.showMonetDialog
 import dhp.thl.tpl.ndv.ui.showPaneDialog
+import dhp.thl.tpl.ndv.ui.theme.ExpressiveThemeManager
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
@@ -43,18 +41,14 @@ import kotlin.concurrent.thread
 /**
  * Handles all per-sticker actions: Zalo sharing, long-press context menu, single-sticker gallery
  * export, offline MediaPipe & online BRIA RMBG 1.4 background removal, border creation, uCrop
- * launching, full-size sticker preview, and recents/sticker deletion sync.
+ * launching, full-size sticker preview, and reactive [StickerRepository] updates.
  */
 class StickerActionsController(
     private val activity: BaseActivity,
     private val binding: ActivityMainBinding,
-    private val adapterProvider: () -> StickerAdapter,
-    private val recentsAdapterProvider: () -> StickerAdapter,
-    private val currentTabIdProvider: () -> Int,
-    private val getThemeColor: (Int) -> Int,
     private val isVideoUri: (Uri) -> Boolean,
-    private val onUpdateEmptyState: (isEmpty: Boolean, message: String) -> Unit,
-    private val cropLauncherProvider: () -> ActivityResultLauncher<Intent>
+    private val cropLauncherProvider: () -> ActivityResultLauncher<Intent>,
+    private val onStickerCreated: (() -> Unit)? = null
 ) {
     private val mediaPipeBackgroundRemover by lazy { MediaPipeBackgroundRemover(activity) }
     private var isOperationCancelled = false
@@ -89,24 +83,10 @@ class StickerActionsController(
                 setClassName("com.zing.zalo", "com.zing.zalo.ui.TempShareViaActivity")
             }
             activity.startActivity(intent)
-            addToRecents(file.name)
+            StickerRepository.recordRecentUsage(activity, file.name)
         } catch (e: Exception) {
             e.printStackTrace()
             ToastUtils.showToast(activity, activity.getString(R.string.zalo_share_failed))
-        }
-    }
-
-    private fun addToRecents(fileName: String) {
-        val prefs = activity.getSharedPreferences("recents", Context.MODE_PRIVATE)
-        val list = prefs.getString("list", "")
-            ?.split(",")
-            ?.filter { it.isNotEmpty() }
-            ?.toMutableList() ?: mutableListOf()
-        list.add(0, "$fileName:${System.currentTimeMillis()}")
-        if (list.size > 100) list.removeAt(100)
-        prefs.edit().putString("list", list.joinToString(",")).apply()
-        if (currentTabIdProvider() == R.id.nav_recents) {
-            recentsAdapterProvider().refreshData(activity)
         }
     }
 
@@ -157,12 +137,12 @@ class StickerActionsController(
         val progressDialog = ProgressDialog.newInstance(activity.getString(R.string.exporting_to_gallery))
         isOperationCancelled = false
         progressDialog.onCancel = { isOperationCancelled = true }
-        progressDialog.show(activity.supportFragmentManager, "export_single")
+        progressDialog.showSafe(activity.supportFragmentManager, "export_single")
 
         thread {
             val success = BackupHelper.exportSingleStickerToGallery(activity, file)
             activity.runOnUiThread {
-                progressDialog.dismiss()
+                progressDialog.dismissSafe()
                 if (isOperationCancelled) {
                     ToastUtils.showToast(activity, activity.getString(R.string.failed))
                 } else {
@@ -176,17 +156,9 @@ class StickerActionsController(
     }
 
     private fun showLoadingOverlay() {
-        val surfaceColor = getThemeColor(com.google.android.material.R.attr.colorSurface)
-        binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(surfaceColor, 153))
-
-        val materialColorEnabled = activity.getSharedPreferences("settings", Context.MODE_PRIVATE)
-            .getBoolean("material_color_enabled", false)
-        val primary = if (materialColorEnabled) {
-            MonetCompat.getInstance().getAccentColor(activity)
-        } else {
-            activity.getColor(R.color.orange_primary)
-        }
-        binding.loadingIndicator.setIndicatorColor(primary)
+        val palette = ExpressiveThemeManager.resolvePalette(activity)
+        binding.progressBar.setBackgroundColor(ColorUtils.setAlphaComponent(palette.surface, 178))
+        binding.loadingIndicator.setIndicatorColor(palette.primary)
         binding.progressBar.visibility = View.VISIBLE
     }
 
@@ -226,10 +198,9 @@ class StickerActionsController(
             activity.runOnUiThread {
                 binding.progressBar.visibility = View.GONE
                 if (isSuccess && resultUri != null) {
-                    val adapter = adapterProvider()
-                    adapter.refreshData(activity)
-                    onUpdateEmptyState(adapter.itemCount == 0, activity.getString(R.string.no_stickers_found))
-                    binding.recycler.scrollToPosition(0)
+                    StickerRepository.refreshHome(activity) {
+                        onStickerCreated?.invoke()
+                    }
                     ToastUtils.showToast(activity, activity.getString(R.string.rb_completed))
                 } else {
                     ToastUtils.showToast(activity, activity.getString(R.string.rb_failed))
@@ -244,6 +215,7 @@ class StickerActionsController(
             removeBackgroundOnline(uri)
             return
         }
+        val palette = ExpressiveThemeManager.resolvePalette(activity)
         val dialogView = LayoutInflater.from(activity).inflate(R.layout.dialog_warning, null)
         val dialog = MaterialAlertDialogBuilder(activity).setView(dialogView).create()
         val titleView = dialogView.findViewById<TextView>(R.id.dialog_title)
@@ -252,27 +224,22 @@ class StickerActionsController(
         val checkBox = dialogView.findViewById<MaterialCheckBox>(R.id.cb_dont_show_again)
 
         titleView.text = activity.boldTitle(activity.getString(R.string.rb_warning_title))
+        titleView.setTextColor(palette.onSurface)
         messageView.text = activity.getString(R.string.rb_warning_message)
-        iconView.setImageResource(R.drawable.ic_remove_bg)
+        messageView.setTextColor(palette.onSurfaceVariant)
+        messageView.setLinkTextColor(palette.primary)
 
-        val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
-        val primary = if (materialColorEnabled) {
-            MonetCompat.getInstance().getAccentColor(activity)
-        } else {
-            activity.getColor(R.color.orange_primary)
-        }
-        iconView.setColorFilter(primary)
-        messageView.setLinkTextColor(primary)
+        iconView.setImageResource(R.drawable.ic_remove_bg)
+        iconView.setColorFilter(palette.primary)
 
         val btnCancel = dialogView.findViewById<MaterialButton>(R.id.btn_cancel)
         val btnContinue = dialogView.findViewById<MaterialButton>(R.id.btn_continue)
-        btnCancel.setTextColor(primary)
-        checkBox.buttonTintList = ColorStateList.valueOf(primary)
+        btnCancel.setTextColor(palette.primary)
+        checkBox.buttonTintList = ColorStateList.valueOf(palette.primary)
+        checkBox.setTextColor(palette.onSurface)
 
-        val isDark = (activity.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-            Configuration.UI_MODE_NIGHT_YES
-        btnContinue.setTextColor(if (isDark) Color.BLACK else Color.WHITE)
-        btnContinue.backgroundTintList = ColorStateList.valueOf(primary)
+        btnContinue.setTextColor(palette.onPrimary)
+        btnContinue.backgroundTintList = ColorStateList.valueOf(palette.primary)
 
         btnCancel.setOnClickListener { dialog.dismiss() }
         btnContinue.setOnClickListener {
@@ -342,10 +309,9 @@ class StickerActionsController(
             activity.runOnUiThread {
                 binding.progressBar.visibility = View.GONE
                 if (isSuccess && resultUri != null) {
-                    val adapter = adapterProvider()
-                    adapter.refreshData(activity)
-                    onUpdateEmptyState(adapter.itemCount == 0, activity.getString(R.string.no_stickers_found))
-                    binding.recycler.scrollToPosition(0)
+                    StickerRepository.refreshHome(activity) {
+                        onStickerCreated?.invoke()
+                    }
                     ToastUtils.showToast(activity, activity.getString(R.string.rb_completed))
                 } else {
                     ToastUtils.showToast(activity, activity.getString(R.string.rb_failed))
@@ -371,10 +337,9 @@ class StickerActionsController(
             activity.runOnUiThread {
                 binding.progressBar.visibility = View.GONE
                 if (resultFile != null) {
-                    val adapter = adapterProvider()
-                    adapter.refreshData(activity)
-                    onUpdateEmptyState(adapter.itemCount == 0, activity.getString(R.string.no_stickers_found))
-                    binding.recycler.scrollToPosition(0)
+                    StickerRepository.refreshHome(activity) {
+                        onStickerCreated?.invoke()
+                    }
                     ToastUtils.showToast(activity, activity.getString(R.string.success))
                 } else {
                     ToastUtils.showToast(activity, activity.getString(R.string.failed))
@@ -385,33 +350,18 @@ class StickerActionsController(
 
     private fun deleteSticker(uri: Uri) {
         val file = File(activity.filesDir, uri.lastPathSegment ?: "")
-        if (file.exists() && file.delete()) {
-            val adapter = adapterProvider()
-            adapter.refreshData(activity)
-            syncRecentsAfterDeletion()
-            onUpdateEmptyState(adapter.itemCount == 0, activity.getString(R.string.no_stickers_found))
-            ToastUtils.showToast(activity, activity.getString(R.string.success))
+        StickerRepository.deleteSticker(activity, file) { deleted ->
+            if (deleted) {
+                ToastUtils.showToast(activity, activity.getString(R.string.success))
+            }
         }
     }
 
-    fun syncRecentsAfterDeletion() {
-        val prefs = activity.getSharedPreferences("recents", Context.MODE_PRIVATE)
-        val list = prefs.getString("list", "")?.split(",")?.toMutableList() ?: mutableListOf()
-        val filtered = list.filter { item ->
-            val fileName = item.substringBefore(":")
-            File(activity.filesDir, fileName).exists()
-        }.joinToString(",")
-        prefs.edit().putString("list", filtered).apply()
-        recentsAdapterProvider().refreshData(activity)
-    }
-
     private fun removeFromRecents(entry: String) {
-        val prefs = activity.getSharedPreferences("recents", Context.MODE_PRIVATE)
-        val list = prefs.getString("list", "")?.split(",")?.toMutableList() ?: mutableListOf()
-        if (list.remove(entry)) {
-            prefs.edit().putString("list", list.joinToString(",")).apply()
-            recentsAdapterProvider().refreshData(activity)
-            ToastUtils.showToast(activity, activity.getString(R.string.success))
+        StickerRepository.removeRecentEntry(activity, entry) { removed ->
+            if (removed) {
+                ToastUtils.showToast(activity, activity.getString(R.string.success))
+            }
         }
     }
 
@@ -422,23 +372,15 @@ class StickerActionsController(
             return
         }
 
-        val materialColorEnabled = activity.getSharedPreferences("settings", Context.MODE_PRIVATE)
-            .getBoolean("material_color_enabled", false)
-        val primary = if (materialColorEnabled) {
-            MonetCompat.getInstance().getAccentColor(activity)
-        } else {
-            activity.getColor(R.color.orange_primary)
-        }
-
+        val palette = ExpressiveThemeManager.resolvePalette(activity)
         val destinationUri = Uri.fromFile(File(activity.cacheDir, "crop_temp_${System.currentTimeMillis()}.png"))
 
         val options = UCrop.Options().apply {
-            val surface = getThemeColor(com.google.android.material.R.attr.colorSurface)
-            setToolbarColor(surface)
-            setToolbarWidgetColor(primary)
-            setActiveControlsWidgetColor(primary)
-            setRootViewBackgroundColor(surface)
-            setLogoColor(primary)
+            setToolbarColor(palette.surface)
+            setToolbarWidgetColor(palette.onSurface)
+            setActiveControlsWidgetColor(palette.primary)
+            setRootViewBackgroundColor(palette.surface)
+            setLogoColor(palette.primary)
             setToolbarTitle(activity.getString(R.string.crop))
             setCompressionFormat(Bitmap.CompressFormat.PNG)
             setFreeStyleCropEnabled(true)
@@ -460,9 +402,9 @@ class StickerActionsController(
                     activity.contentResolver.openInputStream(resultUri)?.use { input ->
                         FileOutputStream(file).use { out -> input.copyTo(out) }
                     }
-                    val adapter = adapterProvider()
-                    adapter.refreshData(activity)
-                    onUpdateEmptyState(adapter.itemCount == 0, activity.getString(R.string.no_stickers_found))
+                    StickerRepository.refreshHome(activity) {
+                        onStickerCreated?.invoke()
+                    }
                     ToastUtils.showToast(activity, activity.getString(R.string.success))
                 } catch (e: Exception) {
                     e.printStackTrace()

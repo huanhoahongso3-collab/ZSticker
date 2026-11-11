@@ -148,6 +148,10 @@ public class TrimVideo {
             bundle.putString(TRIM_VIDEO_OPTION, gson.toJson(options));
             bundle.putBoolean(ENABLE_COMPRESSION, options.isCompressionEnabled);
             intent.putExtras(bundle);
+            if (videoUri != null && videoUri.startsWith("content://")) {
+                intent.setData(android.net.Uri.parse(videoUri));
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            }
             return intent;
         }
     }

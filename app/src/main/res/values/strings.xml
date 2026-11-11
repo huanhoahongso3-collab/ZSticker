@@ -98,4 +98,8 @@
     <string name="trim_video_title">Trim Video</string>
     <string name="only_one_video_allowed">Only 1 video can be imported at a time</string>
     <string name="thank_you_toast">Thank you for using this app!</string>
+    <string name="section_storage">Data &amp; Storage</string>
+    <string name="add_first_sticker">Add Sticker</string>
+    <string name="empty_stickers_subtitle">Import an image, GIF, or short video to create your first Zalo sticker</string>
+    <string name="empty_history_subtitle">Stickers you send to Zalo will appear here by date</string>
 </resources>

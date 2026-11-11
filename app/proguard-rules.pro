@@ -52,11 +52,14 @@
 -keep class androidx.appcompat.widget.** { *; }
 -keep class com.google.android.material.** { *; }
 
-# Keep ViewBinding classes
+# Keep ViewBinding & Multi-Screen Fragment classes
 -keep class **.databinding.** { *; }
 -keepclassmembers class **.databinding.** {
     public static ** inflate(...);
     public static ** bind(...);
+}
+-keep public class dhp.thl.tpl.ndv.ui.** extends androidx.fragment.app.Fragment {
+    public <init>();
 }
 
 # Android-video-trimmer

@@ -1,497 +1,243 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface">
 
+    <!-- Material 3 Expressive Editorial Header -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/colorSurface"
-        app:elevation="0dp">
-
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:title="@string/app_name"
-            app:titleTextAppearance="@style/ToolbarBoldTitle" />
-        </com.google.android.material.appbar.AppBarLayout>
+        app:elevation="0dp"
+        app:liftOnScroll="false">
 
         <LinearLayout
+            android:id="@+id/expressiveHeaderRow"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+            android:layout_height="68dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="22dp"
+            android:paddingEnd="20dp">
 
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1">
+            <TextView
+                android:id="@+id/txtToolbarTitle"
+                style="@style/TextAppearance.Material3.HeadlineMedium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:letterSpacing="-0.015"
+                android:singleLine="true"
+                android:text="@string/nav_home"
+                android:textColor="?attr/colorOnSurface"
+                android:textStyle="bold" />
 
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/recycler"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:paddingStart="4dp"
-                    android:paddingTop="4dp"
-                    android:paddingEnd="4dp"
-                    android:paddingBottom="108dp"
-                    android:clipToPadding="false"
-                    android:scrollbarStyle="outsideOverlay" />
+            <TextView
+                android:id="@+id/txtToolbarBadge"
+                style="@style/TextAppearance.Material3.LabelLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:paddingHorizontal="11dp"
+                android:paddingVertical="3dp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </LinearLayout>
+    </com.google.android.material.appbar.AppBarLayout>
 
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/recyclerRecents"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:paddingStart="4dp"
-                    android:paddingTop="4dp"
-                    android:paddingEnd="4dp"
-                    android:paddingBottom="108dp"
-                    android:clipToPadding="false"
-                    android:scrollbarStyle="outsideOverlay"
-                    android:visibility="gone" />
+    <!-- Multi-Screen Host Container (HomeFragment, RecentsFragment, OptionsFragment) -->
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/fragmentContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+    <!-- Material 3 Expressive Borderless Floating Bottom Navigation Bar (74% Alpha) + Circular FAB -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/floatingBottomContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:elevation="8dp"
+        android:paddingStart="16dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="16dp">
+
+        <LinearLayout
+            android:id="@+id/floatingBottomRow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:gravity="center"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/floatingNavCard"
+                style="@style/FloatingNavCardStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="64dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@android:color/transparent"
+                app:strokeWidth="0dp">
 
                 <LinearLayout
-                    android:id="@+id/emptyLayout"
-                    android:layout_width="match_parent"
+                    android:id="@+id/floatingNavTabsContainer"
+                    android:layout_width="wrap_content"
                     android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:visibility="gone"
-                    android:paddingStart="32dp"
-                    android:paddingTop="32dp"
-                    android:paddingEnd="32dp"
-                    android:paddingBottom="96dp">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp">
 
-                    <ImageView
-                        android:id="@+id/imgEmpty"
-                        android:layout_width="120dp"
-                        android:layout_height="120dp"
-                        android:src="@drawable/ic_empty_state" />
-
-                    <TextView
-                        android:id="@+id/txtEmpty"
+                    <!-- Tab 1: Home -->
+                    <LinearLayout
+                        android:id="@+id/navTabHome"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="@string/no_stickers_found"
-                        android:textAlignment="center"
-                        style="@style/TextAppearance.Material3.TitleMedium"
-                        android:alpha="0.7" />
+                        android:layout_height="48dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:orientation="horizontal"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp">
+
+                        <ImageView
+                            android:id="@+id/iconNavHome"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:src="@drawable/ic_home"
+                            android:contentDescription="@string/nav_home" />
+
+                        <TextView
+                            android:id="@+id/txtNavHome"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:ellipsize="none"
+                            android:singleLine="true"
+                            android:text="@string/nav_home"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Tab 2: Recents -->
+                    <LinearLayout
+                        android:id="@+id/navTabRecents"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="4dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:orientation="horizontal"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp">
+
+                        <ImageView
+                            android:id="@+id/iconNavRecents"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:src="@drawable/ic_history"
+                            android:contentDescription="@string/nav_recents" />
+
+                        <TextView
+                            android:id="@+id/txtNavRecents"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:ellipsize="none"
+                            android:singleLine="true"
+                            android:text="@string/nav_recents"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+                    </LinearLayout>
+
+                    <!-- Tab 3: Options -->
+                    <LinearLayout
+                        android:id="@+id/navTabOptions"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="4dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:orientation="horizontal"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp">
+
+                        <ImageView
+                            android:id="@+id/iconNavOptions"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:src="@drawable/ic_more_horiz"
+                            android:contentDescription="@string/nav_options" />
+
+                        <TextView
+                            android:id="@+id/txtNavOptions"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:ellipsize="none"
+                            android:singleLine="true"
+                            android:text="@string/nav_options"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+                    </LinearLayout>
+
                 </LinearLayout>
 
-                <ScrollView
-                    android:id="@+id/info_layout"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:visibility="gone"
-                    android:paddingBottom="108dp"
-                    android:clipToPadding="false"
-                    android:scrollbarStyle="outsideOverlay">
+            </com.google.android.material.card.MaterialCardView>
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="8dp">
-
-                        <!-- Settings Section -->
-                        <TextView
-                            android:id="@+id/section_settings_header"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/section_settings"
-                            android:textColor="?attr/colorPrimary"
-                            android:textStyle="bold"
-                            android:paddingStart="16dp"
-                            android:paddingEnd="16dp"
-                            android:paddingTop="16dp"
-                            android:paddingBottom="8dp"/>
-
-                        <com.google.android.material.card.MaterialCardView
-                            android:id="@+id/cardSettings"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_margin="8dp"
-                            app:cardElevation="0dp"
-                            app:cardCornerRadius="24dp"
-                            app:cardBackgroundColor="?attr/colorSurfaceContainerLow">
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:orientation="vertical">
-
-                                <LinearLayout
-                                    android:id="@+id/itemTheme"
-                                    style="@style/InfoItemStyle">
-                                    <ImageView android:id="@+id/imgTheme" style="@style/InfoIconStyle" android:src="@drawable/ic_palette"/>
-                                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_theme_title" style="@style/TextAppearance.Material3.TitleMedium" android:textStyle="bold"/>
-                                        <TextView android:id="@+id/txtCurrentTheme" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/theme_light" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
-                                    </LinearLayout>
-                                </LinearLayout>
-
-                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" />
-
-                                <LinearLayout
-                                    android:id="@+id/itemMaterialColor"
-                                    style="@style/InfoItemStyle">
-                                    <ImageView
-                                        android:id="@+id/imgMaterialColor"
-                                        style="@style/InfoIconStyle"
-                                        android:src="@drawable/ic_water_drop"/>
-                                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_material_color_title" style="@style/TextAppearance.Material3.TitleMedium" android:textStyle="bold"/>
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_material_color_subtitle" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
-                                    </LinearLayout>
-                                <com.google.android.material.materialswitch.MaterialSwitch
-                                    android:id="@+id/switchMaterialColor"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:scaleX="0.85"
-                                    android:scaleY="0.85"
-                                    android:background="@android:color/transparent"
-                                    app:thumbIcon="@drawable/ic_switch_thumb"
-                                    app:trackDecorationTint="@android:color/transparent"/>
-                                </LinearLayout>
-
-                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" />
-
-                                <LinearLayout
-                                    android:id="@+id/itemOnlineRemoveBg"
-                                    style="@style/InfoItemStyle">
-                                    <ImageView
-                                        android:id="@+id/imgOnlineRemoveBg"
-                                        style="@style/InfoIconStyle"
-                                        android:src="@drawable/ic_remove_bg"/>
-                                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_online_removebg_title" style="@style/TextAppearance.Material3.TitleMedium" android:textStyle="bold"/>
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_online_removebg_subtitle" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
-                                    </LinearLayout>
-                                <com.google.android.material.materialswitch.MaterialSwitch
-                                    android:id="@+id/switchOnlineRemoveBg"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:scaleX="0.85"
-                                    android:scaleY="0.85"
-                                    android:background="@android:color/transparent"
-                                    app:thumbIcon="@drawable/ic_switch_thumb"
-                                    app:trackDecorationTint="@android:color/transparent"/>
-                                </LinearLayout>
-
-                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" />
-
-                                <LinearLayout
-                                    android:id="@+id/itemLanguage"
-                                    style="@style/InfoItemStyle">
-                                    <ImageView android:id="@+id/imgLanguage" style="@style/InfoIconStyle" android:src="@drawable/ic_language"/>
-                                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_language_title" style="@style/TextAppearance.Material3.TitleMedium" android:textStyle="bold"/>
-                                        <TextView android:id="@+id/txtCurrentLanguage" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/lang_en" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
-                                    </LinearLayout>
-                                </LinearLayout>
-
-                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" />
-
-                                <LinearLayout
-                                    android:id="@+id/itemFiles"
-                                    style="@style/InfoItemStyle">
-                                    <ImageView android:id="@+id/imgFiles" style="@style/InfoIconStyle" android:src="@drawable/ic_import_export"/>
-                                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_files_title" style="@style/TextAppearance.Material3.TitleMedium" android:textStyle="bold"/>
-                                    </LinearLayout>
-                                </LinearLayout>
-
-                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" />
-
-                                <LinearLayout
-                                    android:id="@+id/itemRemoveRecent"
-                                    style="@style/InfoItemStyle">
-                                    <ImageView android:id="@+id/imgRemoveRecent" style="@style/InfoIconStyle" android:src="@drawable/ic_delete_history"/>
-                                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:id="@+id/txtRemoveRecent" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_remove_recent_title" style="@style/TextAppearance.Material3.TitleMedium" />
-                                    </LinearLayout>
-                                </LinearLayout>
-
-                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1"  />
-
-                                <LinearLayout
-                                    android:id="@+id/itemRemoveAll"
-                                    style="@style/InfoItemStyle">
-                                    <ImageView android:id="@+id/imgRemoveAll" style="@style/InfoIconStyle" android:src="@drawable/ic_delete_all"/>
-                                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:id="@+id/txtRemoveAll" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_remove_all_title" style="@style/TextAppearance.Material3.TitleMedium" />
-                                    </LinearLayout>
-                                </LinearLayout>
-
-                            </LinearLayout>
-                        </com.google.android.material.card.MaterialCardView>
-
-
-                        <!-- General Section -->
-                        <TextView
-                            android:id="@+id/section_general_header"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/section_general"
-                            android:textColor="?attr/colorPrimary"
-                            android:textStyle="bold"
-                            android:paddingStart="16dp"
-                            android:paddingEnd="16dp"
-                            android:paddingTop="16dp"
-                            android:paddingBottom="8dp"/>
-
-                        <com.google.android.material.card.MaterialCardView
-                            android:id="@+id/cardGeneral"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_margin="8dp"
-                            app:cardElevation="0dp"
-                            app:cardCornerRadius="24dp"
-                            app:cardBackgroundColor="?attr/colorSurfaceContainerLow">
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:orientation="vertical">
-
-                                <LinearLayout
-                                    android:id="@+id/itemVersion"
-                                    style="@style/InfoItemStyle">
-                                    <ImageView android:id="@+id/imgVersion" style="@style/InfoIconStyle" android:src="@drawable/ic_info"/>
-                                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_version_title" style="@style/TextAppearance.Material3.TitleMedium" android:textStyle="bold"/>
-                                        <TextView android:id="@+id/txtVersion" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1.0.0" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
-                                    </LinearLayout>
-                                </LinearLayout>
-
-                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" />
-
-                                <LinearLayout
-                                    android:id="@+id/itemRepo"
-                                    style="@style/InfoItemStyle">
-                                    <ImageView android:id="@+id/imgRepo" style="@style/InfoIconStyle" android:src="@drawable/ic_code"/>
-                                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_repo_title" style="@style/TextAppearance.Material3.TitleMedium" android:textStyle="bold"/>
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_repo_note" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
-                                    </LinearLayout>
-                                </LinearLayout>
-
-                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1" />
-
-                                <LinearLayout
-                                    android:id="@+id/itemLicense"
-                                    style="@style/InfoItemStyle">
-                                    <ImageView android:id="@+id/imgLicense" style="@style/InfoIconStyle" android:src="@drawable/ic_description"/>
-                                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_license_title" style="@style/TextAppearance.Material3.TitleMedium" android:textStyle="bold"/>
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_license_note" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
-                                    </LinearLayout>
-                                </LinearLayout>
-
-                                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="?attr/colorOnSurfaceVariant" android:alpha="0.1"  />
-
-                                <LinearLayout
-                                    android:id="@+id/itemOpenSource"
-                                    style="@style/InfoItemStyle">
-                                    <ImageView android:id="@+id/imgOpenSource" style="@style/InfoIconStyle" android:src="@drawable/ic_opensource"/>
-                                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_opensource_title" style="@style/TextAppearance.Material3.TitleMedium" android:textStyle="bold"/>
-                                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/info_opensource_note" style="@style/TextAppearance.Material3.BodySmall" android:alpha="0.7"/>
-                                    </LinearLayout>
-                                </LinearLayout>
-
-                            </LinearLayout>
-                        </com.google.android.material.card.MaterialCardView>
-
-                    </LinearLayout>
-                </ScrollView>
-            </FrameLayout>
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/addButton"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_marginStart="22dp"
+                app:backgroundTint="?attr/colorPrimary"
+                app:elevation="0dp"
+                app:fabCustomSize="60dp"
+                app:hoveredFocusedTranslationZ="0dp"
+                app:maxImageSize="26dp"
+                app:pressedTranslationZ="0dp"
+                app:shapeAppearance="@style/ShapeAppearance.ZSticker.FullCircle"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.ZSticker.FullCircle"
+                app:srcCompat="@drawable/ic_add"
+                app:tint="?attr/colorOnPrimary" />
 
         </LinearLayout>
 
-        <!-- Material 3 Expressive Floating Bottom Navigation Bar + Paired FAB (Google Photos Style) -->
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/floatingBottomContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|center_horizontal"
-            android:paddingStart="16dp"
-            android:paddingTop="8dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="16dp"
-            android:clipChildren="false"
-            android:clipToPadding="false"
-            android:elevation="8dp">
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <LinearLayout
-                android:id="@+id/floatingBottomRow"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center"
-                android:clipChildren="false"
-                android:clipToPadding="false"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent">
+    <!-- Full-Screen Expressive Loading Indicator Overlay -->
+    <FrameLayout
+        android:id="@+id/progressBar"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/transparent"
+        android:clickable="true"
+        android:focusable="true"
+        android:translationZ="10dp"
+        android:visibility="gone">
 
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/floatingNavCard"
-                    style="@style/FloatingNavCardStyle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="62dp">
+        <com.google.android.material.loadingindicator.LoadingIndicator
+            android:id="@+id/loadingIndicator"
+            android:layout_width="480dp"
+            android:layout_height="480dp"
+            android:layout_gravity="center"
+            app:indicatorColor="?attr/colorPrimary" />
 
-                    <LinearLayout
-                        android:id="@+id/floatingNavTabsContainer"
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:paddingStart="7dp"
-                        android:paddingEnd="7dp">
+    </FrameLayout>
 
-                        <!-- Tab 1: Home (Selected by default: Icon + Full Text on same line) -->
-                        <LinearLayout
-                            android:id="@+id/navTabHome"
-                            android:layout_width="wrap_content"
-                            android:layout_height="48dp"
-                            android:orientation="horizontal"
-                            android:gravity="center"
-                            android:paddingStart="16dp"
-                            android:paddingEnd="16dp"
-                            android:clickable="true"
-                            android:focusable="true">
-
-                            <ImageView
-                                android:id="@+id/iconNavHome"
-                                android:layout_width="22dp"
-                                android:layout_height="22dp"
-                                android:src="@drawable/ic_home" />
-
-                            <TextView
-                                android:id="@+id/txtNavHome"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:text="@string/nav_home"
-                                android:singleLine="true"
-                                android:ellipsize="none"
-                                android:textSize="14sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-
-                        <!-- Tab 2: Recents (Unselected: Icon only) -->
-                        <LinearLayout
-                            android:id="@+id/navTabRecents"
-                            android:layout_width="wrap_content"
-                            android:layout_height="48dp"
-                            android:layout_marginStart="4dp"
-                            android:orientation="horizontal"
-                            android:gravity="center"
-                            android:paddingStart="14dp"
-                            android:paddingEnd="14dp"
-                            android:clickable="true"
-                            android:focusable="true">
-
-                            <ImageView
-                                android:id="@+id/iconNavRecents"
-                                android:layout_width="22dp"
-                                android:layout_height="22dp"
-                                android:src="@drawable/ic_history" />
-
-                            <TextView
-                                android:id="@+id/txtNavRecents"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:text="@string/nav_recents"
-                                android:singleLine="true"
-                                android:ellipsize="none"
-                                android:textSize="14sp"
-                                android:textStyle="bold"
-                                android:visibility="gone" />
-                        </LinearLayout>
-
-                        <!-- Tab 3: Options (Unselected: Icon only) -->
-                        <LinearLayout
-                            android:id="@+id/navTabOptions"
-                            android:layout_width="wrap_content"
-                            android:layout_height="48dp"
-                            android:layout_marginStart="4dp"
-                            android:orientation="horizontal"
-                            android:gravity="center"
-                            android:paddingStart="14dp"
-                            android:paddingEnd="14dp"
-                            android:clickable="true"
-                            android:focusable="true">
-
-                            <ImageView
-                                android:id="@+id/iconNavOptions"
-                                android:layout_width="22dp"
-                                android:layout_height="22dp"
-                                android:src="@drawable/ic_more_horiz" />
-
-                            <TextView
-                                android:id="@+id/txtNavOptions"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:text="@string/nav_options"
-                                android:singleLine="true"
-                                android:ellipsize="none"
-                                android:textSize="14sp"
-                                android:textStyle="bold"
-                                android:visibility="gone" />
-                        </LinearLayout>
-
-                    </LinearLayout>
-
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/addButton"
-                    android:layout_width="60dp"
-                    android:layout_height="60dp"
-                    android:layout_marginStart="22dp"
-                    app:fabCustomSize="60dp"
-                    app:maxImageSize="26dp"
-                    app:shapeAppearance="@style/ShapeAppearance.ZSticker.FullCircle"
-                    app:shapeAppearanceOverlay="@style/ShapeAppearance.ZSticker.FullCircle"
-                    app:srcCompat="@drawable/ic_add"
-                    app:tint="?attr/colorOnSecondaryContainer"
-                    app:backgroundTint="?attr/colorSecondaryContainer"
-                    app:elevation="0dp"
-                    app:hoveredFocusedTranslationZ="0dp"
-                    app:pressedTranslationZ="0dp" />
-
-            </LinearLayout>
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-            <FrameLayout
-                android:id="@+id/progressBar"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@android:color/transparent"
-                android:visibility="gone"
-                android:clickable="true"
-                android:focusable="true"
-                android:translationZ="10dp">
-
-                <com.google.android.material.loadingindicator.LoadingIndicator
-                    android:id="@+id/loadingIndicator"
-                    android:layout_width="480dp"
-                    android:layout_height="480dp"
-                    android:layout_gravity="center"
-                    app:indicatorColor="?attr/colorPrimary" />
-
-                </FrameLayout>
-
-            </androidx.coordinatorlayout.widget.CoordinatorLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

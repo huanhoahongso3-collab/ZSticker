@@ -98,4 +98,8 @@
     <string name="trim_video_title">裁剪视频</string>
     <string name="only_one_video_allowed">每次只能导入 1 个视频</string>
     <string name="thank_you_toast">感谢您使用本应用！</string>
+    <string name="section_storage">数据与存储</string>
+    <string name="add_first_sticker">添加贴纸</string>
+    <string name="empty_stickers_subtitle">导入图片、GIF 或短视频，制作您的第一个 Zalo 贴纸</string>
+    <string name="empty_history_subtitle">您发送到 Zalo 的贴纸将按日期显示在这里</string>
 </resources>

@@ -98,4 +98,8 @@
     <string name="trim_video_title">Обрезка видео</string>
     <string name="only_one_video_allowed">Можно импортировать только 1 видео за раз</string>
     <string name="thank_you_toast">Спасибо за использование этого приложения!</string>
+    <string name="section_storage">Данные и хранилище</string>
+    <string name="add_first_sticker">Добавить стикер</string>
+    <string name="empty_stickers_subtitle">Импортируйте изображение, GIF или короткое видео для создания первого стикера</string>
+    <string name="empty_history_subtitle">Отправленные в Zalo стикеры будут отображаться здесь по датам</string>
 </resources>

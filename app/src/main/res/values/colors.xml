@@ -1,30 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="orange_primary">#F57C00</color>
-    <color name="orange_primary_dark">#FFB74D</color>
-    <color name="orange_primary_light">#F57C00</color>
+    <!-- Stock Orange (#F57C00) Material 3 Perceptual Tonal Scheme — Light Mode -->
+    <color name="orange_primary">#924700</color>
+    <color name="orange_on_primary">#FFFFFF</color>
+    <color name="orange_container">#FFDAC3</color>
+    <color name="orange_on_container">#301200</color>
 
-    <color name="orange_container">#FFB74D</color> 
-    <color name="orange_on_container">#5D3A1A</color>
-    
-    <color name="light_surface">#FFFBFE</color>
-    <color name="light_surface_container">#F5F5F5</color>
-    <color name="light_surface_container_high">#FFFFFF</color>
-    <color name="light_on_surface">#1C1B1F</color>
-    <color name="light_background">#FFFBFE</color>
-    <color name="light_orange_background">#FFF3E0</color>
-    <color name="floating_nav_stroke_light">#1A000000</color>
-    
-    <color name="dark_surface">#1C1B1F</color>
-    <color name="dark_surface_container">#2B2930</color>
-    <color name="dark_surface_container_high">#322F37</color>
-    <color name="dark_on_surface">#E6E1E5</color>
-    <color name="dark_background">#1C1B1F</color>
-    <color name="floating_nav_stroke_dark">#26FFFFFF</color>
-    
-    <color name="dark_orange_container">#4A3422</color> 
-    <color name="dark_orange_on_container">#FFB74D</color>
-    
+    <color name="orange_secondary">#765642</color>
+    <color name="orange_on_secondary">#FFFFFF</color>
+    <color name="orange_secondary_container">#FBDCC9</color>
+    <color name="orange_on_secondary_container">#2B1606</color>
+
+    <color name="orange_tertiary">#626229</color>
+    <color name="orange_on_tertiary">#FFFFFF</color>
+    <color name="orange_tertiary_container">#E6E7AB</color>
+    <color name="orange_on_tertiary_container">#1E1D00</color>
+
+    <color name="light_surface">#FFF8F3</color>
+    <color name="light_surface_container_lowest">#FFFFFF</color>
+    <color name="light_surface_container_low">#FBF2EC</color>
+    <color name="light_surface_container">#F5ECE7</color>
+    <color name="light_surface_container_high">#EFE6E1</color>
+    <color name="light_surface_container_highest">#E9E1DB</color>
+    <color name="light_on_surface">#201A16</color>
+    <color name="light_on_surface_variant">#51443C</color>
+    <color name="light_outline">#82746B</color>
+    <color name="light_outline_variant">#D3C3BA</color>
+    <color name="light_background">#FFF8F3</color>
+    <color name="light_orange_background">#FFF8F3</color>
+
+    <!-- Stock Orange (#F57C00) Material 3 Perceptual Tonal Scheme — Dark Mode -->
+    <color name="dark_orange_primary">#FFB381</color>
+    <color name="dark_orange_on_primary">#4E2200</color>
+    <color name="dark_orange_container">#6F3400</color>
+    <color name="dark_orange_on_container">#FFDAC3</color>
+
+    <color name="dark_orange_secondary">#E3BEA8</color>
+    <color name="dark_orange_on_secondary">#432917</color>
+    <color name="dark_orange_secondary_container">#5B402C</color>
+    <color name="dark_orange_on_secondary_container">#FBDCC9</color>
+
+    <color name="dark_orange_tertiary">#CACB90</color>
+    <color name="dark_orange_on_tertiary">#323300</color>
+    <color name="dark_orange_tertiary_container">#4B4A0D</color>
+    <color name="dark_orange_on_tertiary_container">#E6E7AB</color>
+
+    <color name="dark_surface">#18120E</color>
+    <color name="dark_surface_container_lowest">#130D09</color>
+    <color name="dark_surface_container_low">#201A16</color>
+    <color name="dark_surface_container">#241E1A</color>
+    <color name="dark_surface_container_high">#2F2824</color>
+    <color name="dark_surface_container_highest">#3A332F</color>
+    <color name="dark_on_surface">#E9E1DB</color>
+    <color name="dark_on_surface_variant">#D3C3BA</color>
+    <color name="dark_outline">#9C8D84</color>
+    <color name="dark_outline_variant">#51443C</color>
+    <color name="dark_background">#18120E</color>
+
+    <!-- Legacy aliases kept for compatibility -->
+    <color name="orange_primary_dark">#FFB381</color>
+    <color name="orange_primary_light">#FFB381</color>
+    <color name="floating_nav_stroke_light">#00000000</color>
+    <color name="floating_nav_stroke_dark">#00000000</color>
+
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 </resources>

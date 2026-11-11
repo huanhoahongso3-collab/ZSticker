@@ -5,21 +5,20 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.DialogFragment
-import com.kieronquinn.monetcompat.core.MonetCompat
+import dhp.thl.tpl.ndv.ui.theme.ExpressiveThemeManager
 
 class ProgressDialog : DialogFragment() {
 
@@ -41,36 +40,17 @@ class ProgressDialog : DialogFragment() {
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
-                val materialColorEnabled = remember {
-                    context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
-                        .getBoolean("material_color_enabled", false)
+                val palette = remember(context) {
+                    ExpressiveThemeManager.resolvePalette(context)
                 }
-                val isDark = isSystemInDarkTheme()
-                val monet = MonetCompat.getInstance()
-                
-                val colors = if (materialColorEnabled) {
-                    val primary = Color(monet.getAccentColor(context))
-                    val background = Color(monet.getBackgroundColor(context, isDark))
-                    if (isDark) {
-                        darkColorScheme(primary = primary, surface = background, surfaceContainerHigh = background)
-                    } else {
-                        lightColorScheme(primary = primary, surface = background, surfaceContainerHigh = background)
-                    }
-                } else {
-                    if (isDark) darkColorScheme() else lightColorScheme()
+                val colorScheme = remember(palette) {
+                    palette.toComposeColorScheme()
                 }
 
-                val primaryColor = if (materialColorEnabled) {
-                    Color(monet.getAccentColor(context))
-                } else {
-                    Color(0xFFFF9500) // orange_primary fallback
-                }
-
-                MaterialTheme(colorScheme = colors) {
+                MaterialTheme(colorScheme = colorScheme) {
                     ProgressDialogContent(
                         progressProvider = { progressState.floatValue },
                         messageProvider = { messageState.value },
-                        primaryColor = primaryColor,
                         onCancel = onCancel
                     )
                 }
@@ -111,7 +91,6 @@ class ProgressDialog : DialogFragment() {
     private fun ProgressDialogContent(
         progressProvider: () -> Float,
         messageProvider: () -> String,
-        primaryColor: Color,
         onCancel: (() -> Unit)?
     ) {
         val progress by rememberUpdatedState(progressProvider())
@@ -120,6 +99,7 @@ class ProgressDialog : DialogFragment() {
             animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec,
             label = "ProgressAnimation"
         )
+        val primaryColor = MaterialTheme.colorScheme.primary
 
         Surface(
             modifier = Modifier
@@ -137,8 +117,9 @@ class ProgressDialog : DialogFragment() {
                 Text(
                     text = messageProvider(),
                     style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier.padding(bottom = 18.dp)
                 )
 
                 LinearWavyProgressIndicator(
@@ -147,35 +128,44 @@ class ProgressDialog : DialogFragment() {
                         .fillMaxWidth()
                         .height(14.dp),
                     color = primaryColor,
-                    trackColor = primaryColor.copy(alpha = 0.2f),
+                    trackColor = MaterialTheme.colorScheme.secondaryContainer,
                     stroke = WavyProgressIndicatorDefaults.linearIndicatorStroke,
                     trackStroke = WavyProgressIndicatorDefaults.linearTrackStroke
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text(
-                    text = "${(progress * 100).toInt()}%",
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
-                    ),
-                    color = primaryColor
-                )
+                Surface(
+                    shape = MaterialTheme.shapes.large,
+                    color = MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    Text(
+                        text = "${(progress * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                }
 
                 if (onCancel != null) {
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
                     TextButton(
                         onClick = { onCancel.invoke() },
                         colors = ButtonDefaults.textButtonColors(contentColor = primaryColor)
                     ) {
-                        Text(stringResource(id = R.string.cancel))
+                        Text(
+                            text = stringResource(id = R.string.cancel),
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
         }
     }
-    
+
     companion object {
         fun newInstance(message: String): ProgressDialog {
             return ProgressDialog().apply {

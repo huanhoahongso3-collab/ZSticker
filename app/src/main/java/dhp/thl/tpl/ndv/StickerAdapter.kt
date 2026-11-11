@@ -1,6 +1,7 @@
 package dhp.thl.tpl.ndv
 
-import android.content.Context
+import android.content.res.ColorStateList
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
@@ -8,93 +9,133 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.FileProvider
+import androidx.core.graphics.ColorUtils
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
+import com.google.android.material.card.MaterialCardView
+import dhp.thl.tpl.ndv.data.StickerListItem
+import dhp.thl.tpl.ndv.ui.theme.ExpressiveMotion
+import dhp.thl.tpl.ndv.ui.theme.ExpressivePalette
+import dhp.thl.tpl.ndv.ui.theme.ExpressiveThemeManager
 
+/**
+ * DiffUtil-backed Material 3 Expressive sticker & history grid adapter.
+ * Features:
+ * - Tonal `surfaceContainerLow` 22dp squircle cards with `fitCenter` silhouette framing
+ * - Interactive spatial spring press + 22dp -> 32dp corner-radius morphing
+ * - Tonal `tertiaryContainer` GIF pill badges & `secondaryContainer` date headers
+ */
 class StickerAdapter(
-    private var items: MutableList<Any>,
-    private val listener: StickerListener,
-    private val isRecents: Boolean = false,
-    private val materialColorEnabled: Boolean = false
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-
-    data class RecentSticker(val file: File, val timestamp: Long)
+    private val listener: StickerListener
+) : ListAdapter<StickerListItem, RecyclerView.ViewHolder>(DiffCallback) {
 
     interface StickerListener {
         fun onStickerClick(uri: Uri)
         fun onStickerLongClick(uri: Uri, isRecent: Boolean, entry: String? = null)
     }
 
+    private var palette: ExpressivePalette? = null
+
+    fun updatePalette(newPalette: ExpressivePalette) {
+        if (palette != newPalette) {
+            palette = newPalette
+            if (itemCount > 0) {
+                notifyItemRangeChanged(0, itemCount)
+            }
+        }
+    }
+
     override fun getItemViewType(position: Int): Int {
-        return if (items[position] is String) 0 else 1
+        return when (getItem(position)) {
+            is StickerListItem.Header -> VIEW_TYPE_HEADER
+            is StickerListItem.Sticker -> VIEW_TYPE_STICKER
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        return if (viewType == 0) {
+        return if (viewType == VIEW_TYPE_HEADER) {
             val view = LayoutInflater.from(parent.context).inflate(R.layout.item_header, parent, false)
             HeaderViewHolder(view)
         } else {
             val view = LayoutInflater.from(parent.context).inflate(R.layout.item_sticker, parent, false)
-            StickerViewHolder(view)
+            StickerViewHolder(view).also { holder ->
+                ExpressiveMotion.attachCardTouchMorph(
+                    targetView = holder.card,
+                    cardView = holder.card,
+                    restingCornerDp = 22f,
+                    pressedCornerDp = 32f,
+                    pressedScale = 0.93f
+                )
+            }
         }
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        val item = items[position]
-        if (holder is HeaderViewHolder && item is String) {
-            holder.text.text = item
-            if (materialColorEnabled) {
-                val primary = com.kieronquinn.monetcompat.core.MonetCompat.getInstance().getAccentColor(holder.itemView.context)
-                holder.text.setTextColor(primary)
-            } else {
-                holder.text.setTextColor(androidx.core.content.ContextCompat.getColor(holder.itemView.context, R.color.orange_primary))
-            }
-        } else if (holder is StickerViewHolder && (item is File || item is RecentSticker)) {
-            val file = if (item is RecentSticker) item.file else item as File
-            val isGif = file.name.endsWith(".gif", ignoreCase = true)
-            holder.badgeGif.visibility = if (isGif) View.VISIBLE else View.GONE
-            Glide.with(holder.image).load(file).into(holder.image)
-            
-            holder.itemView.setOnClickListener {
-                val uri = FileProvider.getUriForFile(
-                    holder.itemView.context,
-                    "${holder.itemView.context.packageName}.provider",
-                    file
-                )
-                listener.onStickerClick(uri)
-            }
-            
-            holder.itemView.setOnLongClickListener {
-                if (item is RecentSticker) {
-                    val uri = Uri.fromFile(item.file)
-                    listener.onStickerLongClick(uri, true, "${item.file.name}:${item.timestamp}")
-                } else {
-                    val uri = Uri.fromFile(item as File)
-                    listener.onStickerLongClick(uri, false)
+        val context = holder.itemView.context
+        val pal = palette ?: ExpressiveThemeManager.resolvePalette(context).also { palette = it }
+        val density = context.resources.displayMetrics.density
+
+        when (val item = getItem(position)) {
+            is StickerListItem.Header -> {
+                val headerHolder = holder as HeaderViewHolder
+                headerHolder.text.text = item.date
+                headerHolder.text.setTextColor(pal.onSecondaryContainer)
+                headerHolder.text.background = GradientDrawable().apply {
+                    shape = GradientDrawable.RECTANGLE
+                    cornerRadius = 999f * density
+                    setColor(pal.secondaryContainer)
                 }
-                true
             }
 
-            val context = holder.itemView.context
-            val isDark = (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
-            
-            if (!isDark) {
-                holder.card.setCardBackgroundColor(android.graphics.Color.TRANSPARENT)
+            is StickerListItem.Sticker -> {
+                val stickerHolder = holder as StickerViewHolder
+                val file = item.file
+                val isGif = file.name.endsWith(".gif", ignoreCase = true)
+
+                stickerHolder.card.setCardBackgroundColor(pal.surfaceContainerLow)
+                stickerHolder.card.strokeWidth = 0
+                stickerHolder.card.rippleColor = ColorStateList.valueOf(
+                    ColorUtils.setAlphaComponent(pal.primary, if (pal.isDark) 52 else 36)
+                )
+
+                if (isGif) {
+                    stickerHolder.badgeGif.visibility = View.VISIBLE
+                    stickerHolder.badgeGif.setTextColor(pal.onTertiaryContainer)
+                    stickerHolder.badgeGif.background = GradientDrawable().apply {
+                        shape = GradientDrawable.RECTANGLE
+                        cornerRadius = 999f * density
+                        setColor(ColorUtils.setAlphaComponent(pal.tertiaryContainer, 238))
+                    }
+                } else {
+                    stickerHolder.badgeGif.visibility = View.GONE
+                }
+
+                Glide.with(stickerHolder.image)
+                    .load(file)
+                    .into(stickerHolder.image)
+
+                stickerHolder.card.setOnClickListener {
+                    val uri = FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.provider",
+                        file
+                    )
+                    listener.onStickerClick(uri)
+                }
+
+                stickerHolder.card.setOnLongClickListener {
+                    val uri = Uri.fromFile(file)
+                    if (item.isRecent) {
+                        listener.onStickerLongClick(uri, true, item.recentEntry)
+                    } else {
+                        listener.onStickerLongClick(uri, false, null)
+                    }
+                    true
+                }
             }
         }
-    }
-
-    override fun getItemCount(): Int = items.size
-
-    fun getItems(): List<Any> = items
-
-    fun refreshData(context: Context) {
-        this.items.clear()
-        this.items.addAll(if (isRecents) loadRecents(context) else loadOrdered(context))
-        notifyDataSetChanged()
     }
 
     class HeaderViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -103,49 +144,22 @@ class StickerAdapter(
 
     class StickerViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val image: ImageView = view.findViewById(R.id.stickerImage)
-        val card: com.google.android.material.card.MaterialCardView = view.findViewById(R.id.stickerCard)
+        val card: MaterialCardView = view.findViewById(R.id.stickerCard)
         val badgeGif: TextView = view.findViewById(R.id.badgeGif)
     }
 
     companion object {
-        fun loadOrdered(context: Context): MutableList<Any> {
-            val list = mutableListOf<Any>()
-            val folder = context.filesDir
-            
-            val files = folder.listFiles { file ->
-                file.name.startsWith("zsticker_") && (file.name.endsWith(".png") || file.name.endsWith(".gif"))
-            }?.sortedByDescending { file ->
-                file.name.removePrefix("zsticker_").removePrefix("rb_").substringBefore(".").toLongOrNull() ?: 0L
-            } ?: emptyList()
+        const val VIEW_TYPE_HEADER = 0
+        const val VIEW_TYPE_STICKER = 1
 
-            list.addAll(files)
-            return list
-        }
-
-        fun loadRecents(context: Context): MutableList<Any> {
-            val prefs = context.getSharedPreferences("recents", Context.MODE_PRIVATE)
-            val recentEntries = prefs.getString("list", "")?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
-            val list = mutableListOf<Any>()
-            
-            var lastDate = ""
-            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-
-            recentEntries.forEach { entry ->
-                val fileName = entry.substringBefore(":")
-                val timestampStr = entry.substringAfter(":", "")
-                val timestamp = timestampStr.toLongOrNull() ?: File(context.filesDir, fileName).lastModified()
-                
-                val file = File(context.filesDir, fileName)
-                if (file.exists()) {
-                    val date = sdf.format(Date(timestamp))
-                    if (date != lastDate) {
-                        list.add(date)
-                        lastDate = date
-                    }
-                    list.add(RecentSticker(file, timestamp))
-                }
+        private object DiffCallback : DiffUtil.ItemCallback<StickerListItem>() {
+            override fun areItemsTheSame(oldItem: StickerListItem, newItem: StickerListItem): Boolean {
+                return oldItem.stableId == newItem.stableId
             }
-            return list
+
+            override fun areContentsTheSame(oldItem: StickerListItem, newItem: StickerListItem): Boolean {
+                return oldItem == newItem
+            }
         }
     }
 }

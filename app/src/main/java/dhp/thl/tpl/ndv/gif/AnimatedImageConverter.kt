@@ -7,6 +7,7 @@ import android.net.Uri
 import com.bumptech.glide.gifdecoder.GifDecoder
 import com.bumptech.glide.gifdecoder.GifHeaderParser
 import com.bumptech.glide.gifdecoder.StandardGifDecoder
+import java.io.BufferedOutputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -136,7 +137,7 @@ object AnimatedImageConverter {
         val (targetW, targetH) = calculateScaledDimensions(originalW, originalH, MAX_STICKER_SIZE)
         encoder.setSize(targetW, targetH)
 
-        FileOutputStream(outputFile).use { fos ->
+        BufferedOutputStream(FileOutputStream(outputFile), 65536).use { fos ->
             encoder.start(fos)
 
             for (i in 0 until frameCount) {
@@ -178,7 +179,7 @@ object AnimatedImageConverter {
         encoder.setRepeat(0)
         encoder.setSize(targetW, targetH)
 
-        FileOutputStream(outputFile).use { fos ->
+        BufferedOutputStream(FileOutputStream(outputFile), 65536).use { fos ->
             encoder.start(fos)
 
             for ((i, frame) in frames.withIndex()) {
@@ -301,7 +302,7 @@ object AnimatedImageConverter {
         encoder.setSize(scaled.width.coerceAtLeast(1), scaled.height.coerceAtLeast(1))
         encoder.setDelay(100)
 
-        FileOutputStream(outputFile).use { fos ->
+        BufferedOutputStream(FileOutputStream(outputFile), 65536).use { fos ->
             encoder.start(fos)
             encoder.addFrame(scaled)
             encoder.finish()
