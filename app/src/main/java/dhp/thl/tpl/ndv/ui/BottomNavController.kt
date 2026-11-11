@@ -300,8 +300,8 @@ class BottomNavController(
 
         binding.addButton.backgroundTintList = ColorStateList.valueOf(fabBgColor)
         binding.addButton.imageTintList = ColorStateList.valueOf(fabIconColor)
-        binding.addButton.rippleColor = ColorStateList.valueOf(
-            ColorUtils.setAlphaComponent(fabIconColor, 40)
+        binding.addButton.setRippleColor(
+            ColorStateList.valueOf(ColorUtils.setAlphaComponent(fabIconColor, 40))
         )
 
         val density = activity.resources.displayMetrics.density
