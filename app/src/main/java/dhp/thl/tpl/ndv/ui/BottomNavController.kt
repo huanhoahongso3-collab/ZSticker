@@ -288,23 +288,9 @@ class BottomNavController(
                 .setInterpolator(fabOvershootInterpolator)
                 .start()
         } else if (fab.visibility == View.VISIBLE) {
-            fab.animate()
-                .scaleX(0.55f)
-                .scaleY(0.55f)
-                .alpha(0f)
-                .setDuration(150L)
-                .setInterpolator(m3EmphasizedInterpolator)
-                .withEndAction {
-                    TransitionManager.beginDelayedTransition(
-                        binding.floatingBottomRow,
-                        ChangeBounds().apply {
-                            duration = 220L
-                            interpolator = m3EmphasizedInterpolator
-                        }
-                    )
-                    fab.visibility = View.GONE
-                }
-                .start()
+            // Hide inside the nav transition already begun in selectTab (Fade OUT + ChangeBounds),
+            // so the bar starts moving on press instead of waiting for a separate FAB animation.
+            fab.visibility = View.GONE
         }
     }
 
