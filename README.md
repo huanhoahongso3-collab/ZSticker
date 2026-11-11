@@ -36,7 +36,10 @@ Dự án lấy cảm hứng từ **Zamoji** — ứng dụng chính thức của
 * **Tách nền ảnh (Background Removal):** Cung cấp 2 cơ chế (tùy chỉnh trong Cài đặt):
   * **Offline:** Chạy hoàn toàn trên thiết bị thông qua *Google MediaPipe Tasks Vision* (Mã nguồn mở, Apache 2.0). Dữ liệu hoàn toàn không rời khỏi thiết bị.
   * **Online:** Sử dụng mô hình *BRIA-RMBG-1.4* hosted trên HuggingFace Spaces. Endpoint proxy (`bria14proxy.vercel.app`) chỉ đóng vai trò trung gian kết nối giữa Android và HuggingFace API, hoàn toàn không lưu trữ dữ liệu hay thu thập thông tin cá nhân ([Xem mã nguồn proxy](https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY)).
-* **Cắt GIF:** Giữ lâu một GIF rồi chọn *Cắt* như với ảnh; vùng cắt áp dụng cho mọi khung hình.
+* **Cắt GIF:** Giữ lâu một GIF rồi chọn *Cắt*: GIF vẫn chuyển động ngay dưới khung cắt, có nút phát/tạm dừng và thanh thời gian để tua từng khung hình; vùng cắt áp dụng cho mọi khung hình.
+* **Yêu thích & thư mục:** Gắn sao cho nhãn dán, tạo thư mục và lọc nhanh bằng các nút *Tất cả / Yêu thích / thư mục* phía trên lưới (giữ lâu một thư mục để đổi tên hoặc xóa).
+* **Chọn nhiều:** Giữ lâu một nhãn dán rồi chọn *Chọn* để thao tác hàng loạt: yêu thích, chuyển thư mục, thêm viền, xuất ra thư viện hoặc xóa.
+* **Trình chỉnh sửa:** Giữ lâu một nhãn dán ảnh tĩnh rồi chọn *Chỉnh sửa*: tẩy, cọ **khôi phục** (lấy lại phần ảnh gốc đã bị xóa nền; ảnh gốc được giữ trên thiết bị sau khi xóa nền), vẽ, thêm chữ, hoàn tác/làm lại, thu phóng bằng hai ngón. Kết quả lưu thành nhãn dán mới.
 * **Sao lưu `.zsticker`:** Sao lưu là một tệp zip thông thường (đuôi `.zsticker`, không có mật khẩu). Bản sao lưu từ phiên bản cũ (`.zip`, có mật khẩu) khôi phục bằng nút *Nhập bản sao lưu cũ*.
 * **Giao diện:** Thiết kế theo chuẩn Google Material Design 3 (Material You).
 
@@ -98,7 +101,10 @@ It was inspired by **Zamoji** — an official VNG application that integrates st
 * **Background Removal:** Offers two configurable engines in Settings:
   * **Offline:** Powered on-device by *Google MediaPipe Tasks Vision* (Apache 2.0 open-source). Zero data leaves your device.
   * **Online:** Powered by the *BRIA-RMBG-1.4* model hosted on HuggingFace Spaces. The endpoint proxy (`bria14proxy.vercel.app`) acts strictly as a bridge between Android and the HuggingFace API — no personal data or images are logged or stored ([View proxy source code](https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY)).
-* **GIF crop:** Long-press a GIF and choose *Crop* like for photos; the chosen region is applied to every frame.
+* **GIF crop:** Long-press a GIF and choose *Crop*: the GIF keeps playing under the crop frame, with a play / pause button and a timeline to scrub through frames; the chosen region is applied to every frame.
+* **Favorites & folders:** Star stickers, create folders, and filter with the *All / Favorites / folders* chips above the grid (long-press a folder chip to rename or delete it).
+* **Multi-select:** Long-press a sticker and choose *Select* to act on many at once: favorite, move to a folder, add a border, export to the gallery, or delete.
+* **Editor:** Long-press a still sticker and choose *Edit*: eraser, a **restore** brush (brings back parts of the original photo that background removal cut away; the original is kept on the device after background removal), drawing, text, undo / redo, and two-finger zoom. The result is saved as a new sticker.
 * **`.zsticker` backups:** Backups are plain zip files (`.zsticker`, no password). Backups from older versions (`.zip`, password-protected) are restored with the *Import legacy backup* button.
 * **UI/UX:** Updated to Google Material Design 3 (Material You).
 

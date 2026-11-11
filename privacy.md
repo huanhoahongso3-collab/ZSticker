@@ -1,6 +1,6 @@
 # Chính Sách Quyền Riêng Tư
 
-_Last Updated: August 11, 2026_
+_Last Updated: November 11, 2026_
 
 ## 📑 Điều hướng / Navigation
 
@@ -46,6 +46,8 @@ Chúng tôi tôn trọng quyền riêng tư của bạn. Ứng dụng này **kh�
 - **Không** bao gồm SDK quảng cáo.
 - **Không** thu thập telemetry hoặc thống kê sử dụng.
 - **Không** thu thập hoặc lưu trữ thông tin cá nhân trên máy chủ.
+
+Dữ liệu bạn tạo trong ứng dụng (nhãn dán, mục yêu thích, thư mục, và ảnh gốc được giữ lại sau khi xóa nền để dùng cho cọ khôi phục) chỉ được lưu **trên thiết bị của bạn** và chỉ rời khỏi thiết bị khi bạn tự xuất bản sao lưu. Bản sao lưu `.zsticker` là tệp zip không có mật khẩu, hãy giữ nó ở nơi an toàn.
 
 ## Truy cập Internet
 
@@ -153,6 +155,8 @@ This application:
 - Does **not** include advertising SDKs.
 - Does **not** collect telemetry or usage statistics.
 - Does **not** collect or store personal information on our servers.
+
+The data you create in the app (stickers, favorites, folders, and the original photo kept after background removal for the restore brush) is stored **only on your device** and leaves it only when you export a backup yourself. A `.zsticker` backup is a plain zip file without a password, so keep it somewhere safe.
 
 ## Internet Access
 
