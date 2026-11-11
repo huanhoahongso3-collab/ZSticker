@@ -122,4 +122,5 @@
     <string name="gif_host_save">Lưu</string>
     <string name="gif_host_invalid">Nhập địa chỉ https:// hợp lệ</string>
     <string name="gif_host_unavailable">Máy chủ GIF động chưa khả dụng, đã gửi GIF thường</string>
+    <string name="gif_host_not_configured">Bản dựng này chưa có máy chủ mặc định. Hãy nhập địa chỉ của bạn.</string>
 </resources>

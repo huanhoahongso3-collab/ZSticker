@@ -55,6 +55,20 @@ Dự án lấy cảm hứng từ **Zamoji** — ứng dụng chính thức của
 
 ---
 
+### 🔧 Cấu hình khi tự biên dịch
+
+Máy chủ GIF động được cấu hình lúc biên dịch bằng biến môi trường (hoặc gradle property), **không có giá trị nào được ghi cứng trong mã nguồn**:
+
+| Biến | Ý nghĩa |
+|---|---|
+| `ZS_GIF_HOST_URL` | Địa chỉ máy chủ mặc định, ví dụ `https://tên-dự-án.vercel.app` |
+| `ZS_GIF_API_KEY_ID` | Key id khớp với một cặp trong `API_KEYS` của máy chủ |
+| `ZS_GIF_API_SECRET` | Bí mật tương ứng, dùng để ký yêu cầu tải lên |
+
+Trên GitHub Actions, đặt chúng trong *Settings > Secrets and variables > Actions* (cùng tên). Nếu thiếu, tính năng GIF động bị tắt và ứng dụng gửi GIF thường. ⚠️ Mọi thứ nằm trong APK đều có thể bị trích xuất, nên đây chỉ là rào cản cho lạm dụng thông thường.
+
+---
+
 ### 📜 Giấy phép & Bản quyền (License)
 
 Dự án được phát hành theo giấy phép **GNU General Public License v3.0 (GPL-3.0)**.
@@ -113,6 +127,20 @@ It was inspired by **Zamoji** — an official VNG application that integrates st
 
 * **Android OS:** Minimum **Android 10 (SDK 29)**, recommended **Android 16 (SDK 36)**.
 * **Localization:** English, Vietnamese, Russian, and Simplified Chinese.
+
+---
+
+### 🔧 Build configuration
+
+The animated GIF host is configured at build time through environment variables (or gradle properties); **nothing is hardcoded in the repository**:
+
+| Variable | Meaning |
+|---|---|
+| `ZS_GIF_HOST_URL` | Default server address, for example `https://your-project.vercel.app` |
+| `ZS_GIF_API_KEY_ID` | Key id matching a pair in the server's `API_KEYS` |
+| `ZS_GIF_API_SECRET` | The matching secret, used to sign uploads |
+
+On GitHub Actions set them under *Settings > Secrets and variables > Actions* (same names). If they are missing, Animated GIF is disabled and the app sends a vanilla GIF. ⚠️ Anything inside an APK can be extracted, so this only deters casual abuse.
 
 ---
 

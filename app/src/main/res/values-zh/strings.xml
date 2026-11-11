@@ -122,4 +122,5 @@
     <string name="gif_host_save">保存</string>
     <string name="gif_host_invalid">请输入有效的 https:// 地址</string>
     <string name="gif_host_unavailable">动态 GIF 托管暂不可用，已作为普通 GIF 发送</string>
+    <string name="gif_host_not_configured">此版本没有默认服务器，请设置你自己的地址。</string>
 </resources>

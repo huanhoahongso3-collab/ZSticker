@@ -60,6 +60,10 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Build Debug and Release APKs
+        env:
+          ZS_GIF_HOST_URL: ${{ secrets.ZS_GIF_HOST_URL }}
+          ZS_GIF_API_KEY_ID: ${{ secrets.ZS_GIF_API_KEY_ID }}
+          ZS_GIF_API_SECRET: ${{ secrets.ZS_GIF_API_SECRET }}
         run: ./gradlew assembleDebug assembleRelease -PskipLint --stacktrace
 
       - name: Remove keystore

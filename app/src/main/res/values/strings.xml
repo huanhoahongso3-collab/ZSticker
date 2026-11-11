@@ -122,4 +122,5 @@
     <string name="gif_host_save">Save</string>
     <string name="gif_host_invalid">Enter a valid https:// address</string>
     <string name="gif_host_unavailable">Animated GIF host isn\'t available yet, sent as a vanilla GIF</string>
+    <string name="gif_host_not_configured">No default server in this build. Set your own address.</string>
 </resources>

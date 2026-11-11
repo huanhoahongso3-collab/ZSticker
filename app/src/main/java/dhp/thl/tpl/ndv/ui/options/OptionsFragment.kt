@@ -492,6 +492,8 @@ class OptionsFragment : Fragment() {
         val custom = GifSendSettings.customHost(ctx)
         binding.txtGifHost.text = if (custom != null) {
             getString(R.string.gif_host_custom, custom)
+        } else if (GifSendSettings.DEFAULT_HOST_BASE_URL.isBlank()) {
+            getString(R.string.gif_host_not_configured)
         } else {
             getString(R.string.gif_host_default, GifSendSettings.DEFAULT_HOST_BASE_URL)
         }
