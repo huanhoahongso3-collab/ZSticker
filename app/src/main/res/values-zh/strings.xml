@@ -134,4 +134,13 @@
     <string name="action_delete">删除</string>
     <string name="delete_selected_title">删除 %1$d 个贴纸？</string>
     <string name="delete_selected_message">此操作无法撤销。</string>
+    <string name="crop_gif_title">裁剪 GIF</string>
+    <string name="crop_save">保存</string>
+    <string name="crop_aspect_free">自由</string>
+    <string name="crop_aspect_square">1:1</string>
+    <string name="crop_aspect_original">原始</string>
+    <string name="crop_play">播放</string>
+    <string name="crop_pause">暂停</string>
+    <string name="crop_saving">正在保存…</string>
+    <string name="crop_load_failed">无法打开此 GIF</string>
 </resources>

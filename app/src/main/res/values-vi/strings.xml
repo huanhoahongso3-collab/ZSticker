@@ -134,4 +134,13 @@
     <string name="action_delete">Xóa</string>
     <string name="delete_selected_title">Xóa %1$d nhãn dán?</string>
     <string name="delete_selected_message">Không thể hoàn tác.</string>
+    <string name="crop_gif_title">Cắt GIF</string>
+    <string name="crop_save">Lưu</string>
+    <string name="crop_aspect_free">Tự do</string>
+    <string name="crop_aspect_square">1:1</string>
+    <string name="crop_aspect_original">Gốc</string>
+    <string name="crop_play">Phát</string>
+    <string name="crop_pause">Tạm dừng</string>
+    <string name="crop_saving">Đang lưu…</string>
+    <string name="crop_load_failed">Không mở được GIF này</string>
 </resources>

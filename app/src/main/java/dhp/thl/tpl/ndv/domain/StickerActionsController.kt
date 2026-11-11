@@ -20,6 +20,7 @@ import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.yalantis.ucrop.UCrop
 import dhp.thl.tpl.ndv.BackupHelper
+import dhp.thl.tpl.ndv.GifCropActivity
 import dhp.thl.tpl.ndv.BaseActivity
 import dhp.thl.tpl.ndv.ImageUtils
 import dhp.thl.tpl.ndv.MediaPipeBackgroundRemover
@@ -31,7 +32,6 @@ import dhp.thl.tpl.ndv.data.OriginalStore
 import dhp.thl.tpl.ndv.data.StickerMetaStore
 import dhp.thl.tpl.ndv.data.StickerRepository
 import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
-import dhp.thl.tpl.ndv.gif.GifProcessor
 import dhp.thl.tpl.ndv.ui.showMonetDialog
 import dhp.thl.tpl.ndv.ui.showFolderPicker
 import dhp.thl.tpl.ndv.ui.showPaneDialog
@@ -433,9 +433,6 @@ class StickerActionsController(
         }
     }
 
-    /** The GIF being cropped: uCrop edits its first frame, the chosen region is then applied to every frame. */
-    private var pendingGifCrop: File? = null
-
     private fun startCrop(uri: Uri) {
         val fileName = uri.lastPathSegment?.lowercase() ?: ""
         if (isVideoUri(uri)) {
@@ -443,25 +440,12 @@ class StickerActionsController(
             return
         }
 
-        var cropSource = uri
         if (fileName.endsWith(".gif")) {
-            val gif = File(activity.filesDir, uri.lastPathSegment ?: "")
-            val frame = try {
-                GifProcessor.firstFrame(gif)
-            } catch (_: Exception) {
-                null
-            }
-            if (frame == null) {
-                ToastUtils.showToast(activity, activity.getString(R.string.unsupported_file_type))
-                return
-            }
-            val framePng = File(activity.cacheDir, "gif_crop_src_${System.currentTimeMillis()}.png")
-            FileOutputStream(framePng).use { frame.compress(Bitmap.CompressFormat.PNG, 100, it) }
-            frame.recycle()
-            pendingGifCrop = gif
-            cropSource = Uri.fromFile(framePng)
-        } else {
-            pendingGifCrop = null
+            // GIFs get their own crop screen: live animated preview, play / pause and a timeline.
+            val intent = Intent(activity, GifCropActivity::class.java)
+                .putExtra(GifCropActivity.EXTRA_GIF_NAME, uri.lastPathSegment)
+            cropLauncherProvider().launch(intent)
+            return
         }
 
         val palette = ExpressiveThemeManager.resolvePalette(activity)
@@ -478,7 +462,7 @@ class StickerActionsController(
             setFreeStyleCropEnabled(true)
         }
 
-        val intent = UCrop.of(cropSource, destinationUri)
+        val intent = UCrop.of(uri, destinationUri)
             .withOptions(options)
             .getIntent(activity)
 
@@ -486,14 +470,15 @@ class StickerActionsController(
     }
 
     fun handleCropResult(result: ActivityResult) {
-        val gifToCrop = pendingGifCrop
-        pendingGifCrop = null
-
         if (result.resultCode != Activity.RESULT_OK) return
         val data = result.data ?: return
 
-        if (gifToCrop != null) {
-            cropGif(gifToCrop, data)
+        // The GIF crop screen saves the new sticker itself.
+        if (data.getBooleanExtra(GifCropActivity.EXTRA_SAVED, false)) {
+            StickerRepository.refreshHome(activity) {
+                onStickerCreated?.invoke()
+            }
+            ToastUtils.showToast(activity, activity.getString(R.string.success))
             return
         }
 
@@ -511,39 +496,6 @@ class StickerActionsController(
             } catch (e: Exception) {
                 e.printStackTrace()
                 ToastUtils.showToast(activity, activity.getString(R.string.failed))
-            }
-        }
-    }
-
-    /** Applies the region uCrop chose on the first frame to every frame of [gif] and saves a new sticker. */
-    private fun cropGif(gif: File, data: Intent) {
-        // uCrop reports the crop as offset + size in source pixels (keys are com.yalantis.ucrop.*).
-        val prefix = "com.yalantis.ucrop"
-        val x = data.getIntExtra("$prefix.OffsetX", 0)
-        val y = data.getIntExtra("$prefix.OffsetY", 0)
-        val w = data.getIntExtra("$prefix.ImageWidth", 0)
-        val h = data.getIntExtra("$prefix.ImageHeight", 0)
-        if (w <= 0 || h <= 0) {
-            ToastUtils.showToast(activity, activity.getString(R.string.failed))
-            return
-        }
-        val region = android.graphics.Rect(x, y, x + w, y + h)
-
-        showLoadingOverlay()
-        thread {
-            val target = File(activity.filesDir, "zsticker_${System.currentTimeMillis()}.gif")
-            val ok = GifProcessor.transform(gif, target, maxSide = 512, crop = region, frameStep = 1, quality = 10)
-            if (!ok) target.delete()
-            activity.runOnUiThread {
-                binding.progressBar.visibility = View.GONE
-                if (ok) {
-                    StickerRepository.refreshHome(activity) {
-                        onStickerCreated?.invoke()
-                    }
-                    ToastUtils.showToast(activity, activity.getString(R.string.success))
-                } else {
-                    ToastUtils.showToast(activity, activity.getString(R.string.failed))
-                }
             }
         }
     }

@@ -134,4 +134,13 @@
     <string name="action_delete">Delete</string>
     <string name="delete_selected_title">Delete %1$d stickers?</string>
     <string name="delete_selected_message">This cannot be undone.</string>
+    <string name="crop_gif_title">Crop GIF</string>
+    <string name="crop_save">Save</string>
+    <string name="crop_aspect_free">Free</string>
+    <string name="crop_aspect_square">1:1</string>
+    <string name="crop_aspect_original">Original</string>
+    <string name="crop_play">Play</string>
+    <string name="crop_pause">Pause</string>
+    <string name="crop_saving">Saving…</string>
+    <string name="crop_load_failed">Couldn\'t open this GIF</string>
 </resources>
