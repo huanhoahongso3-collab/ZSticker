@@ -331,14 +331,13 @@
 
             <LinearLayout
                 android:id="@+id/floatingBottomRow"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center"
                 android:animateLayoutChanges="true"
                 android:clipChildren="false"
                 android:clipToPadding="false"
-                app:layout_constraintWidth_max="410dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
@@ -347,16 +346,116 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/floatingNavCard"
                     style="@style/FloatingNavCardStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="64dp"
-                    android:layout_weight="1">
+                    android:layout_width="wrap_content"
+                    android:layout_height="62dp">
 
-                    <com.google.android.material.bottomnavigation.BottomNavigationView
-                        android:id="@+id/bottom_navigation"
-                        style="@style/Widget.ZSticker.FloatingBottomNavigationView"
-                        android:layout_width="match_parent"
+                    <LinearLayout
+                        android:id="@+id/floatingNavTabsContainer"
+                        android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        app:menu="@menu/bottom_nav_menu" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingStart="7dp"
+                        android:paddingEnd="7dp">
+
+                        <!-- Tab 1: Home (Selected by default: Icon + Full Text on same line) -->
+                        <LinearLayout
+                            android:id="@+id/navTabHome"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:orientation="horizontal"
+                            android:gravity="center"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackgroundBorderless">
+
+                            <ImageView
+                                android:id="@+id/iconNavHome"
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
+                                android:src="@drawable/ic_home" />
+
+                            <TextView
+                                android:id="@+id/txtNavHome"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:text="@string/nav_home"
+                                android:singleLine="true"
+                                android:ellipsize="none"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- Tab 2: Recents (Unselected: Icon only) -->
+                        <LinearLayout
+                            android:id="@+id/navTabRecents"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="4dp"
+                            android:orientation="horizontal"
+                            android:gravity="center"
+                            android:paddingStart="14dp"
+                            android:paddingEnd="14dp"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackgroundBorderless">
+
+                            <ImageView
+                                android:id="@+id/iconNavRecents"
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
+                                android:src="@drawable/ic_history" />
+
+                            <TextView
+                                android:id="@+id/txtNavRecents"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:text="@string/nav_recents"
+                                android:singleLine="true"
+                                android:ellipsize="none"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:visibility="gone" />
+                        </LinearLayout>
+
+                        <!-- Tab 3: Options (Unselected: Icon only) -->
+                        <LinearLayout
+                            android:id="@+id/navTabOptions"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="4dp"
+                            android:orientation="horizontal"
+                            android:gravity="center"
+                            android:paddingStart="14dp"
+                            android:paddingEnd="14dp"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackgroundBorderless">
+
+                            <ImageView
+                                android:id="@+id/iconNavOptions"
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
+                                android:src="@drawable/ic_more_horiz" />
+
+                            <TextView
+                                android:id="@+id/txtNavOptions"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:text="@string/nav_options"
+                                android:singleLine="true"
+                                android:ellipsize="none"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:visibility="gone" />
+                        </LinearLayout>
+
+                    </LinearLayout>
 
                 </com.google.android.material.card.MaterialCardView>
 
@@ -364,14 +463,16 @@
                     android:id="@+id/addButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
+                    android:layout_marginStart="10dp"
                     app:fabCustomSize="58dp"
                     app:maxImageSize="26dp"
                     app:shapeAppearanceOverlay="@style/ShapeAppearance.ZSticker.FullCircle"
                     app:srcCompat="@drawable/ic_add"
                     app:tint="?attr/colorOnSecondaryContainer"
                     app:backgroundTint="?attr/colorSecondaryContainer"
-                    app:elevation="6dp" />
+                    app:elevation="0dp"
+                    app:hoveredFocusedTranslationZ="0dp"
+                    app:pressedTranslationZ="0dp" />
 
             </LinearLayout>
 

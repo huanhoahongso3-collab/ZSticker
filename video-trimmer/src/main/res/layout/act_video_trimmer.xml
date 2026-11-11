@@ -46,7 +46,7 @@
                     android:id="@+id/txt_change_res"
                     style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
+                    android:layout_height="38dp"
                     android:layout_marginEnd="8dp"
                     android:insetTop="0dp"
                     android:insetBottom="0dp"
@@ -54,7 +54,8 @@
                     android:paddingEnd="8dp"
                     android:text="1080p"
                     android:textSize="13sp"
-                    app:cornerRadius="18dp"
+                    android:visibility="gone"
+                    app:cornerRadius="19dp"
                     app:icon="@drawable/ic_trimmer_arrow_down"
                     app:iconGravity="end"
                     app:iconSize="16dp" />
@@ -64,18 +65,19 @@
                     android:id="@+id/btn_done_trim"
                     style="@style/Widget.Material3.Button"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
+                    android:layout_height="38dp"
                     android:insetTop="0dp"
                     android:insetBottom="0dp"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
                     android:text="@string/txt_done"
                     android:textSize="13sp"
                     android:textStyle="bold"
-                    app:cornerRadius="18dp"
+                    app:cornerRadius="19dp"
                     app:icon="@drawable/ic_done"
                     app:iconGravity="textStart"
-                    app:iconSize="16dp" />
+                    app:iconPadding="6dp"
+                    app:iconSize="17dp" />
             </LinearLayout>
         </com.google.android.material.appbar.MaterialToolbar>
     </com.google.android.material.appbar.AppBarLayout>
@@ -94,15 +96,15 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:paddingStart="16dp"
-            android:paddingTop="8dp"
+            android:paddingTop="6dp"
             android:paddingEnd="16dp"
-            android:paddingBottom="12dp">
+            android:paddingBottom="10dp">
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_video_preview"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                app:cardBackgroundColor="#000000"
+                app:cardBackgroundColor="#0D0D0D"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="0dp"
                 app:strokeColor="?attr/colorOutlineVariant"
@@ -117,11 +119,11 @@
                 <!-- Translucent Circular Play/Pause overlay -->
                 <ImageView
                     android:id="@+id/image_play_pause"
-                    android:layout_width="60dp"
-                    android:layout_height="60dp"
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
                     android:layout_gravity="center"
                     android:background="@drawable/shape_circle_lib"
-                    android:padding="14dp"
+                    android:padding="16dp"
                     android:src="@drawable/ic_video_play_lib"
                     android:visibility="gone"
                     app:tint="#FFFFFF" />
@@ -147,15 +149,16 @@
             android:layout_marginBottom="12dp"
             app:cardBackgroundColor="?attr/colorSurfaceContainer"
             app:cardCornerRadius="28dp"
-            app:cardElevation="2dp"
-            app:strokeWidth="0dp">
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingTop="12dp"
-                android:paddingBottom="12dp">
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp">
 
                 <!-- Row 1: Start Time Chip | Live Time & Clip Length Badge | End Time Chip -->
                 <LinearLayout
@@ -171,25 +174,35 @@
                     <LinearLayout
                         android:id="@+id/chip_start_container"
                         android:layout_width="wrap_content"
-                        android:layout_height="36dp"
+                        android:layout_height="38dp"
                         android:background="@drawable/bg_m3_time_chip"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center_vertical"
+                        android:orientation="horizontal"
                         android:paddingStart="12dp"
                         android:paddingEnd="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="6dp"
+                            android:text="@string/txt_start_time"
+                            android:textAppearance="?attr/textAppearanceLabelSmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
 
                         <TextView
                             android:id="@+id/txt_start_duration"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
                             android:text="00:00"
                             android:textAppearance="?attr/textAppearanceLabelLarge"
                             android:textColor="?attr/colorOnSurface"
                             android:textStyle="bold" />
                     </LinearLayout>
 
-                    <!-- Center: Current Playhead & Selected Clip Length Badge -->
+                    <!-- Center: Selected Clip Length Badge + Current Playhead -->
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -198,39 +211,54 @@
                         android:orientation="vertical">
 
                         <TextView
-                            android:id="@+id/txt_current_duration"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="00:00"
-                            android:textAppearance="?attr/textAppearanceBodyMedium"
-                            android:textColor="?attr/colorOnSurfaceVariant" />
-
-                        <TextView
                             android:id="@+id/txt_clip_duration"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:paddingStart="10dp"
+                            android:paddingTop="2dp"
+                            android:paddingEnd="10dp"
+                            android:paddingBottom="2dp"
                             android:text="5.0s / 5.0s"
-                            android:textAppearance="?attr/textAppearanceLabelSmall"
+                            android:textAppearance="?attr/textAppearanceLabelMedium"
                             android:textColor="?attr/colorPrimary"
                             android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/txt_current_duration"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:text="00:00"
+                            android:textAppearance="?attr/textAppearanceLabelSmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
 
                     <!-- Right: End Time Chip -->
                     <LinearLayout
                         android:id="@+id/chip_end_container"
                         android:layout_width="wrap_content"
-                        android:layout_height="36dp"
+                        android:layout_height="38dp"
                         android:background="@drawable/bg_m3_time_chip"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center_vertical"
+                        android:orientation="horizontal"
                         android:paddingStart="12dp"
                         android:paddingEnd="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="6dp"
+                            android:text="@string/txt_end_time"
+                            android:textAppearance="?attr/textAppearanceLabelSmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
 
                         <TextView
                             android:id="@+id/txt_end_duration"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
                             android:text="00:05"
                             android:textAppearance="?attr/textAppearanceLabelLarge"
                             android:textColor="?attr/colorOnSurface"
@@ -238,7 +266,45 @@
                     </LinearLayout>
                 </LinearLayout>
 
-                <!-- Row 2: Quick Duration Chips (1s, 2s, 3s, 4s, 5s) -->
+                <!-- Row 2: Tier 2 Zoomed 5s Scrollable Filmstrip + M3 Range Overlay -->
+                <include
+                    android:id="@+id/view_thumbnails"
+                    layout="@layout/view_video_controller" />
+
+                <!-- Row 3: Tier 1 Overview Slider (Visible on videos > 5s for fast navigation) -->
+                <LinearLayout
+                    android:id="@+id/layout_overview_slider"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="18dp"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginEnd="18dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="@string/txt_overview_label"
+                        android:textAppearance="?attr/textAppearanceLabelSmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textStyle="bold" />
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/slider_overview"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:valueFrom="0.0"
+                        android:valueTo="100.0"
+                        app:haloRadius="12dp"
+                        app:labelBehavior="gone"
+                        app:thumbRadius="7dp"
+                        app:trackHeight="4dp" />
+                </LinearLayout>
+
+                <!-- Row 4: Quick Duration Chips (1s, 2s, 3s, 4s, 5s) -->
                 <LinearLayout
                     android:id="@+id/layout_quick_durations"
                     android:layout_width="match_parent"
@@ -253,107 +319,76 @@
                         android:id="@+id/chip_dur_1s"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="0dp"
-                        android:layout_height="34dp"
-                        android:layout_marginEnd="4dp"
+                        android:layout_height="36dp"
+                        android:layout_marginEnd="6dp"
                         android:layout_weight="1"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
                         android:padding="0dp"
                         android:text="@string/txt_duration_1s"
                         android:textSize="12sp"
-                        app:cornerRadius="10dp" />
+                        android:textStyle="bold"
+                        app:cornerRadius="18dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/chip_dur_2s"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="0dp"
-                        android:layout_height="34dp"
-                        android:layout_marginEnd="4dp"
+                        android:layout_height="36dp"
+                        android:layout_marginEnd="6dp"
                         android:layout_weight="1"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
                         android:padding="0dp"
                         android:text="@string/txt_duration_2s"
                         android:textSize="12sp"
-                        app:cornerRadius="10dp" />
+                        android:textStyle="bold"
+                        app:cornerRadius="18dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/chip_dur_3s"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="0dp"
-                        android:layout_height="34dp"
-                        android:layout_marginEnd="4dp"
+                        android:layout_height="36dp"
+                        android:layout_marginEnd="6dp"
                         android:layout_weight="1"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
                         android:padding="0dp"
                         android:text="@string/txt_duration_3s"
                         android:textSize="12sp"
-                        app:cornerRadius="10dp" />
+                        android:textStyle="bold"
+                        app:cornerRadius="18dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/chip_dur_4s"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="0dp"
-                        android:layout_height="34dp"
-                        android:layout_marginEnd="4dp"
+                        android:layout_height="36dp"
+                        android:layout_marginEnd="6dp"
                         android:layout_weight="1"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
                         android:padding="0dp"
                         android:text="@string/txt_duration_4s"
                         android:textSize="12sp"
-                        app:cornerRadius="10dp" />
+                        android:textStyle="bold"
+                        app:cornerRadius="18dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/chip_dur_5s"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="0dp"
-                        android:layout_height="34dp"
+                        android:layout_height="36dp"
                         android:layout_weight="1"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
                         android:padding="0dp"
                         android:text="@string/txt_duration_5s"
                         android:textSize="12sp"
-                        app:cornerRadius="10dp" />
+                        android:textStyle="bold"
+                        app:cornerRadius="18dp" />
                 </LinearLayout>
-
-                <!-- Row 3: Tier 1 Overview Slider (Visible on videos > 5s for fast navigation) -->
-                <LinearLayout
-                    android:id="@+id/layout_overview_slider"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginTop="6dp"
-                    android:layout_marginEnd="16dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:visibility="gone">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:text="@string/txt_overview_label"
-                        android:textAppearance="?attr/textAppearanceLabelSmall"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
-
-                    <com.google.android.material.slider.Slider
-                        android:id="@+id/slider_overview"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:valueFrom="0.0"
-                        android:valueTo="100.0"
-                        app:haloRadius="12dp"
-                        app:thumbRadius="8dp"
-                        app:trackHeight="4dp" />
-                </LinearLayout>
-
-                <!-- Row 4: Tier 2 Zoomed 5s Scrollable Filmstrip + M3 Range Overlay -->
-                <include
-                    android:id="@+id/view_thumbnails"
-                    layout="@layout/view_video_controller" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>

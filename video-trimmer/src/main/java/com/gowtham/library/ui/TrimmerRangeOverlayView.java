@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.HapticFeedbackConstants;
@@ -11,19 +12,13 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.Nullable;
+import androidx.core.graphics.ColorUtils;
 
 /**
- * Material 3 Trimmer Range Overlay sitting directly on top of the filmstrip.
- * Renders:
- * - Dimmed curtain masks on left and right unselected regions.
- * - Solid accent selection frame (top and bottom border lines).
- * - Left and Right bracket handles with 48dp touch targets and grip ridges.
- * - Playhead vertical indicator line inside the selection window.
- *
- * Touch behavior:
- * - Intercepts touches on Left handle to resize Start time.
- * - Intercepts touches on Right handle to resize End time.
- * - Lets touches in the center region pass through so the user can scroll the underlying filmstrip!
+ * Material 3 Trimmer Range Overlay sitting directly on top of the filmstrip container.
+ * The underlying filmstrip card is inset horizontally by {@code handleWidthPx} (16dp) on each side,
+ * so the Left and Right handles frame the 0.0..1.0 filmstrip viewport without obscuring the first
+ * or last frames.
  */
 public class TrimmerRangeOverlayView extends View {
 
@@ -34,23 +29,26 @@ public class TrimmerRangeOverlayView extends View {
     private static final int DRAG_NONE = 0;
     private static final int DRAG_LEFT = 1;
     private static final int DRAG_RIGHT = 2;
+    private static final int DRAG_CENTER = 3;
 
     private int activeDragMode = DRAG_NONE;
     private float downTouchX = 0f;
     private float downStartPercent = 0f;
     private float downEndPercent = 1f;
 
-    // Range represented as 0.0f .. 1.0f of viewport width
+    // Range represented as 0.0f .. 1.0f of the inner filmstrip viewport width
     private float startPercent = 0.0f;
     private float endPercent = 1.0f;
-    private float minSpanPercent = 0.20f; // e.g. 1s / 5s
-    private float maxSpanPercent = 1.00f; // 5s / 5s
+    private float minSpanPercent = 0.20f;
+    private float maxSpanPercent = 1.00f;
+    private boolean allowCenterDrag = false;
 
     // Playhead position (0.0f .. 1.0f of viewport width, or -1f if disabled)
     private float playheadPercent = -1f;
 
     private int accentColor = Color.parseColor("#F57C00");
-    private final int maskColor = Color.parseColor("#99000000");
+    private int gripColor = Color.WHITE;
+    private final int maskColor = Color.parseColor("#A8000000");
 
     private final Paint paintMask = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint paintFrame = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -58,13 +56,22 @@ public class TrimmerRangeOverlayView extends View {
     private final Paint paintGrip = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint paintPlayhead = new Paint(Paint.ANTI_ALIAS_FLAG);
 
+    private final RectF rectLeftMask = new RectF();
+    private final RectF rectRightMask = new RectF();
     private final RectF rectLeftHandle = new RectF();
     private final RectF rectRightHandle = new RectF();
-    private final RectF rectSelection = new RectF();
+    private final RectF rectOuterBracket = new RectF();
+    private final RectF rectPlayhead = new RectF();
+    private final Path pathLeftHandle = new Path();
+    private final Path pathRightHandle = new Path();
 
     private float handleWidthPx;
-    private float handleCornerRadius;
+    private float verticalInsetPx;
+    private float outerCornerRadiusPx;
+    private float borderThicknessPx;
     private float touchTargetSizePx;
+    private float gripHalfHeightPx;
+    private float playheadHalfWidthPx;
 
     private OnTrimRangeListener rangeListener;
 
@@ -84,34 +91,43 @@ public class TrimmerRangeOverlayView extends View {
     private void init(Context context) {
         float density = context.getResources().getDisplayMetrics().density;
         handleWidthPx = 16f * density;
-        handleCornerRadius = 8f * density;
-        touchTargetSizePx = 48f * density;
+        verticalInsetPx = 3f * density;
+        outerCornerRadiusPx = 11f * density;
+        borderThicknessPx = 3f * density;
+        touchTargetSizePx = 44f * density;
+        gripHalfHeightPx = 9f * density;
+        playheadHalfWidthPx = 1.75f * density;
 
         paintMask.setColor(maskColor);
         paintMask.setStyle(Paint.Style.FILL);
 
         paintFrame.setColor(accentColor);
-        paintFrame.setStyle(Paint.Style.STROKE);
-        paintFrame.setStrokeWidth(3.5f * density);
+        paintFrame.setStyle(Paint.Style.FILL);
 
         paintHandle.setColor(accentColor);
         paintHandle.setStyle(Paint.Style.FILL);
 
-        paintGrip.setColor(Color.WHITE);
+        paintGrip.setColor(gripColor);
         paintGrip.setStyle(Paint.Style.STROKE);
-        paintGrip.setStrokeWidth(2f * density);
+        paintGrip.setStrokeWidth(2.2f * density);
         paintGrip.setStrokeCap(Paint.Cap.ROUND);
 
         paintPlayhead.setColor(Color.WHITE);
         paintPlayhead.setStyle(Paint.Style.FILL);
-        paintPlayhead.setShadowLayer(4f * density, 0f, 0f, Color.parseColor("#80000000"));
+        paintPlayhead.setShadowLayer(4f * density, 0f, 0f, Color.parseColor("#99000000"));
     }
 
     public void setAccentColor(int color) {
         this.accentColor = color;
+        this.gripColor = ColorUtils.calculateLuminance(color) > 0.5 ? Color.parseColor("#1C1B1F") : Color.WHITE;
         paintFrame.setColor(color);
         paintHandle.setColor(color);
+        paintGrip.setColor(gripColor);
         invalidate();
+    }
+
+    public void setAllowCenterDrag(boolean allowCenterDrag) {
+        this.allowCenterDrag = allowCenterDrag;
     }
 
     public void setRange(float start, float end, float minSpan, float maxSpan) {
@@ -146,56 +162,95 @@ public class TrimmerRangeOverlayView extends View {
         int h = getHeight();
         if (w <= 0 || h <= 0) return;
 
-        float leftX = startPercent * w;
-        float rightX = endPercent * w;
+        float innerLeft = handleWidthPx;
+        float innerRight = Math.max(innerLeft + 1f, w - handleWidthPx);
+        float innerWidth = innerRight - innerLeft;
 
-        // 1. Draw Left Mask (curtain)
-        if (leftX > 0f) {
-            canvas.drawRect(0f, 0f, leftX, h, paintMask);
+        float leftX = innerLeft + (startPercent * innerWidth);
+        float rightX = innerLeft + (endPercent * innerWidth);
+        float topY = verticalInsetPx;
+        float bottomY = h - verticalInsetPx;
+
+        // 1. Draw Left Mask (unselected region inside filmstrip)
+        if (leftX > innerLeft + 0.5f) {
+            rectLeftMask.set(innerLeft, topY, leftX, bottomY);
+            canvas.drawRoundRect(rectLeftMask, outerCornerRadiusPx, outerCornerRadiusPx, paintMask);
+            if (leftX - innerLeft > outerCornerRadiusPx) {
+                canvas.drawRect(innerLeft + outerCornerRadiusPx, topY, leftX, bottomY, paintMask);
+            }
         }
 
-        // 2. Draw Right Mask (curtain)
-        if (rightX < w) {
-            canvas.drawRect(rightX, 0f, w, h, paintMask);
+        // 2. Draw Right Mask (unselected region inside filmstrip)
+        if (rightX < innerRight - 0.5f) {
+            rectRightMask.set(rightX, topY, innerRight, bottomY);
+            canvas.drawRoundRect(rectRightMask, outerCornerRadiusPx, outerCornerRadiusPx, paintMask);
+            if (innerRight - rightX > outerCornerRadiusPx) {
+                canvas.drawRect(rightX, topY, innerRight - outerCornerRadiusPx, bottomY, paintMask);
+            }
         }
 
-        // 3. Draw Active Selection Border (Top & Bottom)
-        float strokeInset = paintFrame.getStrokeWidth() / 2f;
-        canvas.drawLine(leftX, strokeInset, rightX, strokeInset, paintFrame);
-        canvas.drawLine(leftX, h - strokeInset, rightX, h - strokeInset, paintFrame);
+        // 3. Draw Top & Bottom Selection Borders connecting the Left and Right handles
+        canvas.drawRect(leftX - 1f, topY, rightX + 1f, topY + borderThicknessPx, paintFrame);
+        canvas.drawRect(leftX - 1f, bottomY - borderThicknessPx, rightX + 1f, bottomY, paintFrame);
 
-        // 4. Draw Left Bracket Handle
-        rectLeftHandle.set(leftX, 0f, leftX + handleWidthPx, h);
-        canvas.drawRoundRect(rectLeftHandle, handleCornerRadius, handleCornerRadius, paintHandle);
-        // Draw Left Handle Grip bars
+        // 4. Draw Left Bracket Handle (rounded on outer left corners, flush on inner right edge)
+        rectLeftHandle.set(leftX - handleWidthPx, topY, leftX, bottomY);
+        pathLeftHandle.reset();
+        float[] leftRadii = new float[]{
+                outerCornerRadiusPx, outerCornerRadiusPx,
+                0f, 0f,
+                0f, 0f,
+                outerCornerRadiusPx, outerCornerRadiusPx
+        };
+        pathLeftHandle.addRoundRect(rectLeftHandle, leftRadii, Path.Direction.CW);
+        canvas.drawPath(pathLeftHandle, paintHandle);
+
+        // Left Handle Grip Pill
         float lMidX = rectLeftHandle.centerX();
         float midY = h / 2f;
-        canvas.drawLine(lMidX - 2f, midY - 10f, lMidX - 2f, midY + 10f, paintGrip);
-        canvas.drawLine(lMidX + 2f, midY - 10f, lMidX + 2f, midY + 10f, paintGrip);
+        canvas.drawLine(lMidX, midY - gripHalfHeightPx, lMidX, midY + gripHalfHeightPx, paintGrip);
 
-        // 5. Draw Right Bracket Handle
-        rectRightHandle.set(rightX - handleWidthPx, 0f, rightX, h);
-        canvas.drawRoundRect(rectRightHandle, handleCornerRadius, handleCornerRadius, paintHandle);
-        // Draw Right Handle Grip bars
+        // 5. Draw Right Bracket Handle (flush on inner left edge, rounded on outer right corners)
+        rectRightHandle.set(rightX, topY, rightX + handleWidthPx, bottomY);
+        pathRightHandle.reset();
+        float[] rightRadii = new float[]{
+                0f, 0f,
+                outerCornerRadiusPx, outerCornerRadiusPx,
+                outerCornerRadiusPx, outerCornerRadiusPx,
+                0f, 0f
+        };
+        pathRightHandle.addRoundRect(rectRightHandle, rightRadii, Path.Direction.CW);
+        canvas.drawPath(pathRightHandle, paintHandle);
+
+        // Right Handle Grip Pill
         float rMidX = rectRightHandle.centerX();
-        canvas.drawLine(rMidX - 2f, midY - 10f, rMidX - 2f, midY + 10f, paintGrip);
-        canvas.drawLine(rMidX + 2f, midY - 10f, rMidX + 2f, midY + 10f, paintGrip);
+        canvas.drawLine(rMidX, midY - gripHalfHeightPx, rMidX, midY + gripHalfHeightPx, paintGrip);
 
         // 6. Draw Playhead if within selection bounds
         if (playheadPercent >= startPercent && playheadPercent <= endPercent) {
-            float playheadX = playheadPercent * w;
-            canvas.drawRect(playheadX - 1.5f, 0f, playheadX + 1.5f, h, paintPlayhead);
+            float playheadX = innerLeft + (playheadPercent * innerWidth);
+            playheadX = Math.max(leftX + playheadHalfWidthPx, Math.min(rightX - playheadHalfWidthPx, playheadX));
+            rectPlayhead.set(
+                    playheadX - playheadHalfWidthPx,
+                    topY - (1.5f * borderThicknessPx * 0.3f),
+                    playheadX + playheadHalfWidthPx,
+                    bottomY + (1.5f * borderThicknessPx * 0.3f)
+            );
+            canvas.drawRoundRect(rectPlayhead, playheadHalfWidthPx, playheadHalfWidthPx, paintPlayhead);
         }
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         int w = getWidth();
-        if (w <= 0) return false;
+        float innerWidth = w - (2f * handleWidthPx);
+        if (innerWidth <= 1f) return false;
 
         float x = event.getX();
-        float leftX = startPercent * w;
-        float rightX = endPercent * w;
+        float leftHandleCenter = ( handleWidthPx + (startPercent * innerWidth) ) - (handleWidthPx / 2f);
+        float rightHandleCenter = ( handleWidthPx + (endPercent * innerWidth) ) + (handleWidthPx / 2f);
+        float leftInnerX = handleWidthPx + (startPercent * innerWidth);
+        float rightInnerX = handleWidthPx + (endPercent * innerWidth);
 
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN: {
@@ -203,49 +258,45 @@ public class TrimmerRangeOverlayView extends View {
                 downStartPercent = startPercent;
                 downEndPercent = endPercent;
 
-                // Test Left Handle with expanded hit target (biased slightly outward)
-                float leftHitStart = leftX - (touchTargetSizePx - handleWidthPx);
-                float leftHitEnd = leftX + touchTargetSizePx;
-                boolean hitLeft = x >= leftHitStart && x <= leftHitEnd;
-
-                // Test Right Handle with expanded hit target (biased slightly outward)
-                float rightHitStart = rightX - touchTargetSizePx;
-                float rightHitEnd = rightX + (touchTargetSizePx - handleWidthPx);
-                boolean hitRight = x >= rightHitStart && x <= rightHitEnd;
+                float halfHit = touchTargetSizePx / 2f;
+                boolean hitLeft = Math.abs(x - leftHandleCenter) <= halfHit;
+                boolean hitRight = Math.abs(x - rightHandleCenter) <= halfHit;
 
                 if (hitLeft && hitRight) {
-                    // When handles are very close, decide by which one is closer
-                    float dLeft = Math.abs(x - leftX);
-                    float dRight = Math.abs(x - rightX);
-                    activeDragMode = (dLeft < dRight) ? DRAG_LEFT : DRAG_RIGHT;
+                    float dLeft = Math.abs(x - leftHandleCenter);
+                    float dRight = Math.abs(x - rightHandleCenter);
+                    activeDragMode = (dLeft <= dRight) ? DRAG_LEFT : DRAG_RIGHT;
                 } else if (hitLeft) {
                     activeDragMode = DRAG_LEFT;
                 } else if (hitRight) {
                     activeDragMode = DRAG_RIGHT;
+                } else if (allowCenterDrag && x > leftInnerX && x < rightInnerX && (endPercent - startPercent) < 0.999f) {
+                    activeDragMode = DRAG_CENTER;
                 } else {
-                    // Touch in center or outside: DO NOT consume here so underlying RecyclerView can scroll!
+                    // Let touches in the center pass through to the scrollable filmstrip RecyclerView
                     activeDragMode = DRAG_NONE;
                     return false;
                 }
 
                 performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
-                getParent().requestDisallowInterceptTouchEvent(true);
+                if (getParent() != null) {
+                    getParent().requestDisallowInterceptTouchEvent(true);
+                }
                 return true;
             }
 
             case MotionEvent.ACTION_MOVE: {
                 if (activeDragMode == DRAG_NONE) return false;
 
-                float deltaPercent = (x - downTouchX) / (float) w;
+                float deltaPercent = (x - downTouchX) / innerWidth;
 
                 if (activeDragMode == DRAG_LEFT) {
                     float newStart = downStartPercent + deltaPercent;
-                    // Clamp start: 0 <= newStart <= endPercent - minSpanPercent
                     newStart = Math.max(0f, Math.min(newStart, endPercent - minSpanPercent));
                     if ((endPercent - newStart) > maxSpanPercent) {
                         newStart = endPercent - maxSpanPercent;
                     }
-                    if (newStart != startPercent) {
+                    if (Math.abs(newStart - startPercent) > 0.0005f) {
                         startPercent = newStart;
                         invalidate();
                         if (rangeListener != null) {
@@ -254,12 +305,23 @@ public class TrimmerRangeOverlayView extends View {
                     }
                 } else if (activeDragMode == DRAG_RIGHT) {
                     float newEnd = downEndPercent + deltaPercent;
-                    // Clamp end: startPercent + minSpanPercent <= newEnd <= 1f
                     newEnd = Math.max(startPercent + minSpanPercent, Math.min(newEnd, 1f));
                     if ((newEnd - startPercent) > maxSpanPercent) {
                         newEnd = startPercent + maxSpanPercent;
                     }
-                    if (newEnd != endPercent) {
+                    if (Math.abs(newEnd - endPercent) > 0.0005f) {
+                        endPercent = newEnd;
+                        invalidate();
+                        if (rangeListener != null) {
+                            rangeListener.onTrimRangeChanged(startPercent, endPercent, false);
+                        }
+                    }
+                } else if (activeDragMode == DRAG_CENTER) {
+                    float span = downEndPercent - downStartPercent;
+                    float newStart = Math.max(0f, Math.min(1f - span, downStartPercent + deltaPercent));
+                    float newEnd = newStart + span;
+                    if (Math.abs(newStart - startPercent) > 0.0005f || Math.abs(newEnd - endPercent) > 0.0005f) {
+                        startPercent = newStart;
                         endPercent = newEnd;
                         invalidate();
                         if (rangeListener != null) {

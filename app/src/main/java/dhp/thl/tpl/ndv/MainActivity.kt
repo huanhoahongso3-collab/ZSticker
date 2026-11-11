@@ -100,6 +100,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
     private var materialColorIconId: Int = -1
     private var isOperationCancelled = false
+    private var currentTabId: Int = R.id.nav_home
 
     private fun getThemeColor(attr: Int): Int {
         val typedValue = android.util.TypedValue()
@@ -151,8 +152,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         setupInfoSection()
 
         val startTab = if (savedInstanceState == null) R.id.nav_home else prefs.getInt("last_tab", R.id.nav_home)
-        binding.bottomNavigation.selectedItemId = startTab
-        updateLayoutVisibility(startTab)
+        selectBottomTab(startTab, animate = false)
 
         savedInstanceState?.getString("current_temp_video_path")?.let { path ->
             val f = File(path)
@@ -160,12 +160,12 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         }
         handleEdgeToEdge()
         updateStatusBar()
+        styleFloatingNavBar()
 
         lifecycleScope.launch {
             if (materialColorEnabled) {
                 monet.awaitMonetReady()
                 binding.root.applyMonetRecursively()
-                binding.bottomNavigation.applyMonet()
                 
                 val monetInstance = MonetCompat.getInstance()
                 val primary = monetInstance.getAccentColor(this@MainActivity)
@@ -177,22 +177,13 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 binding.root.setBackgroundColor(surface)
                 binding.appBarLayout.setBackgroundColor(surface)
                 binding.toolbar.setBackgroundColor(surface)
-                binding.bottomNavigation.setBackgroundColor(Color.TRANSPARENT)
-                val floatingPillColor = ColorUtils.blendARGB(surface, primary, if (isDark) 0.16f else 0.10f)
-                binding.floatingNavCard.setCardBackgroundColor(floatingPillColor)
-                binding.floatingNavCard.strokeColor = ColorUtils.setAlphaComponent(primary, if (isDark) 64 else 40)
                 
                 binding.sectionSettingsHeader.setTextColor(headColor)
                 binding.sectionGeneralHeader.setTextColor(headColor)
                 binding.cardSettings.setCardBackgroundColor(cardColor)
                 binding.cardGeneral.setCardBackgroundColor(cardColor)
-                
-                // Match FAB to content/bottom nav theme in dark mode
-                val fabBg = primary
-                val fabIcon = if (isDark) Color.BLACK else monetInstance.getBackgroundColor(this@MainActivity)
-                
-                binding.addButton.backgroundTintList = android.content.res.ColorStateList.valueOf(fabBg)
-                binding.addButton.imageTintList = android.content.res.ColorStateList.valueOf(fabIcon)
+
+                styleFloatingNavBar()
 
                 // Tint all icons in options pane
                 listOf(
@@ -238,10 +229,9 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 binding.loadingIndicator.setIndicatorColor(primary)
 
                 // Refresh empty state with correct localized colors and data
-                val currentTab = binding.bottomNavigation.selectedItemId
-                if (currentTab == R.id.nav_home) {
+                if (currentTabId == R.id.nav_home) {
                     updateEmptyState(adapter.itemCount == 0, getString(R.string.no_stickers_found))
-                } else if (currentTab == R.id.nav_recents) {
+                } else if (currentTabId == R.id.nav_recents) {
                     updateEmptyState(adapterRecents.itemCount == 0, getString(R.string.no_history_found))
                 }
             } else {
@@ -268,6 +258,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                     binding.cardSettings.setCardBackgroundColor(Color.WHITE)
                     binding.cardGeneral.setCardBackgroundColor(Color.WHITE)
                 }
+                styleFloatingNavBar()
             }
         }
 
@@ -1027,11 +1018,6 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             view.updatePadding(left = topInsets.left, top = topInsets.top, right = topInsets.right)
             insets
         }
-        // Prevent MDC NavigationBarView from adding internal bottom system-bar padding inside our 64dp floating pill
-        ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigation) { view, _ ->
-            view.setPadding(0, 0, 0, 0)
-            WindowInsetsCompat.CONSUMED
-        }
         ViewCompat.setOnApplyWindowInsetsListener(binding.floatingBottomContainer) { view, insets ->
             val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars() or WindowInsetsCompat.Type.displayCutout())
             val density = resources.displayMetrics.density
@@ -1147,17 +1133,117 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
     }
 
     private fun setupNavigation() {
-        binding.bottomNavigation.setOnItemSelectedListener { item ->
-            getSharedPreferences("settings", MODE_PRIVATE).edit().putInt("last_tab", item.itemId).apply()
-            updateLayoutVisibility(item.itemId)
-            true
+        binding.navTabHome.setOnClickListener {
+            selectBottomTab(R.id.nav_home, animate = true)
         }
-        val menu = binding.bottomNavigation.menu
-        for (i in 0 until menu.size()) {
-            val view = binding.bottomNavigation.findViewById<View>(menu.getItem(i).itemId)
-            view?.setOnLongClickListener { true }
-            view?.let { androidx.appcompat.widget.TooltipCompat.setTooltipText(it, null) }
+        binding.navTabRecents.setOnClickListener {
+            selectBottomTab(R.id.nav_recents, animate = true)
         }
+        binding.navTabOptions.setOnClickListener {
+            selectBottomTab(R.id.nav_options, animate = true)
+        }
+    }
+
+    private fun selectBottomTab(tabId: Int, animate: Boolean = true) {
+        currentTabId = tabId
+        getSharedPreferences("settings", MODE_PRIVATE).edit().putInt("last_tab", tabId).apply()
+        if (animate) {
+            android.transition.TransitionManager.beginDelayedTransition(
+                binding.floatingBottomRow,
+                android.transition.AutoTransition().apply { duration = 180L }
+            )
+        }
+        updateLayoutVisibility(tabId)
+        styleFloatingNavBar()
+    }
+
+    /**
+     * Styles the Google Photos-inspired floating capsule navigation bar:
+     * - 74% opacity (alpha = 189 / 0xBD) translucent container background
+     * - Selected tab: horizontal [Icon + Full Text] inside an active stadium pill
+     * - Unselected tabs: compact Icon-only buttons
+     */
+    private fun styleFloatingNavBar() {
+        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+        val materialColorEnabled = prefs.getBoolean("material_color_enabled", false)
+        val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+
+        val primaryColor: Int
+        val baseSurfaceColor: Int
+        val activePillColor: Int
+        val activeContentColor: Int
+        val inactiveIconColor: Int
+        val fabBgColor: Int
+        val fabIconColor: Int
+
+        if (materialColorEnabled) {
+            val monetInstance = MonetCompat.getInstance()
+            val monetPrimary = try { monetInstance.getAccentColor(this) } catch (_: Exception) { null }
+            val monetSurface = try { monetInstance.getBackgroundColor(this) } catch (_: Exception) { null }
+            primaryColor = monetPrimary ?: getColor(if (isDark) R.color.orange_primary_light else R.color.orange_primary)
+            val fallbackSurface = getColor(if (isDark) R.color.dark_surface_container_high else R.color.light_surface_container_high)
+            val surface = monetSurface ?: fallbackSurface
+            baseSurfaceColor = ColorUtils.blendARGB(surface, primaryColor, if (isDark) 0.16f else 0.10f)
+            activePillColor = ColorUtils.setAlphaComponent(primaryColor, if (isDark) 72 else 48)
+            activeContentColor = if (isDark) ColorUtils.blendARGB(primaryColor, Color.WHITE, 0.35f) else ColorUtils.blendARGB(primaryColor, Color.BLACK, 0.25f)
+            inactiveIconColor = ColorUtils.setAlphaComponent(if (isDark) Color.WHITE else Color.BLACK, 175)
+            fabBgColor = ColorUtils.setAlphaComponent(primaryColor, 225)
+            fabIconColor = if (isDark) Color.BLACK else Color.WHITE
+        } else {
+            primaryColor = getColor(if (isDark) R.color.orange_primary_light else R.color.orange_primary)
+            baseSurfaceColor = getColor(if (isDark) R.color.dark_surface_container_high else R.color.light_surface_container_high)
+            activePillColor = getColor(if (isDark) R.color.dark_orange_container else R.color.orange_container)
+            activeContentColor = getColor(if (isDark) R.color.dark_orange_on_container else R.color.orange_on_container)
+            inactiveIconColor = ColorUtils.setAlphaComponent(getColor(if (isDark) R.color.dark_on_surface else R.color.light_on_surface), 175)
+            fabBgColor = ColorUtils.setAlphaComponent(activePillColor, 225)
+            fabIconColor = activeContentColor
+        }
+
+        // 74% opacity = (255 * 0.74).roundToInt() = 189
+        val navBar74Alpha = 189
+        val translucentNavBg = ColorUtils.setAlphaComponent(baseSurfaceColor, navBar74Alpha)
+        val strokeTint = ColorUtils.setAlphaComponent(primaryColor, if (isDark) 76 else 48)
+
+        binding.floatingNavCard.setCardBackgroundColor(translucentNavBg)
+        binding.floatingNavCard.strokeColor = strokeTint
+        binding.floatingNavCard.cardElevation = 0f
+
+        binding.addButton.backgroundTintList = android.content.res.ColorStateList.valueOf(fabBgColor)
+        binding.addButton.imageTintList = android.content.res.ColorStateList.valueOf(fabIconColor)
+
+        val density = resources.displayMetrics.density
+        val activeRadiusPx = 24f * density
+        val activePaddingH = (16 * density).toInt()
+        val inactivePaddingH = (14 * density).toInt()
+
+        fun styleTab(
+            tabLayout: LinearLayout,
+            iconView: ImageView,
+            textView: TextView,
+            isSelected: Boolean
+        ) {
+            if (isSelected) {
+                val pillDrawable = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                    cornerRadius = activeRadiusPx
+                    setColor(activePillColor)
+                }
+                tabLayout.background = pillDrawable
+                tabLayout.setPadding(activePaddingH, 0, activePaddingH, 0)
+                textView.visibility = View.VISIBLE
+                textView.setTextColor(activeContentColor)
+                iconView.setColorFilter(activeContentColor)
+            } else {
+                tabLayout.background = null
+                tabLayout.setPadding(inactivePaddingH, 0, inactivePaddingH, 0)
+                textView.visibility = View.GONE
+                iconView.setColorFilter(inactiveIconColor)
+            }
+        }
+
+        styleTab(binding.navTabHome, binding.iconNavHome, binding.txtNavHome, currentTabId == R.id.nav_home)
+        styleTab(binding.navTabRecents, binding.iconNavRecents, binding.txtNavRecents, currentTabId == R.id.nav_recents)
+        styleTab(binding.navTabOptions, binding.iconNavOptions, binding.txtNavOptions, currentTabId == R.id.nav_options)
     }
 
     override fun onStickerClick(uri: Uri) {
@@ -1197,7 +1283,7 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         list.add(0, "$fileName:${System.currentTimeMillis()}")
         if (list.size > 100) list.removeAt(100)
         prefs.edit().putString("list", list.joinToString(",")).apply()
-        if (binding.bottomNavigation.selectedItemId == R.id.nav_recents) adapterRecents.refreshData(this)
+        if (currentTabId == R.id.nav_recents) adapterRecents.refreshData(this)
     }
 
     override fun onStickerLongClick(uri: Uri, isRecent: Boolean, entry: String?) {

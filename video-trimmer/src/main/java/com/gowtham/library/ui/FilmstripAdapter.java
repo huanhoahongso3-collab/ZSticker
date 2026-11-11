@@ -21,13 +21,15 @@ public class FilmstripAdapter extends RecyclerView.Adapter<FilmstripAdapter.Film
     private final Uri videoUri;
     private final int totalFrames;
     private final long intervalUs;
+    private final int totalFilmstripWidthPx;
 
-    public FilmstripAdapter(Context context, Uri videoUri, long totalDurationMs, int totalFrames) {
+    public FilmstripAdapter(Context context, Uri videoUri, long totalDurationMs, int totalFrames, int totalFilmstripWidthPx) {
         this.context = context;
         this.videoUri = videoUri;
         this.totalFrames = Math.max(1, totalFrames);
         long totalDurationUs = Math.max(1L, totalDurationMs) * 1000L;
         this.intervalUs = totalDurationUs / this.totalFrames;
+        this.totalFilmstripWidthPx = Math.max(this.totalFrames, totalFilmstripWidthPx);
     }
 
     @NonNull
@@ -39,10 +41,20 @@ public class FilmstripAdapter extends RecyclerView.Adapter<FilmstripAdapter.Film
 
     @Override
     public void onBindViewHolder(@NonNull FilmstripViewHolder holder, int position) {
-        long frameTimeUs = position * intervalUs;
+        int startPx = Math.round((float) position * totalFilmstripWidthPx / totalFrames);
+        int endPx = Math.round((float) (position + 1) * totalFilmstripWidthPx / totalFrames);
+        int itemWidthPx = Math.max(1, endPx - startPx);
+
+        ViewGroup.LayoutParams lp = holder.itemView.getLayoutParams();
+        if (lp != null && lp.width != itemWidthPx) {
+            lp.width = itemWidthPx;
+            holder.itemView.setLayoutParams(lp);
+        }
+
+        long frameTimeUs = (position * intervalUs) + (intervalUs / 2L);
         RequestOptions options = new RequestOptions()
                 .frame(frameTimeUs)
-                .override(120, 120)
+                .override(140, 140)
                 .centerCrop();
 
         Glide.with(context)

@@ -7,16 +7,16 @@
     <color name="trimmer_on_orange_container">#4E2600</color>
 
     <color name="trimmer_light_surface">#FFFBFE</color>
-    <color name="trimmer_light_surface_container">#F3EFF4</color>
-    <color name="trimmer_light_surface_container_high">#ECE6F0</color>
+    <color name="trimmer_light_surface_container">#F5F5F5</color>
+    <color name="trimmer_light_surface_container_high">#EBEBEB</color>
     <color name="trimmer_light_on_surface">#1C1B1F</color>
-    <color name="trimmer_light_on_surface_variant">#49454F</color>
+    <color name="trimmer_light_on_surface_variant">#53433E</color>
 
     <color name="trimmer_dark_surface">#1C1B1F</color>
-    <color name="trimmer_dark_surface_container">#25232A</color>
-    <color name="trimmer_dark_surface_container_high">#2F2D36</color>
+    <color name="trimmer_dark_surface_container">#26242A</color>
+    <color name="trimmer_dark_surface_container_high">#322F37</color>
     <color name="trimmer_dark_on_surface">#E6E1E5</color>
-    <color name="trimmer_dark_on_surface_variant">#CAC4D0</color>
+    <color name="trimmer_dark_on_surface_variant">#D7C2B9</color>
     <color name="trimmer_dark_orange_container">#4A3422</color>
     <color name="trimmer_dark_on_orange_container">#FFB74D</color>
 

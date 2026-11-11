@@ -3,21 +3,27 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/layout_filmstrip_container"
     android:layout_width="match_parent"
-    android:layout_height="64dp"
-    android:layout_marginStart="16dp"
-    android:layout_marginEnd="16dp"
-    android:layout_marginTop="8dp"
-    android:layout_marginBottom="8dp">
+    android:layout_height="68dp"
+    android:layout_marginStart="14dp"
+    android:layout_marginTop="12dp"
+    android:layout_marginEnd="14dp"
+    android:layout_marginBottom="4dp"
+    android:clipChildren="false"
+    android:clipToPadding="false">
 
-    <!-- Rounded Thumbnail Filmstrip -->
+    <!-- Rounded Thumbnail Filmstrip (inset by 16dp horizontally so Left/Right handles frame it cleanly) -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/card_filmstrip"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:cardBackgroundColor="#000000"
-        app:cardCornerRadius="14dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="3dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="3dp"
+        app:cardBackgroundColor="#0D0D0D"
+        app:cardCornerRadius="10dp"
         app:cardElevation="0dp"
-        app:strokeColor="?attr/colorOutlineVariant"
+        app:strokeColor="#26FFFFFF"
         app:strokeWidth="1dp">
 
         <androidx.recyclerview.widget.RecyclerView
@@ -29,7 +35,7 @@
             android:scrollbars="none" />
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Material 3 Range Overlay (Handles + Scrims + Playhead) -->
+    <!-- Material 3 Range Overlay (Handles + Dimmed Scrims + Playhead) -->
     <com.gowtham.library.ui.TrimmerRangeOverlayView
         android:id="@+id/range_overlay"
         android:layout_width="match_parent"

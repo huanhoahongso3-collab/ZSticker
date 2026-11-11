@@ -7,8 +7,12 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -16,6 +20,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,6 +38,7 @@ import androidx.appcompat.widget.PopupMenu;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.ColorUtils;
 import androidx.core.graphics.Insets;
 import androidx.core.util.Pair;
 import androidx.core.view.ViewCompat;
@@ -142,10 +148,11 @@ public class ActVideoTrimmer extends LocalizationActivity {
     private String fileName;
 
     // Viewport window mapping for the scrollable filmstrip
-    private int filmstripTotalPx = 0;
-    private int filmstripVisiblePx = 0;
+    private long windowStartMs = 0L;
     private boolean isFilmstripScrolling = false;
+    private boolean isProgrammaticScroll = false;
     private boolean isOverviewDragging = false;
+    private MaterialButton chipDur1s, chipDur2s, chipDur3s, chipDur4s, chipDur5s;
 
     private final Runnable updatePlayheadRunnable = new Runnable() {
         @Override
@@ -202,29 +209,40 @@ public class ActVideoTrimmer extends LocalizationActivity {
             }
         }
 
-        setUpToolBar(getSupportActionBar(), trimVideoOptions != null ? trimVideoOptions.title : null);
+        resolveThemeColors();
+        setUpToolBar(getSupportActionBar(), toolbar, trimVideoOptions != null ? trimVideoOptions.title : null);
         toolbar.setNavigationOnClickListener(v -> finish());
 
-        resolveThemeColors();
         setupWindowInsets();
     }
 
     private void resolveThemeColors() {
+        boolean isDark = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
         try {
             isMonetEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false);
             if (isMonetEnabled) {
                 primaryColor = MonetCompat.getInstance().getAccentColor(this, null);
             } else {
-                primaryColor = ContextCompat.getColor(this, R.color.trimmer_orange_primary);
+                primaryColor = ContextCompat.getColor(this, isDark ? R.color.trimmer_orange_primary_dark : R.color.trimmer_orange_primary);
             }
         } catch (Exception e) {
-            primaryColor = ContextCompat.getColor(this, R.color.trimmer_orange_primary);
+            primaryColor = ContextCompat.getColor(this, isDark ? R.color.trimmer_orange_primary_dark : R.color.trimmer_orange_primary);
         }
 
-        boolean isDark = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
         WindowInsetsControllerCompat insetsController = new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
         insetsController.setAppearanceLightStatusBars(!isDark);
         insetsController.setAppearanceLightNavigationBars(!isDark);
+    }
+
+    private int resolveThemeAttrColor(int attrRes) {
+        TypedValue tv = new TypedValue();
+        if (getTheme().resolveAttribute(attrRes, tv, true)) {
+            if (tv.resourceId != 0) {
+                return ContextCompat.getColor(this, tv.resourceId);
+            }
+            return tv.data;
+        }
+        return Color.GRAY;
     }
 
     private void setupWindowInsets() {
@@ -287,8 +305,8 @@ public class ActVideoTrimmer extends LocalizationActivity {
             isCompressionEnabled = bundle.getBoolean(TrimVideo.ENABLE_COMPRESSION, true);
         }
 
-        if (!isCompressionEnabled && resChangeSpinner != null) {
-            resChangeSpinner.setVisibility(View.GONE);
+        if (resChangeSpinner != null) {
+            resChangeSpinner.setVisibility(isCompressionEnabled ? View.VISIBLE : View.GONE);
         }
 
         String selectVideoRes = savedInstanceState != null ? savedInstanceState.getString("selectedRes") : "";
@@ -315,35 +333,88 @@ public class ActVideoTrimmer extends LocalizationActivity {
         rvFilmstrip = findViewById(R.id.rv_filmstrip);
         rangeOverlay = findViewById(R.id.range_overlay);
 
+        chipDur1s = findViewById(R.id.chip_dur_1s);
+        chipDur2s = findViewById(R.id.chip_dur_2s);
+        chipDur3s = findViewById(R.id.chip_dur_3s);
+        chipDur4s = findViewById(R.id.chip_dur_4s);
+        chipDur5s = findViewById(R.id.chip_dur_5s);
+
+        int onPrimary = ColorUtils.calculateLuminance(primaryColor) > 0.5 ? Color.parseColor("#1C1B1F") : Color.WHITE;
+
         if (rangeOverlay != null) {
             rangeOverlay.setAccentColor(primaryColor);
         }
         if (btnDoneTrim != null) {
-            btnDoneTrim.setBackgroundColor(primaryColor);
+            btnDoneTrim.setBackgroundTintList(ColorStateList.valueOf(primaryColor));
+            btnDoneTrim.setTextColor(onPrimary);
+            btnDoneTrim.setIconTint(ColorStateList.valueOf(onPrimary));
             btnDoneTrim.setOnClickListener(v -> {
                 if (SystemClock.elapsedRealtime() - lastClickedTime < 800) return;
                 lastClickedTime = SystemClock.elapsedRealtime();
                 trimVideo();
             });
         }
+        if (txtClipDuration != null) {
+            GradientDrawable badgeBg = new GradientDrawable();
+            badgeBg.setShape(GradientDrawable.RECTANGLE);
+            badgeBg.setCornerRadius(999f);
+            badgeBg.setColor(ColorUtils.setAlphaComponent(primaryColor, 32));
+            txtClipDuration.setBackground(badgeBg);
+            txtClipDuration.setTextColor(primaryColor);
+        }
+        if (sliderOverview != null) {
+            sliderOverview.setTrackActiveTintList(ColorStateList.valueOf(primaryColor));
+            sliderOverview.setThumbTintList(ColorStateList.valueOf(primaryColor));
+            sliderOverview.setHaloTintList(ColorStateList.valueOf(ColorUtils.setAlphaComponent(primaryColor, 56)));
+            sliderOverview.setTrackInactiveTintList(ColorStateList.valueOf(ColorUtils.setAlphaComponent(primaryColor, 48)));
+        }
 
         findViewById(R.id.chip_start_container).setOnClickListener(v -> showManualTimeDialog(true));
         findViewById(R.id.chip_end_container).setOnClickListener(v -> showManualTimeDialog(false));
 
         setupQuickDurationChips();
+        updateQuickDurationChipsState();
     }
 
     private void setupQuickDurationChips() {
-        setupDurationChip(findViewById(R.id.chip_dur_1s), 1000L);
-        setupDurationChip(findViewById(R.id.chip_dur_2s), 2000L);
-        setupDurationChip(findViewById(R.id.chip_dur_3s), 3000L);
-        setupDurationChip(findViewById(R.id.chip_dur_4s), 4000L);
-        setupDurationChip(findViewById(R.id.chip_dur_5s), 5000L);
+        setupDurationChip(chipDur1s, 1000L);
+        setupDurationChip(chipDur2s, 2000L);
+        setupDurationChip(chipDur3s, 3000L);
+        setupDurationChip(chipDur4s, 4000L);
+        setupDurationChip(chipDur5s, 5000L);
     }
 
-    private void setupDurationChip(View chip, long durationMs) {
+    private void setupDurationChip(MaterialButton chip, long durationMs) {
         if (chip != null) {
             chip.setOnClickListener(v -> applyClipDuration(durationMs));
+        }
+    }
+
+    private void updateQuickDurationChipsState() {
+        long currentDurationMs = Math.max(MIN_CLIP_DURATION_MS, endMs - startMs);
+        styleDurationChip(chipDur1s, 1000L, currentDurationMs);
+        styleDurationChip(chipDur2s, 2000L, currentDurationMs);
+        styleDurationChip(chipDur3s, 3000L, currentDurationMs);
+        styleDurationChip(chipDur4s, 4000L, currentDurationMs);
+        styleDurationChip(chipDur5s, 5000L, currentDurationMs);
+    }
+
+    private void styleDurationChip(MaterialButton chip, long chipDurationMs, long currentDurationMs) {
+        if (chip == null) return;
+        boolean isAvailable = totalDurationMs >= (chipDurationMs - 200L) || chipDurationMs == MIN_CLIP_DURATION_MS;
+        chip.setEnabled(isAvailable);
+        chip.setAlpha(isAvailable ? 1.0f : 0.38f);
+
+        boolean isSelected = isAvailable && Math.abs(currentDurationMs - chipDurationMs) <= 250L;
+        if (isSelected) {
+            int onPrimary = ColorUtils.calculateLuminance(primaryColor) > 0.5 ? Color.parseColor("#1C1B1F") : Color.WHITE;
+            chip.setBackgroundTintList(ColorStateList.valueOf(primaryColor));
+            chip.setTextColor(onPrimary);
+        } else {
+            int surfaceHigh = resolveThemeAttrColor(com.google.android.material.R.attr.colorSurfaceContainerHigh);
+            int onSurface = resolveThemeAttrColor(com.google.android.material.R.attr.colorOnSurface);
+            chip.setBackgroundTintList(ColorStateList.valueOf(surfaceHigh));
+            chip.setTextColor(onSurface);
         }
     }
 
@@ -358,12 +429,30 @@ public class ActVideoTrimmer extends LocalizationActivity {
         syncAllComponentsFromMs(true);
     }
 
-    private void setUpToolBar(ActionBar actionBar, String title) {
+    private void setUpToolBar(ActionBar actionBar, Toolbar toolbar, String title) {
         try {
             if (actionBar != null) {
                 actionBar.setDisplayHomeAsUpEnabled(true);
                 actionBar.setDisplayShowHomeEnabled(true);
                 actionBar.setTitle(title != null ? title : getString(R.string.txt_edt_video));
+            }
+            if (toolbar != null) {
+                Drawable arrow = ContextCompat.getDrawable(this, R.drawable.trimmer_arrow_back_white);
+                if (arrow != null) {
+                    arrow = arrow.mutate();
+                    arrow.setTint(primaryColor);
+
+                    GradientDrawable circleBg = new GradientDrawable();
+                    circleBg.setShape(GradientDrawable.OVAL);
+                    circleBg.setColor(ColorUtils.setAlphaComponent(primaryColor, 30));
+                    int sizePx = ViewUtil.dpToPx(40);
+                    circleBg.setSize(sizePx, sizePx);
+
+                    int padPx = ViewUtil.dpToPx(8);
+                    LayerDrawable layered = new LayerDrawable(new Drawable[]{circleBg, arrow});
+                    layered.setLayerInset(1, padPx, padPx, padPx, padPx);
+                    toolbar.setNavigationIcon(layered);
+                }
             }
         } catch (Exception e) {
             Log.e("ActVideoTrimmer", "setUpToolBar: ", e);
@@ -403,7 +492,6 @@ public class ActVideoTrimmer extends LocalizationActivity {
                     buildMediaSource();
                     setupTwoTierTimeline();
                     setUpResChanger();
-                    Toast.makeText(ActVideoTrimmer.this, getString(R.string.txt_select_part_toast), Toast.LENGTH_LONG).show();
                 });
             });
         } catch (Exception e) {
@@ -453,6 +541,7 @@ public class ActVideoTrimmer extends LocalizationActivity {
             showFileLocationAlert = trimVideoOptions.showFileLocationAlert;
         }
 
+        windowStartMs = 0L;
         startMs = 0L;
         endMs = Math.min(totalDurationMs, MAX_CLIP_DURATION_MS);
     }
@@ -487,13 +576,21 @@ public class ActVideoTrimmer extends LocalizationActivity {
         }
     }
 
+    private long getViewportDurationMs() {
+        return Math.max(1000L, Math.min(totalDurationMs, MAX_CLIP_DURATION_MS));
+    }
+
     private void setupTwoTierTimeline() {
+        final long viewportDurationMs = getViewportDurationMs();
+
         // Setup Tier 1: Full-video overview slider for videos > 5s
         if (totalDurationMs > MAX_CLIP_DURATION_MS) {
             layoutOverviewSlider.setVisibility(View.VISIBLE);
             sliderOverview.setValueFrom(0f);
             sliderOverview.setValueTo((float) totalDurationMs);
             sliderOverview.setValue(0f);
+            sliderOverview.clearOnSliderTouchListeners();
+            sliderOverview.clearOnChangeListeners();
             sliderOverview.addOnSliderTouchListener(new Slider.OnSliderTouchListener() {
                 @Override
                 public void onStartTrackingTouch(@NonNull Slider slider) {
@@ -503,13 +600,12 @@ public class ActVideoTrimmer extends LocalizationActivity {
                 @Override
                 public void onStopTrackingTouch(@NonNull Slider slider) {
                     isOverviewDragging = false;
-                    long targetMs = (long) slider.getValue();
-                    panClipToCenter(targetMs);
+                    panClipToTargetStart((long) slider.getValue());
                 }
             });
             sliderOverview.addOnChangeListener((slider, value, fromUser) -> {
                 if (fromUser && isOverviewDragging) {
-                    panClipToCenter((long) value);
+                    panClipToTargetStart((long) value);
                 }
             });
         } else {
@@ -519,54 +615,73 @@ public class ActVideoTrimmer extends LocalizationActivity {
         // Setup Tier 2: Zoomed scrollable filmstrip (RecyclerView)
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
         rvFilmstrip.setLayoutManager(layoutManager);
+        rvFilmstrip.clearOnScrollListeners();
 
-        // Calculate total frames: e.g. 1 frame per 1.5 seconds, min 10 frames
-        int frameCount = Math.max(10, (int) (totalDurationMs / 1500L));
-        FilmstripAdapter adapter = new FilmstripAdapter(this, fileUri, totalDurationMs, frameCount);
-        rvFilmstrip.setAdapter(adapter);
+        rvFilmstrip.post(() -> {
+            int viewportWidthPx = rvFilmstrip.getWidth();
+            if (viewportWidthPx <= 0) {
+                viewportWidthPx = getResources().getDisplayMetrics().widthPixels - ViewUtil.dpToPx(84);
+            }
+            int totalFilmstripWidthPx = (int) Math.round(viewportWidthPx * ((double) totalDurationMs / (double) viewportDurationMs));
+            int targetFrameWidthPx = ViewUtil.dpToPx(44);
+            int frameCount = Math.max(8, Math.round((float) totalFilmstripWidthPx / (float) Math.max(1, targetFrameWidthPx)));
+
+            FilmstripAdapter adapter = new FilmstripAdapter(this, fileUri, totalDurationMs, frameCount, totalFilmstripWidthPx);
+            rvFilmstrip.setAdapter(adapter);
+        });
 
         rvFilmstrip.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
                 isFilmstripScrolling = (newState != RecyclerView.SCROLL_STATE_IDLE);
-                if (!isFilmstripScrolling) {
+                if (!isFilmstripScrolling && !isProgrammaticScroll) {
                     seekToMs(startMs);
                 }
             }
 
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                if (isFilmstripScrolling) {
-                    int offset = recyclerView.computeHorizontalScrollOffset();
-                    int range = recyclerView.computeHorizontalScrollRange() - recyclerView.computeHorizontalScrollExtent();
-                    if (range > 0) {
-                        float scrollPercent = (float) offset / (float) range;
-                        long currentClipDuration = endMs - startMs;
-                        long maxStart = Math.max(0L, totalDurationMs - currentClipDuration);
-                        long newStart = Math.round(scrollPercent * maxStart);
-                        startMs = newStart;
-                        endMs = newStart + currentClipDuration;
-                        updateTimeLabels();
-                        updateOverviewSlider();
+                if (isProgrammaticScroll || !isFilmstripScrolling) return;
+                int offset = recyclerView.computeHorizontalScrollOffset();
+                int range = recyclerView.computeHorizontalScrollRange() - recyclerView.computeHorizontalScrollExtent();
+                if (range > 0 && totalDurationMs > viewportDurationMs) {
+                    float scrollFraction = Math.max(0f, Math.min(1f, (float) offset / (float) range));
+                    long maxWindowStart = totalDurationMs - viewportDurationMs;
+                    windowStartMs = Math.round(scrollFraction * maxWindowStart);
+
+                    float sPct = rangeOverlay != null ? rangeOverlay.getStartPercent() : 0f;
+                    float ePct = rangeOverlay != null ? rangeOverlay.getEndPercent() : 1f;
+                    startMs = windowStartMs + Math.round(sPct * viewportDurationMs);
+                    endMs = windowStartMs + Math.round(ePct * viewportDurationMs);
+                    if (endMs > totalDurationMs) {
+                        endMs = totalDurationMs;
                     }
+                    if (endMs - startMs < MIN_CLIP_DURATION_MS) {
+                        startMs = Math.max(0L, endMs - MIN_CLIP_DURATION_MS);
+                    }
+
+                    updateTimeLabels();
+                    updateOverviewSlider();
                 }
             }
         });
 
         // Setup TrimmerRangeOverlayView
-        float minSpan = (float) MIN_CLIP_DURATION_MS / (float) Math.min(totalDurationMs, MAX_CLIP_DURATION_MS);
-        float maxSpan = 1.0f;
-        rangeOverlay.setRange(0f, 1f, minSpan, maxSpan);
+        float minSpan = Math.min(1f, (float) MIN_CLIP_DURATION_MS / (float) viewportDurationMs);
+        rangeOverlay.setAllowCenterDrag(totalDurationMs <= MAX_CLIP_DURATION_MS);
+        rangeOverlay.setRange(0f, 1f, minSpan, 1.0f);
         rangeOverlay.setOnTrimRangeListener((startPercent, endPercent, isFinal) -> {
-            long viewportDuration = Math.min(totalDurationMs, MAX_CLIP_DURATION_MS);
-            long clipSpan = Math.round((endPercent - startPercent) * viewportDuration);
-            clipSpan = Math.max(MIN_CLIP_DURATION_MS, Math.min(clipSpan, MAX_CLIP_DURATION_MS));
+            long vpDuration = getViewportDurationMs();
+            long newStart = windowStartMs + Math.round(startPercent * vpDuration);
+            long newEnd = windowStartMs + Math.round(endPercent * vpDuration);
 
-            long newEnd = startMs + clipSpan;
-            if (newEnd > totalDurationMs) {
-                newEnd = totalDurationMs;
-                startMs = Math.max(0L, newEnd - clipSpan);
+            newStart = Math.max(0L, Math.min(newStart, totalDurationMs - MIN_CLIP_DURATION_MS));
+            newEnd = Math.max(newStart + MIN_CLIP_DURATION_MS, Math.min(newEnd, totalDurationMs));
+            if (newEnd - newStart > MAX_CLIP_DURATION_MS) {
+                newEnd = newStart + MAX_CLIP_DURATION_MS;
             }
+
+            startMs = newStart;
             endMs = newEnd;
 
             updateTimeLabels();
@@ -580,33 +695,46 @@ public class ActVideoTrimmer extends LocalizationActivity {
         syncAllComponentsFromMs(true);
     }
 
-    private void panClipToCenter(long centerMs) {
-        long currentClipDuration = endMs - startMs;
-        long newStart = Math.max(0L, Math.min(centerMs - (currentClipDuration / 2L), totalDurationMs - currentClipDuration));
+    private void panClipToTargetStart(long targetStartMs) {
+        long currentClipDuration = Math.max(MIN_CLIP_DURATION_MS, endMs - startMs);
+        long newStart = Math.max(0L, Math.min(targetStartMs, totalDurationMs - currentClipDuration));
         startMs = newStart;
         endMs = newStart + currentClipDuration;
         syncAllComponentsFromMs(true);
     }
 
     private void syncAllComponentsFromMs(boolean scrollFilmstrip) {
-        updateTimeLabels();
-        updateOverviewSlider();
+        long viewportDurationMs = getViewportDurationMs();
+        long maxWindowStartMs = Math.max(0L, totalDurationMs - viewportDurationMs);
 
-        if (scrollFilmstrip && rvFilmstrip != null) {
+        // Keep windowStartMs stable if [startMs, endMs] already fits inside [windowStartMs, windowStartMs + viewportDurationMs]
+        if (startMs < windowStartMs || endMs > (windowStartMs + viewportDurationMs)) {
+            windowStartMs = Math.max(0L, Math.min(startMs, maxWindowStartMs));
+        }
+
+        if (scrollFilmstrip && rvFilmstrip != null && maxWindowStartMs > 0L) {
             int range = rvFilmstrip.computeHorizontalScrollRange() - rvFilmstrip.computeHorizontalScrollExtent();
-            long maxStart = Math.max(1L, totalDurationMs - (endMs - startMs));
-            float ratio = (float) startMs / (float) maxStart;
-            int targetScrollX = Math.round(ratio * range);
-            rvFilmstrip.scrollBy(targetScrollX - rvFilmstrip.computeHorizontalScrollOffset(), 0);
+            if (range > 0) {
+                float ratio = (float) windowStartMs / (float) maxWindowStartMs;
+                int targetScrollX = Math.round(ratio * range);
+                int deltaX = targetScrollX - rvFilmstrip.computeHorizontalScrollOffset();
+                if (deltaX != 0) {
+                    isProgrammaticScroll = true;
+                    rvFilmstrip.scrollBy(deltaX, 0);
+                    isProgrammaticScroll = false;
+                }
+            }
         }
 
         if (rangeOverlay != null) {
-            long viewportDuration = Math.min(totalDurationMs, MAX_CLIP_DURATION_MS);
-            float spanPercent = (float) (endMs - startMs) / (float) viewportDuration;
-            float minSpan = (float) MIN_CLIP_DURATION_MS / (float) viewportDuration;
-            rangeOverlay.setRange(0f, spanPercent, minSpan, 1f);
+            float startPct = (float) (startMs - windowStartMs) / (float) viewportDurationMs;
+            float endPct = (float) (endMs - windowStartMs) / (float) viewportDurationMs;
+            float minSpan = Math.min(1f, (float) MIN_CLIP_DURATION_MS / (float) viewportDurationMs);
+            rangeOverlay.setRange(startPct, endPct, minSpan, 1f);
         }
 
+        updateTimeLabels();
+        updateOverviewSlider();
         seekToMs(startMs);
     }
 
@@ -624,21 +752,23 @@ public class ActVideoTrimmer extends LocalizationActivity {
         if (txtCurrentDuration != null) {
             txtCurrentDuration.setText(TrimmerUtils.formatSeconds(startMs / 1000L));
         }
+        updateQuickDurationChipsState();
     }
 
     private void updateOverviewSlider() {
         if (sliderOverview != null && layoutOverviewSlider.getVisibility() == View.VISIBLE && !isOverviewDragging) {
-            sliderOverview.setValue((float) Math.min(totalDurationMs, Math.max(0L, startMs)));
+            float clamped = Math.max(sliderOverview.getValueFrom(), Math.min(sliderOverview.getValueTo(), (float) startMs));
+            sliderOverview.setValue(clamped);
         }
     }
 
     private float msToOverlayPercent(long currentMs) {
         long currentClipDuration = Math.max(1L, endMs - startMs);
-        if (currentMs < startMs) return 0f;
-        if (currentMs > endMs) return rangeOverlay.getEndPercent();
+        float overlayStart = rangeOverlay != null ? rangeOverlay.getStartPercent() : 0f;
+        float overlayEnd = rangeOverlay != null ? rangeOverlay.getEndPercent() : 1f;
+        if (currentMs <= startMs) return overlayStart;
+        if (currentMs >= endMs) return overlayEnd;
         float fraction = (float) (currentMs - startMs) / (float) currentClipDuration;
-        float overlayStart = rangeOverlay.getStartPercent();
-        float overlayEnd = rangeOverlay.getEndPercent();
         return overlayStart + fraction * (overlayEnd - overlayStart);
     }
 
@@ -689,17 +819,43 @@ public class ActVideoTrimmer extends LocalizationActivity {
                     .create();
 
             // Nudge buttons inside dialog
-            dialogView.findViewById(R.id.btn_nudge_minus_1s).setOnClickListener(v -> adjustManualInput(input, -1.0f));
-            dialogView.findViewById(R.id.btn_nudge_minus_half).setOnClickListener(v -> adjustManualInput(input, -0.5f));
-            dialogView.findViewById(R.id.btn_nudge_plus_half).setOnClickListener(v -> adjustManualInput(input, +0.5f));
-            dialogView.findViewById(R.id.btn_nudge_plus_1s).setOnClickListener(v -> adjustManualInput(input, +1.0f));
+            int surfaceHigh = resolveThemeAttrColor(com.google.android.material.R.attr.colorSurfaceContainerHigh);
+            int onSurface = resolveThemeAttrColor(com.google.android.material.R.attr.colorOnSurface);
+            int onPrimary = ColorUtils.calculateLuminance(primaryColor) > 0.5 ? Color.parseColor("#1C1B1F") : Color.WHITE;
 
-            dialogView.findViewById(R.id.btn_cancel).setOnClickListener(v -> dialog.dismiss());
-            dialogView.findViewById(R.id.btn_apply).setOnClickListener(v -> {
-                long parsedMs = parseTimeInputToMs(input.getText().toString(), currentValMs);
-                applyManualTimeSelection(isStart, parsedMs);
-                dialog.dismiss();
-            });
+            int[] nudgeIds = new int[]{
+                    R.id.btn_nudge_minus_1s,
+                    R.id.btn_nudge_minus_half,
+                    R.id.btn_nudge_plus_half,
+                    R.id.btn_nudge_plus_1s
+            };
+            float[] nudgeDeltas = new float[]{-1.0f, -0.5f, +0.5f, +1.0f};
+            for (int i = 0; i < nudgeIds.length; i++) {
+                MaterialButton btnNudge = dialogView.findViewById(nudgeIds[i]);
+                if (btnNudge != null) {
+                    btnNudge.setBackgroundTintList(ColorStateList.valueOf(surfaceHigh));
+                    btnNudge.setTextColor(onSurface);
+                    final float delta = nudgeDeltas[i];
+                    btnNudge.setOnClickListener(v -> adjustManualInput(input, delta));
+                }
+            }
+
+            MaterialButton btnCancel = dialogView.findViewById(R.id.btn_cancel);
+            if (btnCancel != null) {
+                btnCancel.setTextColor(primaryColor);
+                btnCancel.setOnClickListener(v -> dialog.dismiss());
+            }
+
+            MaterialButton btnApply = dialogView.findViewById(R.id.btn_apply);
+            if (btnApply != null) {
+                btnApply.setBackgroundTintList(ColorStateList.valueOf(primaryColor));
+                btnApply.setTextColor(onPrimary);
+                btnApply.setOnClickListener(v -> {
+                    long parsedMs = parseTimeInputToMs(input.getText().toString(), currentValMs);
+                    applyManualTimeSelection(isStart, parsedMs);
+                    dialog.dismiss();
+                });
+            }
 
             dialog.show();
         } catch (Exception e) {
