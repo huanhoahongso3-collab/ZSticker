@@ -23,14 +23,18 @@ jobs:
         with:
           distribution: temurin
           java-version: 25
+          cache: gradle
 
+      # The repo ships a Gradle wrapper; only fall back to downloading Gradle when it is missing.
       - name: Download Gradle 9.4.0
+        if: hashFiles('gradlew') == ''
         run: |
           wget https://services.gradle.org/distributions/gradle-9.4.0-bin.zip -O gradle-9.4.0.zip
           unzip gradle-9.4.0.zip -d gradle-dist
           chmod +x gradle-dist/gradle-9.4.0/bin/gradle
 
       - name: Generate Gradle wrapper if missing
+        if: hashFiles('gradlew') == ''
         run: |
           if [ ! -f ./gradlew ]; then
             echo "Gradle wrapper not found, generating..."
