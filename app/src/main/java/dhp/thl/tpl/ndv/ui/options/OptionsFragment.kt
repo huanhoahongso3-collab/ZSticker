@@ -98,6 +98,8 @@ class OptionsFragment : Fragment() {
             binding.cardTheme,
             binding.cardMaterialColor,
             binding.cardOnlineRemoveBg,
+            binding.cardAutoCrop,
+            binding.cardAutoResize,
             binding.cardLanguage,
             binding.cardFiles,
             binding.cardRemoveRecent,
@@ -161,6 +163,22 @@ class OptionsFragment : Fragment() {
         }
         binding.switchOnlineRemoveBg.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean("removebg_online_mode", isChecked).apply()
+        }
+
+        // 3b. Auto crop after background removal / auto resize for sharing (both default ON)
+        binding.switchAutoCrop.isChecked = prefs.getBoolean("auto_crop_removebg", true)
+        binding.cardAutoCrop.setOnClickListener {
+            binding.switchAutoCrop.isChecked = !binding.switchAutoCrop.isChecked
+        }
+        binding.switchAutoCrop.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("auto_crop_removebg", isChecked).apply()
+        }
+        binding.switchAutoResize.isChecked = prefs.getBoolean("auto_resize_share", true)
+        binding.cardAutoResize.setOnClickListener {
+            binding.switchAutoResize.isChecked = !binding.switchAutoResize.isChecked
+        }
+        binding.switchAutoResize.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("auto_resize_share", isChecked).apply()
         }
 
         // 4. Language
@@ -329,6 +347,8 @@ class OptionsFragment : Fragment() {
         ExpressiveThemeManager.styleSegmentedCard(b.cardTheme, GroupPosition.TOP, palette)
         ExpressiveThemeManager.styleSegmentedCard(b.cardMaterialColor, GroupPosition.MIDDLE, palette)
         ExpressiveThemeManager.styleSegmentedCard(b.cardOnlineRemoveBg, GroupPosition.MIDDLE, palette)
+        ExpressiveThemeManager.styleSegmentedCard(b.cardAutoCrop, GroupPosition.MIDDLE, palette)
+        ExpressiveThemeManager.styleSegmentedCard(b.cardAutoResize, GroupPosition.MIDDLE, palette)
         ExpressiveThemeManager.styleSegmentedCard(b.cardLanguage, GroupPosition.BOTTOM, palette)
 
         // Group 2 Segmented Cards
@@ -357,6 +377,8 @@ class OptionsFragment : Fragment() {
             b.imgTheme,
             b.imgMaterialColor,
             b.imgOnlineRemoveBg,
+            b.imgAutoCrop,
+            b.imgAutoResize,
             b.imgLanguage,
             b.imgFiles,
             b.imgVersion,
@@ -390,6 +412,8 @@ class OptionsFragment : Fragment() {
             b.titleTheme,
             b.titleMaterialColor,
             b.titleOnlineRemoveBg,
+            b.titleAutoCrop,
+            b.titleAutoResize,
             b.titleLanguage,
             b.titleFiles,
             b.titleVersion,
@@ -402,6 +426,8 @@ class OptionsFragment : Fragment() {
             b.txtCurrentTheme,
             b.subtitleMaterialColor,
             b.subtitleOnlineRemoveBg,
+            b.subtitleAutoCrop,
+            b.subtitleAutoResize,
             b.txtCurrentLanguage,
             b.txtVersion,
             b.subtitleRepo,
@@ -412,6 +438,8 @@ class OptionsFragment : Fragment() {
         // Switches
         ExpressiveThemeManager.styleSwitch(b.switchMaterialColor, palette)
         ExpressiveThemeManager.styleSwitch(b.switchOnlineRemoveBg, palette)
+        ExpressiveThemeManager.styleSwitch(b.switchAutoCrop, palette)
+        ExpressiveThemeManager.styleSwitch(b.switchAutoResize, palette)
     }
 
     override fun onDestroyView() {

@@ -218,6 +218,136 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- new AutoCrop (MIDDLE) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardAutoCrop"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:baselineAligned="false"
+                android:gravity="center_vertical"
+                android:minHeight="76dp"
+                android:orientation="horizontal"
+                android:padding="16dp">
+
+                <ImageView
+                    android:layout_gravity="center_vertical"
+                    android:id="@+id/imgAutoCrop"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:layout_marginEnd="16dp"
+                    android:padding="9dp"
+                    android:src="@drawable/ic_crop"
+                    android:contentDescription="@null" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="12dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:includeFontPadding="false"
+                        android:id="@+id/titleAutoCrop"
+                        style="@style/TextAppearance.Material3.TitleMedium"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/info_auto_crop_title"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:includeFontPadding="false"
+                        android:id="@+id/subtitleAutoCrop"
+                        style="@style/TextAppearance.Material3.BodySmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/info_auto_crop_subtitle" />
+                </LinearLayout>
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/switchAutoCrop"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@android:color/transparent"
+                    app:thumbIcon="@drawable/ic_switch_thumb" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- new AutoResize (MIDDLE) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardAutoResize"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:baselineAligned="false"
+                android:gravity="center_vertical"
+                android:minHeight="76dp"
+                android:orientation="horizontal"
+                android:padding="16dp">
+
+                <ImageView
+                    android:layout_gravity="center_vertical"
+                    android:id="@+id/imgAutoResize"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:layout_marginEnd="16dp"
+                    android:padding="9dp"
+                    android:src="@drawable/ic_view_full"
+                    android:contentDescription="@null" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="12dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:includeFontPadding="false"
+                        android:id="@+id/titleAutoResize"
+                        style="@style/TextAppearance.Material3.TitleMedium"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/info_auto_resize_title"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:includeFontPadding="false"
+                        android:id="@+id/subtitleAutoResize"
+                        style="@style/TextAppearance.Material3.BodySmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/info_auto_resize_subtitle" />
+                </LinearLayout>
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/switchAutoResize"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@android:color/transparent"
+                    app:thumbIcon="@drawable/ic_switch_thumb" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- 1.4 Language (BOTTOM) -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardLanguage"

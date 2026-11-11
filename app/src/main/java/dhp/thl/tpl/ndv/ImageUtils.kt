@@ -67,11 +67,16 @@ object ImageUtils {
         }
     }
 
+    /** User option (default ON): resize stickers to 512px when sharing to Zalo. */
+    private fun isAutoResizeEnabled(context: Context): Boolean =
+        context.getSharedPreferences("settings", Context.MODE_PRIVATE).getBoolean("auto_resize_share", true)
+
     /**
      * Prepares an animated sticker for Zalo sharing (max 512px).
      * If already <= 512px, uses it directly; otherwise re-encodes and caches the result.
      */
     fun getZaloAnimatedSticker(context: Context, originalFile: File): File {
+        if (!isAutoResizeEnabled(context)) return originalFile
         val cacheDir = File(context.filesDir, CACHE_DIR_NAME)
         if (!cacheDir.exists()) {
             cacheDir.mkdirs()
@@ -109,6 +114,7 @@ object ImageUtils {
      * Caches the result to avoid redundant processing.
      */
     fun getZaloSticker(context: Context, originalFile: File): File {
+        if (!isAutoResizeEnabled(context)) return originalFile
         val cacheDir = File(context.filesDir, CACHE_DIR_NAME)
         if (!cacheDir.exists()) {
             cacheDir.mkdirs()

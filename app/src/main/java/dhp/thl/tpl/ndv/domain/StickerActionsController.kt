@@ -53,6 +53,10 @@ class StickerActionsController(
     private val mediaPipeBackgroundRemover by lazy { MediaPipeBackgroundRemover(activity) }
     private var isOperationCancelled = false
 
+    private fun isAutoCropEnabled(): Boolean =
+        activity.getSharedPreferences("settings", Context.MODE_PRIVATE)
+            .getBoolean("auto_crop_removebg", true)
+
     fun close() {
         mediaPipeBackgroundRemover.close()
     }
@@ -181,7 +185,7 @@ class StickerActionsController(
                 resizedBitmap.recycle()
 
                 if (segmentedBitmap != null) {
-                    val croppedBitmap = ImageUtils.cropTransparent(segmentedBitmap)
+                    val croppedBitmap = if (isAutoCropEnabled()) ImageUtils.cropTransparent(segmentedBitmap) else segmentedBitmap
                     val file = File(activity.filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
                     FileOutputStream(file).use { out ->
                         croppedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
@@ -287,7 +291,7 @@ class StickerActionsController(
                         val downloadedBitmap = ImageUtils.loadSampledBitmapWithGlide(activity, tempResponseFile, 512, 512)
                         if (downloadedBitmap != null) {
                             val file = File(activity.filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
-                            val croppedBitmap = ImageUtils.cropTransparent(downloadedBitmap)
+                            val croppedBitmap = if (isAutoCropEnabled()) ImageUtils.cropTransparent(downloadedBitmap) else downloadedBitmap
                             FileOutputStream(file).use { out ->
                                 croppedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
                             }

@@ -102,4 +102,8 @@
     <string name="add_first_sticker">添加贴纸</string>
     <string name="empty_stickers_subtitle">导入图片、GIF 或短视频，制作您的第一个 Zalo 贴纸</string>
     <string name="empty_history_subtitle">您发送到 Zalo 的贴纸将按日期显示在这里</string>
+    <string name="info_auto_crop_title">抠图后自动裁剪</string>
+    <string name="info_auto_crop_subtitle">自动裁剪到主体（默认开启）</string>
+    <string name="info_auto_resize_title">分享时自动缩放</string>
+    <string name="info_auto_resize_subtitle">发送到 Zalo 时将贴纸缩放为 512px（默认开启）</string>
 </resources>

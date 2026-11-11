@@ -102,4 +102,8 @@
     <string name="add_first_sticker">Add Sticker</string>
     <string name="empty_stickers_subtitle">Import an image, GIF, or short video to create your first Zalo sticker</string>
     <string name="empty_history_subtitle">Stickers you send to Zalo will appear here by date</string>
+    <string name="info_auto_crop_title">Auto crop after background removal</string>
+    <string name="info_auto_crop_subtitle">Crop to the subject automatically (on by default)</string>
+    <string name="info_auto_resize_title">Auto resize for sharing</string>
+    <string name="info_auto_resize_subtitle">Resize stickers to 512px when sending to Zalo (on by default)</string>
 </resources>

@@ -102,4 +102,8 @@
     <string name="add_first_sticker">Добавить стикер</string>
     <string name="empty_stickers_subtitle">Импортируйте изображение, GIF или короткое видео для создания первого стикера</string>
     <string name="empty_history_subtitle">Отправленные в Zalo стикеры будут отображаться здесь по датам</string>
+    <string name="info_auto_crop_title">Автообрезка после удаления фона</string>
+    <string name="info_auto_crop_subtitle">Автоматически обрезать по объекту (включено по умолчанию)</string>
+    <string name="info_auto_resize_title">Автосжатие при отправке</string>
+    <string name="info_auto_resize_subtitle">Уменьшать стикеры до 512px при отправке в Zalo (включено по умолчанию)</string>
 </resources>

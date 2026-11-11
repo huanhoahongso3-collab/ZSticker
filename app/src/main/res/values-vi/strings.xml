@@ -102,4 +102,8 @@
     <string name="add_first_sticker">Thêm nhãn dán</string>
     <string name="empty_stickers_subtitle">Chọn ảnh, GIF hoặc video ngắn để tạo nhãn dán Zalo đầu tiên của bạn</string>
     <string name="empty_history_subtitle">Các nhãn dán bạn gửi qua Zalo sẽ hiển thị tại đây theo ngày</string>
+    <string name="info_auto_crop_title">Tự động cắt sau khi xóa nền</string>
+    <string name="info_auto_crop_subtitle">Tự động cắt sát chủ thể (mặc định bật)</string>
+    <string name="info_auto_resize_title">Tự động thu nhỏ khi chia sẻ</string>
+    <string name="info_auto_resize_subtitle">Thu nhỏ nhãn dán về 512px khi gửi sang Zalo (mặc định bật)</string>
 </resources>
