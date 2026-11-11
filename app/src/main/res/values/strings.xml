@@ -143,4 +143,22 @@
     <string name="crop_pause">Pause</string>
     <string name="crop_saving">Saving…</string>
     <string name="crop_load_failed">Couldn\'t open this GIF</string>
+    <string name="edit_sticker">Edit</string>
+    <string name="editor_title">Edit sticker</string>
+    <string name="editor_eraser">Eraser</string>
+    <string name="editor_restore">Restore</string>
+    <string name="editor_draw">Draw</string>
+    <string name="editor_text">Text</string>
+    <string name="editor_add_text">Add text</string>
+    <string name="editor_edit_text">Edit text</string>
+    <string name="editor_text_hint">Text</string>
+    <string name="editor_save">Save</string>
+    <string name="editor_undo">Undo</string>
+    <string name="editor_redo">Redo</string>
+    <string name="editor_discard_title">Discard changes?</string>
+    <string name="editor_discard_message">Your edits to this sticker will be lost.</string>
+    <string name="editor_discard">Discard</string>
+    <string name="editor_keep">Keep editing</string>
+    <string name="editor_no_original">No original photo is saved for this sticker, so there is nothing to restore.</string>
+    <string name="editor_size">Size</string>
 </resources>

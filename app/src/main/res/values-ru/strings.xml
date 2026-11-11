@@ -143,4 +143,22 @@
     <string name="crop_pause">Пауза</string>
     <string name="crop_saving">Сохранение…</string>
     <string name="crop_load_failed">Не удалось открыть этот GIF</string>
+    <string name="edit_sticker">Редактировать</string>
+    <string name="editor_title">Редактор стикера</string>
+    <string name="editor_eraser">Ластик</string>
+    <string name="editor_restore">Вернуть</string>
+    <string name="editor_draw">Рисунок</string>
+    <string name="editor_text">Текст</string>
+    <string name="editor_add_text">Добавить текст</string>
+    <string name="editor_edit_text">Изменить текст</string>
+    <string name="editor_text_hint">Текст</string>
+    <string name="editor_save">Сохранить</string>
+    <string name="editor_undo">Отменить</string>
+    <string name="editor_redo">Повторить</string>
+    <string name="editor_discard_title">Отменить изменения?</string>
+    <string name="editor_discard_message">Правки этого стикера будут потеряны.</string>
+    <string name="editor_discard">Отменить</string>
+    <string name="editor_keep">Продолжить</string>
+    <string name="editor_no_original">Для этого стикера нет сохранённого оригинала, восстанавливать нечего.</string>
+    <string name="editor_size">Размер</string>
 </resources>

@@ -143,4 +143,22 @@
     <string name="crop_pause">Tạm dừng</string>
     <string name="crop_saving">Đang lưu…</string>
     <string name="crop_load_failed">Không mở được GIF này</string>
+    <string name="edit_sticker">Chỉnh sửa</string>
+    <string name="editor_title">Chỉnh sửa nhãn dán</string>
+    <string name="editor_eraser">Tẩy</string>
+    <string name="editor_restore">Khôi phục</string>
+    <string name="editor_draw">Vẽ</string>
+    <string name="editor_text">Chữ</string>
+    <string name="editor_add_text">Thêm chữ</string>
+    <string name="editor_edit_text">Sửa chữ</string>
+    <string name="editor_text_hint">Nội dung</string>
+    <string name="editor_save">Lưu</string>
+    <string name="editor_undo">Hoàn tác</string>
+    <string name="editor_redo">Làm lại</string>
+    <string name="editor_discard_title">Bỏ thay đổi?</string>
+    <string name="editor_discard_message">Các chỉnh sửa trên nhãn dán này sẽ bị mất.</string>
+    <string name="editor_discard">Bỏ</string>
+    <string name="editor_keep">Tiếp tục sửa</string>
+    <string name="editor_no_original">Nhãn dán này không còn ảnh gốc nên không có gì để khôi phục.</string>
+    <string name="editor_size">Cỡ</string>
 </resources>

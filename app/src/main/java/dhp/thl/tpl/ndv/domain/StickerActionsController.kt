@@ -20,6 +20,7 @@ import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.yalantis.ucrop.UCrop
 import dhp.thl.tpl.ndv.BackupHelper
+import dhp.thl.tpl.ndv.EditorActivity
 import dhp.thl.tpl.ndv.GifCropActivity
 import dhp.thl.tpl.ndv.BaseActivity
 import dhp.thl.tpl.ndv.ImageUtils
@@ -122,6 +123,10 @@ class StickerActionsController(
             options.add(OptionItem(R.drawable.ic_remove_bg, activity.getString(R.string.remove_bg)))
             options.add(OptionItem(R.drawable.ic_border_sticker, activity.getString(R.string.border_sticker)))
         }
+        // The editor (eraser, restore, draw, text) works on still stickers only.
+        if (!isRecent && !isAnimated) {
+            options.add(OptionItem(R.drawable.ic_brush, activity.getString(R.string.edit_sticker)))
+        }
         // Photos and GIFs can be cropped; videos cannot.
         if (!isRecent && (!isAnimated || fileName.endsWith(".gif", ignoreCase = true))) {
             options.add(OptionItem(R.drawable.ic_crop, activity.getString(R.string.crop)))
@@ -153,6 +158,11 @@ class StickerActionsController(
                     if (onlineModeEnabled) checkAndShowBackgroundRemovalWarning(uri) else removeBackground(uri)
                 }
                 activity.getString(R.string.border_sticker) -> stickify(uri)
+                activity.getString(R.string.edit_sticker) -> {
+                    val intent = Intent(activity, EditorActivity::class.java)
+                        .putExtra(EditorActivity.EXTRA_STICKER_NAME, fileName)
+                    cropLauncherProvider().launch(intent)
+                }
                 activity.getString(R.string.crop) -> startCrop(uri)
                 activity.getString(R.string.view_full_sticker) -> viewFullSticker(uri)
                 activity.getString(R.string.delete) -> deleteSticker(uri)

@@ -52,6 +52,10 @@
             android:theme="@style/Theme.ZSticker" />
 
         <activity
+            android:name=".EditorActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ZSticker" />
+        <activity
             android:name=".GifCropActivity"
             android:exported="false"
             android:theme="@style/Theme.ZSticker" />

@@ -143,4 +143,22 @@
     <string name="crop_pause">暂停</string>
     <string name="crop_saving">正在保存…</string>
     <string name="crop_load_failed">无法打开此 GIF</string>
+    <string name="edit_sticker">编辑</string>
+    <string name="editor_title">编辑贴纸</string>
+    <string name="editor_eraser">橡皮擦</string>
+    <string name="editor_restore">还原</string>
+    <string name="editor_draw">绘制</string>
+    <string name="editor_text">文字</string>
+    <string name="editor_add_text">添加文字</string>
+    <string name="editor_edit_text">编辑文字</string>
+    <string name="editor_text_hint">文字内容</string>
+    <string name="editor_save">保存</string>
+    <string name="editor_undo">撤销</string>
+    <string name="editor_redo">重做</string>
+    <string name="editor_discard_title">放弃更改？</string>
+    <string name="editor_discard_message">你对此贴纸所做的编辑将丢失。</string>
+    <string name="editor_discard">放弃</string>
+    <string name="editor_keep">继续编辑</string>
+    <string name="editor_no_original">此贴纸没有保存原始照片，无法还原。</string>
+    <string name="editor_size">大小</string>
 </resources>
