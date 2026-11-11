@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Xposed / LSPosed / NPatch scope: the module only ever runs inside Zalo. -->
-    <string-array name="xposed_scope">
-        <item>com.zing.zalo</item>
-    </string-array>
-</resources>

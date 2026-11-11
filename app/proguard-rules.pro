@@ -66,7 +66,3 @@
 -dontwarn com.gowtham.library**
 -keep class com.gowtham.library** { *; }
 -keep interface com.gowtham.library** { *; }
-
-# Optional Zalo (Xposed) module: loaded by name from assets/xposed_init and uses reflection on Zalo classes.
--keep class dhp.thl.tpl.ndv.xposed.** { *; }
--dontwarn de.robv.android.xposed.**

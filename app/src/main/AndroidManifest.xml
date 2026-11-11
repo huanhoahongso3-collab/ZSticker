@@ -16,13 +16,6 @@
         android:theme="@style/Theme.ZSticker"
         tools:targetApi="37">
 
-        <!-- Optional Xposed/LSPosed/NPatch module (scope: Zalo only) used by "Animated GIF" mode.
-             The app works normally without it. -->
-        <meta-data android:name="xposedmodule" android:value="true" />
-        <meta-data android:name="xposeddescription" android:value="Makes ZSticker animated GIF stickers play in Zalo" />
-        <meta-data android:name="xposedminversion" android:value="93" />
-        <meta-data android:name="xposedscope" android:resource="@array/xposed_scope" />
-
         <activity
             android:name=".MainActivity"
             android:exported="true"

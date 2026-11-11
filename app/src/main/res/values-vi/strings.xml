@@ -110,7 +110,7 @@
     <string name="gif_mode_vanilla">GIF thường</string>
     <string name="gif_mode_vanilla_desc">Gửi GIF như Zalo thường làm. Ảnh vẫn chuyển động nhưng hiển thị như GIF thông thường, không phải nhãn dán.</string>
     <string name="gif_mode_animated">GIF động</string>
-    <string name="gif_mode_animated_desc">Gửi dưới dạng nhãn dán vẫn chuyển động. Cần máy chủ lưu GIF và module Zalo (sắp có); tạm thời sẽ gửi GIF thường.</string>
+    <string name="gif_mode_animated_desc">Gửi nhãn dán trỏ tới bản GIF đã nén trên máy chủ GIF (thử nghiệm). Nếu tải lên thất bại sẽ gửi GIF thường.</string>
     <string name="gif_mode_dialog_title">Chọn chế độ gửi GIF</string>
     <string name="gif_host_title">Máy chủ GIF động (API)</string>
     <string name="gif_host_default">Máy chủ mặc định: %1$s</string>

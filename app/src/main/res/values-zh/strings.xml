@@ -110,7 +110,7 @@
     <string name="gif_mode_vanilla">普通 GIF</string>
     <string name="gif_mode_vanilla_desc">按 Zalo 默认方式发送 GIF。会动，但显示为普通 GIF，而不是贴纸。</string>
     <string name="gif_mode_animated">动态 GIF</string>
-    <string name="gif_mode_animated_desc">以保留动画的贴纸形式发送。需要 GIF 托管服务和 Zalo 模块（即将推出）；在此之前会回退为普通 GIF。</string>
+    <string name="gif_mode_animated_desc">发送指向 GIF 托管服务上压缩副本的贴纸（实验性）。上传失败时会作为普通 GIF 发送。</string>
     <string name="gif_mode_dialog_title">选择 GIF 发送模式</string>
     <string name="gif_host_title">动态 GIF 托管（API）</string>
     <string name="gif_host_default">默认服务器：%1$s</string>

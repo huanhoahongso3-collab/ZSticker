@@ -1,2 +1,2 @@
 rootProject.name = "ZSticker"
-include(":app", ":video-trimmer", ":xposed-stub")
+include(":app", ":video-trimmer")
