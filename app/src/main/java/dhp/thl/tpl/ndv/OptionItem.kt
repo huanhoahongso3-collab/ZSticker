@@ -1,3 +1,4 @@
 package dhp.thl.tpl.ndv
 
-data class OptionItem(val iconRes: Int, val text: String)
+/** [description], when set, is shown under the title in radio dialogs and expands via an arrow. */
+data class OptionItem(val iconRes: Int, val text: String, val description: String? = null)

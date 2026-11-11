@@ -193,11 +193,13 @@ class OptionsFragment : Fragment() {
             val items = listOf(
                 OptionItem(
                     R.drawable.ic_import_image,
-                    getString(R.string.gif_mode_vanilla) + "\n" + getString(R.string.gif_mode_vanilla_desc)
+                    getString(R.string.gif_mode_vanilla),
+                    getString(R.string.gif_mode_vanilla_desc)
                 ),
                 OptionItem(
                     R.drawable.ic_export_image,
-                    getString(R.string.gif_mode_animated) + "\n" + getString(R.string.gif_mode_animated_desc)
+                    getString(R.string.gif_mode_animated),
+                    getString(R.string.gif_mode_animated_desc)
                 )
             )
             val selected = GifSendSettings.mode(hostActivity).ordinal
@@ -482,6 +484,9 @@ class OptionsFragment : Fragment() {
         binding.txtGifMode.text = getString(
             if (GifSendSettings.mode(ctx) == GifSendMode.ANIMATED) R.string.gif_mode_animated else R.string.gif_mode_vanilla
         )
+        // The host option only matters in animated mode.
+        binding.cardGifHost.visibility =
+            if (GifSendSettings.mode(ctx) == GifSendMode.ANIMATED) View.VISIBLE else View.GONE
         val custom = GifSendSettings.customHost(ctx)
         binding.txtGifHost.text = if (custom != null) {
             getString(R.string.gif_host_custom, custom)
