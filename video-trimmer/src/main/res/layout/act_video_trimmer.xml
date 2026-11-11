@@ -2,151 +2,360 @@
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    style="@style/StyleRoot"
-    android:background="#000000"
     android:id="@+id/root_view"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
     tools:ignore="ContentDescription">
 
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/app_bar_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#4D000000"
-        android:elevation="5dp"
-        app:navigationIcon="@drawable/trimmer_arrow_back_white"
-        app:titleTextColor="@color/colorWhite" >
+        android:background="?attr/colorSurface"
+        app:elevation="0dp">
 
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:navigationIcon="@drawable/trimmer_arrow_back_white"
+            app:title="@string/txt_edt_video"
+            app:titleTextAppearance="@style/TrimmerToolbarTitle"
+            app:titleTextColor="?attr/colorOnSurface">
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end">
-
-            <TextView
-                android:id="@+id/txt_file_size"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="100kb"
-                android:visibility="gone"
-                android:textSize="14sp"
-                android:layout_marginEnd="8dp"
-                android:textColor="@color/colorWhite"
-                />
+                android:layout_gravity="end|center_vertical"
+                android:layout_marginEnd="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/txt_change_res"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="1080p"
-                android:textSize="16sp"
-                android:padding="4dp"
-                android:textStyle="bold"
-                android:textColor="@color/colorWhite"
-                app:drawableEndCompat="@drawable/ic_trimmer_arrow_down" />
-        </LinearLayout>
+                <TextView
+                    android:id="@+id/txt_file_size"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
 
+                <!-- Resolution Chip / Tonal Pill -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/txt_change_res"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="8dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="8dp"
+                    android:text="1080p"
+                    android:textSize="13sp"
+                    app:cornerRadius="18dp"
+                    app:icon="@drawable/ic_trimmer_arrow_down"
+                    app:iconGravity="end"
+                    app:iconSize="16dp" />
 
-    </androidx.appcompat.widget.Toolbar>
+                <!-- Prominent Material 3 Done Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_done_trim"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:text="@string/txt_done"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="18dp"
+                    app:icon="@drawable/ic_done"
+                    app:iconGravity="textStart"
+                    app:iconSize="16dp" />
+            </LinearLayout>
+        </com.google.android.material.appbar.MaterialToolbar>
+    </com.google.android.material.appbar.AppBarLayout>
 
-
+    <!-- Main Container: Video Preview + Bottom Control Sheet -->
     <LinearLayout
-        android:id="@+id/linearLayout"
-        android:elevation="1dp"
-        style="@style/FView">
-
-        <RelativeLayout style="@style/VWView">
-
-            <ImageView
-                android:id="@+id/image_play_pause"
-                style="@style/WView"
-                android:layout_centerInParent="true"
-                android:background="@drawable/shape_circle_lib"
-                android:padding="12dp"
-                android:src="@drawable/ic_video_play_lib"
-                android:visibility="gone" />
-
-            <ProgressBar
-                android:id="@+id/progress_circular"
-                style="@style/WView"
-                android:layout_centerInParent="true" />
-        </RelativeLayout>
-
-    </LinearLayout>
-
-    <include layout="@layout/view_video_controller"
-        android:id="@+id/view_thumbnails"/>
-
-    <LinearLayout
-        android:id="@+id/view_timer"
+        android:id="@+id/main_content_layout"
         android:layout_width="match_parent"
-        android:background="#4D000000"
-        android:elevation="1dp"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp"
-        android:layout_marginBottom="55dp"
-        android:layout_gravity="bottom">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <TextView
-            android:id="@+id/txt_start_duration"
-            style="@style/TxtRgStyle22"
-            android:layout_marginStart="10dp"
-            android:background="#33FFFFFF"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:textColor="#FFFFFF"
-            android:textStyle="bold"
-            android:textSize="14sp"
-            android:text="00:00"
-            tools:visibility="visible"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/txt_current_duration"
-            style="@style/TxtRgStyle22"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
+        <!-- Video Preview Container (Card with rounded corners) -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
             android:layout_weight="1"
-            android:gravity="center"
-            android:textColor="#CCFFFFFF"
-            android:textSize="14sp"
-            android:text="00:00"
-            tools:visibility="visible"
-            android:visibility="gone" />
+            android:paddingStart="16dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="12dp">
 
-        <TextView
-            android:id="@+id/txt_end_duration"
-            style="@style/TxtRgStyle22"
-            android:layout_marginEnd="10dp"
-            android:background="#33FFFFFF"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:textColor="#FFFFFF"
-            android:textStyle="bold"
-            android:textSize="14sp"
-            android:text="00:05"
-            tools:visibility="visible"
-            android:visibility="gone" />
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_video_preview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:cardBackgroundColor="#000000"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeWidth="1dp">
 
+                <com.google.android.exoplayer2.ui.StyledPlayerView
+                    android:id="@+id/player_view_lib"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    app:use_controller="false" />
+
+                <!-- Translucent Circular Play/Pause overlay -->
+                <ImageView
+                    android:id="@+id/image_play_pause"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/shape_circle_lib"
+                    android:padding="14dp"
+                    android:src="@drawable/ic_video_play_lib"
+                    android:visibility="gone"
+                    app:tint="#FFFFFF" />
+
+                <com.google.android.material.progressindicator.CircularProgressIndicator
+                    android:id="@+id/progress_circular"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:indeterminate="true"
+                    app:indicatorColor="?attr/colorPrimary"
+                    app:trackThickness="4dp" />
+            </com.google.android.material.card.MaterialCardView>
+        </FrameLayout>
+
+        <!-- Bottom Control Sheet -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/bottom_control_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="2dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp">
+
+                <!-- Row 1: Start Time Chip | Live Time & Clip Length Badge | End Time Chip -->
+                <LinearLayout
+                    android:id="@+id/view_timer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <!-- Left: Start Time Chip -->
+                    <LinearLayout
+                        android:id="@+id/chip_start_container"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:background="@drawable/bg_m3_time_chip"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp">
+
+                        <TextView
+                            android:id="@+id/txt_start_duration"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="00:00"
+                            android:textAppearance="?attr/textAppearanceLabelLarge"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Center: Current Playhead & Selected Clip Length Badge -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/txt_current_duration"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="00:00"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <TextView
+                            android:id="@+id/txt_clip_duration"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="5.0s / 5.0s"
+                            android:textAppearance="?attr/textAppearanceLabelSmall"
+                            android:textColor="?attr/colorPrimary"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Right: End Time Chip -->
+                    <LinearLayout
+                        android:id="@+id/chip_end_container"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:background="@drawable/bg_m3_time_chip"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp">
+
+                        <TextView
+                            android:id="@+id/txt_end_duration"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="00:05"
+                            android:textAppearance="?attr/textAppearanceLabelLarge"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Row 2: Quick Duration Chips (1s, 2s, 3s, 4s, 5s) -->
+                <LinearLayout
+                    android:id="@+id/layout_quick_durations"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginEnd="16dp"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/chip_dur_1s"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="34dp"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:padding="0dp"
+                        android:text="@string/txt_duration_1s"
+                        android:textSize="12sp"
+                        app:cornerRadius="10dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/chip_dur_2s"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="34dp"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:padding="0dp"
+                        android:text="@string/txt_duration_2s"
+                        android:textSize="12sp"
+                        app:cornerRadius="10dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/chip_dur_3s"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="34dp"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:padding="0dp"
+                        android:text="@string/txt_duration_3s"
+                        android:textSize="12sp"
+                        app:cornerRadius="10dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/chip_dur_4s"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="34dp"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:padding="0dp"
+                        android:text="@string/txt_duration_4s"
+                        android:textSize="12sp"
+                        app:cornerRadius="10dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/chip_dur_5s"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="34dp"
+                        android:layout_weight="1"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:padding="0dp"
+                        android:text="@string/txt_duration_5s"
+                        android:textSize="12sp"
+                        app:cornerRadius="10dp" />
+                </LinearLayout>
+
+                <!-- Row 3: Tier 1 Overview Slider (Visible on videos > 5s for fast navigation) -->
+                <LinearLayout
+                    android:id="@+id/layout_overview_slider"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginEnd="16dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="@string/txt_overview_label"
+                        android:textAppearance="?attr/textAppearanceLabelSmall"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/slider_overview"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:valueFrom="0.0"
+                        android:valueTo="100.0"
+                        app:haloRadius="12dp"
+                        app:thumbRadius="8dp"
+                        app:trackHeight="4dp" />
+                </LinearLayout>
+
+                <!-- Row 4: Tier 2 Zoomed 5s Scrollable Filmstrip + M3 Range Overlay -->
+                <include
+                    android:id="@+id/view_thumbnails"
+                    layout="@layout/view_video_controller" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
-
-    <com.google.android.exoplayer2.ui.StyledPlayerView
-        android:id="@+id/player_view_lib"
-        style="@style/FView"
-        android:layout_gravity="center_vertical"
-        app:layout_anchor="@+id/linearLayout"
-        app:layout_anchorGravity="center"
-        app:use_controller="false" />
-
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -12,7 +12,6 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
@@ -24,6 +23,8 @@ import android.text.style.StyleSpan
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -176,7 +177,10 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 binding.root.setBackgroundColor(surface)
                 binding.appBarLayout.setBackgroundColor(surface)
                 binding.toolbar.setBackgroundColor(surface)
-                binding.bottomNavigation.setBackgroundColor(if (isDark) cardColor else Color.parseColor("#F5F5F5"))
+                binding.bottomNavigation.setBackgroundColor(Color.TRANSPARENT)
+                val floatingPillColor = ColorUtils.blendARGB(surface, primary, if (isDark) 0.16f else 0.10f)
+                binding.floatingNavCard.setCardBackgroundColor(floatingPillColor)
+                binding.floatingNavCard.strokeColor = ColorUtils.setAlphaComponent(primary, if (isDark) 64 else 40)
                 
                 binding.sectionSettingsHeader.setTextColor(headColor)
                 binding.sectionGeneralHeader.setTextColor(headColor)
@@ -862,16 +866,10 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             var isSuccess = false
             var resultUri: Uri? = null
             try {
-                val inputStream = contentResolver.openInputStream(uri) ?: throw Exception()
-                val rawBitmap = BitmapFactory.decodeStream(inputStream) ?: throw Exception()
-                val originalBitmap = ImageUtils.rotateBitmapIfRequired(this, rawBitmap, uri)
-
-                // Resize to a manageable size for on-device segmentation
-                val resizedBitmap = ImageUtils.resizeBitmapToWidth(originalBitmap, 512)
+                // Decode, orient, and downsample to <= 512px safely via Glide
+                val resizedBitmap = ImageUtils.loadSampledBitmapWithGlide(this, uri, 512, 512)
+                    ?: throw Exception("Glide failed to decode source URI")
                 val segmentedBitmap = mediaPipeBackgroundRemover.removeBackground(resizedBitmap)
-
-                // Cleanup bitmaps
-                if (resizedBitmap != originalBitmap) originalBitmap.recycle()
                 resizedBitmap.recycle()
 
                 if (segmentedBitmap != null) {
@@ -945,13 +943,11 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
         thread {
             var isSuccess = false
             var resultUri: Uri? = null
+            val tempResponseFile = File(cacheDir, "rb_net_${System.currentTimeMillis()}.png")
             try {
-                val inputStream = contentResolver.openInputStream(uri) ?: throw Exception()
-                val rawBitmap = BitmapFactory.decodeStream(inputStream) ?: throw Exception()
-                val originalBitmap = ImageUtils.rotateBitmapIfRequired(this, rawBitmap, uri)
-
-                // Resize to 512px width as per requirement to save bandwidth
-                val resizedBitmap = ImageUtils.resizeBitmapToWidth(originalBitmap, 512)
+                // Decode, orient, and downsample to <= 512px via Glide to save RAM & bandwidth
+                val resizedBitmap = ImageUtils.loadSampledBitmapWithGlide(this, uri, 512, 512)
+                    ?: throw Exception("Glide failed to decode source URI")
 
                 // Uses the stable BRIA RMBG 1.4 proxy endpoint
                 val url = URL("https://bria14proxy.vercel.app/api/nobg")
@@ -967,16 +963,19 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                 connection.outputStream.use { out ->
                     resizedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
                 }
+                resizedBitmap.recycle()
 
-                // Cleanup bitmaps
-                if (resizedBitmap != originalBitmap) originalBitmap.recycle()
-
-                // Handle successful response (Engine 1.4)
+                // Handle successful response (Engine 1.4) using Glide instead of raw stream decoding
                 if (connection.responseCode == 200) {
-                    val file = File(filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
                     connection.inputStream.use { input ->
-                        val downloadedBitmap = BitmapFactory.decodeStream(input)
+                        FileOutputStream(tempResponseFile).use { tempOut ->
+                            input.copyTo(tempOut)
+                        }
+                    }
+                    if (tempResponseFile.exists() && tempResponseFile.length() > 0) {
+                        val downloadedBitmap = ImageUtils.loadSampledBitmapWithGlide(this, tempResponseFile, 512, 512)
                         if (downloadedBitmap != null) {
+                            val file = File(filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
                             val croppedBitmap = ImageUtils.cropTransparent(downloadedBitmap)
                             FileOutputStream(file).use { out ->
                                 croppedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
@@ -988,10 +987,14 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
                         }
                     }
                 }
-                resizedBitmap.recycle()
             } catch (e: Exception) {
                 // If no internet or API error occurs, isSuccess remains false
                 isSuccess = false
+            } finally {
+                try {
+                    if (tempResponseFile.exists()) tempResponseFile.delete()
+                } catch (_: Exception) {
+                }
             }
 
             runOnUiThread {
@@ -1011,26 +1014,40 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
 
     private fun handleEdgeToEdge() {
-        window.statusBarColor = Color.TRANSPARENT
-        window.navigationBarColor = Color.TRANSPARENT
-        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.appBarLayout) { view, insets ->
-            val statusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
-            view.updatePadding(top = statusBarInsets.top)
+            val topInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.displayCutout())
+            view.updatePadding(left = topInsets.left, top = topInsets.top, right = topInsets.right)
             insets
         }
-        ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigation) { view, insets ->
-            val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-            view.updatePadding(bottom = navInsets.bottom)
-            insets
+        // Prevent MDC NavigationBarView from adding internal bottom system-bar padding inside our 64dp floating pill
+        ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigation) { view, _ ->
+            view.setPadding(0, 0, 0, 0)
+            WindowInsetsCompat.CONSUMED
         }
-        ViewCompat.setOnApplyWindowInsetsListener(binding.addButton) { _, insets ->
-            val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-            binding.addButton.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                val baseMargin = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) 112 else 104
-                bottomMargin = (baseMargin * resources.displayMetrics.density).toInt() + navInsets.bottom
-            }
+        ViewCompat.setOnApplyWindowInsetsListener(binding.floatingBottomContainer) { view, insets ->
+            val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars() or WindowInsetsCompat.Type.displayCutout())
+            val density = resources.displayMetrics.density
+            val sideMarginPx = (16 * density).toInt()
+            val bottomMarginPx = (16 * density).toInt()
+            val scrollBottomPaddingPx = (104 * density).toInt() + navInsets.bottom
+
+            view.updatePadding(
+                left = sideMarginPx + navInsets.left,
+                right = sideMarginPx + navInsets.right,
+                bottom = bottomMarginPx + navInsets.bottom
+            )
+
+            binding.recycler.updatePadding(bottom = scrollBottomPaddingPx)
+            binding.recyclerRecents.updatePadding(bottom = scrollBottomPaddingPx)
+            binding.infoLayout.updatePadding(bottom = scrollBottomPaddingPx)
             insets
         }
     }

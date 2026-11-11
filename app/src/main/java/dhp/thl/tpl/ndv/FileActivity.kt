@@ -2,9 +2,12 @@ package dhp.thl.tpl.ndv
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import dhp.thl.tpl.ndv.databinding.ActivityFileBinding
 import java.io.OutputStream
@@ -64,23 +67,25 @@ class FileActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
         binding = ActivityFileBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        
-        // Edge-to-edge
-        window.statusBarColor = Color.TRANSPARENT
-        window.navigationBarColor = Color.TRANSPARENT
-        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
-        
+
         ViewCompat.setOnApplyWindowInsetsListener(binding.appBarLayout) { view, insets ->
-            val statusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
-            view.updatePadding(top = statusBarInsets.top)
+            val topInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.displayCutout())
+            view.updatePadding(left = topInsets.left, top = topInsets.top, right = topInsets.right)
             insets
         }
-        
+
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
-            val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-            view.updatePadding(bottom = navInsets.bottom)
+            val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars() or WindowInsetsCompat.Type.displayCutout())
+            view.updatePadding(left = navInsets.left, right = navInsets.right, bottom = navInsets.bottom)
             insets
         }
 

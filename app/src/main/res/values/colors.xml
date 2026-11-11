@@ -9,14 +9,18 @@
     
     <color name="light_surface">#FFFBFE</color>
     <color name="light_surface_container">#F5F5F5</color>
+    <color name="light_surface_container_high">#FFFFFF</color>
     <color name="light_on_surface">#1C1B1F</color>
     <color name="light_background">#FFFBFE</color>
     <color name="light_orange_background">#FFF3E0</color>
+    <color name="floating_nav_stroke_light">#1A000000</color>
     
     <color name="dark_surface">#1C1B1F</color>
     <color name="dark_surface_container">#2B2930</color>
+    <color name="dark_surface_container_high">#322F37</color>
     <color name="dark_on_surface">#E6E1E5</color>
     <color name="dark_background">#1C1B1F</color>
+    <color name="floating_nav_stroke_dark">#26FFFFFF</color>
     
     <color name="dark_orange_container">#4A3422</color> 
     <color name="dark_orange_on_container">#FFB74D</color>

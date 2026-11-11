@@ -1,0 +1,22 @@
+<resources>
+    <!-- Material 3 Dark Theme matching ZSticker -->
+    <style name="VideoTrimmerTheme" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/trimmer_orange_primary</item>
+        <item name="colorPrimaryContainer">@color/trimmer_dark_orange_container</item>
+        <item name="colorOnPrimaryContainer">@color/trimmer_dark_on_orange_container</item>
+        <item name="colorSecondary">@color/trimmer_orange_primary_dark</item>
+        <item name="colorSecondaryContainer">@color/trimmer_dark_orange_container</item>
+        <item name="colorOnSecondaryContainer">@color/trimmer_dark_on_orange_container</item>
+
+        <item name="colorSurface">@color/trimmer_dark_surface</item>
+        <item name="colorSurfaceContainer">@color/trimmer_dark_surface_container</item>
+        <item name="colorSurfaceContainerHigh">@color/trimmer_dark_surface_container_high</item>
+        <item name="colorOnSurface">@color/trimmer_dark_on_surface</item>
+        <item name="colorOnSurfaceVariant">@color/trimmer_dark_on_surface_variant</item>
+        <item name="android:colorBackground">@color/trimmer_dark_surface</item>
+
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="popupMenuStyle">@style/Widget.Material3.PopupMenu</item>
+    </style>
+</resources>

@@ -285,31 +285,30 @@ object AnimatedImageConverter {
     }
 
     /**
-     * Converts an APNG to GIF. If APNG frames cannot be easily split, extracts the first frame safely.
+     * Converts an APNG to GIF. If APNG frames cannot be easily split, extracts the first frame safely via Glide.
      */
     private fun convertApng(context: Context, uri: Uri, outputFile: File, onProgress: ((Float) -> Unit)?): Boolean {
-        // Fallback for APNG: decode bitmap with BitmapFactory or ImageDecoder
-        context.contentResolver.openInputStream(uri)?.use { stream ->
-            val bmp = BitmapFactory.decodeStream(stream) ?: return false
-            val (targetW, targetH) = calculateScaledDimensions(bmp.width, bmp.height, MAX_STICKER_SIZE)
-            val scaled = Bitmap.createScaledBitmap(bmp, targetW, targetH, true)
+        val scaled = dhp.thl.tpl.ndv.ImageUtils.loadSampledBitmapWithGlide(
+            context = context,
+            model = uri,
+            targetWidth = MAX_STICKER_SIZE,
+            targetHeight = MAX_STICKER_SIZE,
+            upscaleToFit = false
+        ) ?: return false
 
-            val encoder = AnimatedGifEncoder()
-            encoder.setRepeat(0)
-            encoder.setSize(targetW, targetH)
-            encoder.setDelay(100)
+        val encoder = AnimatedGifEncoder()
+        encoder.setRepeat(0)
+        encoder.setSize(scaled.width.coerceAtLeast(1), scaled.height.coerceAtLeast(1))
+        encoder.setDelay(100)
 
-            FileOutputStream(outputFile).use { fos ->
-                encoder.start(fos)
-                encoder.addFrame(scaled)
-                encoder.finish()
-            }
-            if (scaled != bmp) scaled.recycle()
-            bmp.recycle()
-            onProgress?.invoke(1.0f)
-            return outputFile.exists() && outputFile.length() > 0
+        FileOutputStream(outputFile).use { fos ->
+            encoder.start(fos)
+            encoder.addFrame(scaled)
+            encoder.finish()
         }
-        return false
+        scaled.recycle()
+        onProgress?.invoke(1.0f)
+        return outputFile.exists() && outputFile.length() > 0
     }
 
     private fun calculateScaledDimensions(origW: Int, origH: Int, maxDim: Int): Pair<Int, Int> {

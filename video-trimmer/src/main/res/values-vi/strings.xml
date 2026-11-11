@@ -6,7 +6,7 @@
     <string name="txt_trimming_video">Đang xử lý video…</string>
     <string name="txt_failed_to_trim">Cắt video thất bại</string>
     <string name="txt_cancel">Hủy bỏ</string>
-    <string name="txt_ok">Đồng ý</string>
+    <string name="txt_ok">Áp dụng</string>
     <string name="txt_dlah">\\</string>
     <string name="txt_smaller">Video phải ngắn hơn</string>
     <string name="edit_video">Cắt video</string>
@@ -19,4 +19,12 @@
     <string name="txt_end_time">Thời gian kết thúc</string>
     <string name="txt_time_input_hint">Nhập thời gian (MM:SS hoặc giây, tối đa 5 giây)</string>
     <string name="txt_select_part_toast">Chọn phần video để tạo nhãn dán (tối đa 5 giây)</string>
+    <string name="txt_overview_label">Thanh tua toàn bộ video</string>
+    <string name="txt_clip_duration_format">%.1fs / 5.0s</string>
+    <string name="txt_duration_1s">1s</string>
+    <string name="txt_duration_2s">2s</string>
+    <string name="txt_duration_3s">3s</string>
+    <string name="txt_duration_4s">4s</string>
+    <string name="txt_duration_5s">5s</string>
+    <string name="txt_resolution">Độ phân giải</string>
 </resources>

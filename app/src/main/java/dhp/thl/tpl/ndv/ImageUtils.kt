@@ -10,6 +10,11 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.graphics.Matrix
 import android.net.Uri
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DecodeFormat
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.load.resource.bitmap.DownsampleStrategy
+import com.bumptech.glide.request.FutureTarget
 import java.io.File
 import java.io.FileOutputStream
 import androidx.exifinterface.media.ExifInterface
@@ -17,6 +22,50 @@ import androidx.exifinterface.media.ExifInterface
 object ImageUtils {
     private const val TARGET_WIDTH = 512
     private const val CACHE_DIR_NAME = "zalo_cache"
+
+    /**
+     * Synchronously decodes and downsamples an image source ([Uri], [File], [ByteArray], etc.)
+     * on a background thread using Glide's Downsampler and BitmapPool, returning an owned
+     * ARGB_8888 [Bitmap] copy so callers can safely mutate or recycle it without corrupting
+     * Glide's pool. Automatically applies EXIF orientation.
+     */
+    fun loadSampledBitmapWithGlide(
+        context: Context,
+        model: Any,
+        targetWidth: Int = TARGET_WIDTH,
+        targetHeight: Int = TARGET_WIDTH,
+        upscaleToFit: Boolean = false
+    ): Bitmap? {
+        val appContext = context.applicationContext
+        var futureTarget: FutureTarget<Bitmap>? = null
+        return try {
+            val request = Glide.with(appContext)
+                .asBitmap()
+                .load(model)
+                .override(targetWidth, targetHeight)
+                .format(DecodeFormat.PREFER_ARGB_8888)
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .skipMemoryCache(true)
+            val transformed = if (upscaleToFit) {
+                request.downsample(DownsampleStrategy.FIT_CENTER).fitCenter()
+            } else {
+                request.downsample(DownsampleStrategy.CENTER_INSIDE).centerInside()
+            }
+            futureTarget = transformed.submit()
+            val pooledBitmap = futureTarget.get()
+            pooledBitmap?.copy(Bitmap.Config.ARGB_8888, false)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        } finally {
+            if (futureTarget != null) {
+                try {
+                    Glide.with(appContext).clear(futureTarget)
+                } catch (_: Exception) {
+                }
+            }
+        }
+    }
 
     /**
      * Prepares an animated sticker for Zalo sharing (max 512px).
@@ -90,9 +139,14 @@ object ImageUtils {
             val scale = TARGET_WIDTH.toFloat() / originalWidth
             val targetHeight = (originalHeight * scale).toInt().coerceAtLeast(1)
 
-            // 3. Load and resize bitmap
-            val originalBitmap = BitmapFactory.decodeFile(originalFile.absolutePath) ?: return originalFile
-            val scaledBitmap = Bitmap.createScaledBitmap(originalBitmap, TARGET_WIDTH, targetHeight, true)
+            // 3. Decode and resize via Glide BitmapPool + Downsampler to avoid OOM
+            val scaledBitmap = loadSampledBitmapWithGlide(
+                context = context,
+                model = originalFile,
+                targetWidth = TARGET_WIDTH,
+                targetHeight = targetHeight,
+                upscaleToFit = true
+            ) ?: return originalFile
 
             // 4. Save to cache as PNG (to preserve transparency)
             FileOutputStream(compressedFile).use { out ->
@@ -100,9 +154,6 @@ object ImageUtils {
             }
 
             // Cleanup
-            if (originalBitmap != scaledBitmap) {
-                originalBitmap.recycle()
-            }
             scaledBitmap.recycle()
 
             return compressedFile
@@ -118,23 +169,14 @@ object ImageUtils {
      */
     fun addStickerBorder(context: Context, originalFile: File): File? {
         try {
-            // 1. Load and resize bitmap to a manageable size (max 512) for speed
-            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            BitmapFactory.decodeFile(originalFile.absolutePath, options)
-            
-            val inSampleSize = calculateInSampleSize(options, TARGET_WIDTH, TARGET_WIDTH)
-            val decodeOptions = BitmapFactory.Options().apply { this.inSampleSize = inSampleSize }
-            val tempBitmap = BitmapFactory.decodeFile(originalFile.absolutePath, decodeOptions) ?: return null
-            
-            // Ensure exact resize if still larger than target
-            val originalBitmap = if (tempBitmap.width > TARGET_WIDTH || tempBitmap.height > TARGET_WIDTH) {
-                val scale = TARGET_WIDTH.toFloat() / Math.max(tempBitmap.width, tempBitmap.height)
-                val resized = Bitmap.createScaledBitmap(tempBitmap, (tempBitmap.width * scale).toInt(), (tempBitmap.height * scale).toInt(), true)
-                if (resized != tempBitmap) tempBitmap.recycle()
-                resized
-            } else {
-                tempBitmap
-            }
+            // 1. Load and downsample bitmap to a manageable size (max 512) via Glide
+            val originalBitmap = loadSampledBitmapWithGlide(
+                context = context,
+                model = originalFile,
+                targetWidth = TARGET_WIDTH,
+                targetHeight = TARGET_WIDTH,
+                upscaleToFit = false
+            ) ?: return null
             
             // Define border size
             val borderSize = 17

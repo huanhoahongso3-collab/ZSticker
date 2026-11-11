@@ -6,7 +6,7 @@
     <string name="txt_trimming_video">Обработка видео…</string>
     <string name="txt_failed_to_trim">Ошибка обрезки</string>
     <string name="txt_cancel">Отмена</string>
-    <string name="txt_ok">ОК</string>
+    <string name="txt_ok">Применить</string>
     <string name="txt_dlah">\\</string>
     <string name="txt_smaller">Видео должно быть меньше</string>
     <string name="edit_video">Обрезка видео</string>
@@ -19,4 +19,12 @@
     <string name="txt_end_time">Время окончания</string>
     <string name="txt_time_input_hint">Введите время (ММ:СС или секунды, макс. 5 с)</string>
     <string name="txt_select_part_toast">Выберите часть видео для создания стикера (макс. 5 с)</string>
+    <string name="txt_overview_label">Общий обзор видео</string>
+    <string name="txt_clip_duration_format">%.1f с / 5.0 с</string>
+    <string name="txt_duration_1s">1 с</string>
+    <string name="txt_duration_2s">2 с</string>
+    <string name="txt_duration_3s">3 с</string>
+    <string name="txt_duration_4s">4 с</string>
+    <string name="txt_duration_5s">5 с</string>
+    <string name="txt_resolution">Разрешение</string>
 </resources>

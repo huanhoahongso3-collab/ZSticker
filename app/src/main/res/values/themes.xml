@@ -11,12 +11,11 @@
         <!-- Surface Colors -->
         <item name="colorSurface">@color/light_surface</item>
         <item name="colorSurfaceContainer">@color/light_surface_container</item>
+        <item name="colorSurfaceContainerHigh">@color/light_surface_container_high</item>
         <item name="colorOnSurface">@color/light_on_surface</item>
         <item name="android:colorBackground">@color/light_background</item>
         
-        <!-- System Bars -->
-        <item name="android:statusBarColor">?android:attr/colorBackground</item>
-        <item name="android:navigationBarColor">?attr/colorSurfaceContainer</item>
+        <!-- System Bars (Edge-to-Edge managed via enableEdgeToEdge) -->
         <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
         <item name="titleTextAppearance">@style/ToolbarBoldTitle</item>
@@ -33,6 +32,34 @@
 
     <style name="ShapeAppearance.ZSticker.MediumComponent" parent="ShapeAppearance.Material3.MediumComponent">
         <item name="cornerSize">16dp</item>
+    </style>
+
+    <style name="ShapeAppearance.ZSticker.FullCircle" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="Widget.ZSticker.FloatingBottomNav.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:width">56dp</item>
+        <item name="android:height">30dp</item>
+    </style>
+
+    <style name="Widget.ZSticker.FloatingBottomNavigationView" parent="Widget.Material3.BottomNavigationView">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="elevation">0dp</item>
+        <item name="compatShadowEnabled">false</item>
+        <item name="itemPaddingTop">8dp</item>
+        <item name="itemPaddingBottom">8dp</item>
+        <item name="labelVisibilityMode">labeled</item>
+        <item name="itemActiveIndicatorStyle">@style/Widget.ZSticker.FloatingBottomNav.ActiveIndicator</item>
+    </style>
+
+    <style name="FloatingNavCardStyle" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardBackgroundColor">?attr/colorSurfaceContainerHigh</item>
+        <item name="cardCornerRadius">32dp</item>
+        <item name="cardElevation">6dp</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">@color/floating_nav_stroke_light</item>
     </style>
     
 

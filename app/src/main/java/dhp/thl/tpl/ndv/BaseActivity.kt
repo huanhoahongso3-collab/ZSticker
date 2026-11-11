@@ -2,11 +2,21 @@ package dhp.thl.tpl.ndv
 
 import android.content.Context
 import android.content.res.Configuration
+import android.graphics.Color
 import android.os.Bundle
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import com.kieronquinn.monetcompat.app.MonetCompatActivity
 import java.util.Locale
 
 abstract class BaseActivity : MonetCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
+        )
+    }
     override fun attachBaseContext(newBase: Context) {
         val prefs = newBase.getSharedPreferences("settings", Context.MODE_PRIVATE)
         val langCode = prefs.getString("lang", "system") ?: "system"

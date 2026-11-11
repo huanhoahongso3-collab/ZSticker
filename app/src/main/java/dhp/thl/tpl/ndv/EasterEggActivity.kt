@@ -3,6 +3,7 @@ package dhp.thl.tpl.ndv
 import android.graphics.Color
 import android.graphics.Outline
 import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -11,6 +12,11 @@ import android.view.ViewOutlineProvider
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
 import com.kieronquinn.monetcompat.core.MonetCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -26,6 +32,13 @@ class EasterEggActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
         val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
         
         rootLayout = FrameLayout(this@EasterEggActivity).apply {
@@ -35,6 +48,19 @@ class EasterEggActivity : BaseActivity() {
             )
         }
         setContentView(rootLayout)
+
+        ViewCompat.setOnApplyWindowInsetsListener(rootLayout) { view, insets ->
+            val systemInsets = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            view.updatePadding(
+                left = systemInsets.left,
+                top = systemInsets.top,
+                right = systemInsets.right,
+                bottom = systemInsets.bottom
+            )
+            insets
+        }
 
         val isDark = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
         val initialBg = if (isDark) Color.BLACK else Color.WHITE

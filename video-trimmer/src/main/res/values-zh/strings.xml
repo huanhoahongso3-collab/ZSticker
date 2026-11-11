@@ -6,7 +6,7 @@
     <string name="txt_trimming_video">正在处理视频…</string>
     <string name="txt_failed_to_trim">裁剪失败</string>
     <string name="txt_cancel">取消</string>
-    <string name="txt_ok">确定</string>
+    <string name="txt_ok">应用</string>
     <string name="txt_dlah">\\</string>
     <string name="txt_smaller">视频时长需小于</string>
     <string name="edit_video">裁剪视频</string>
@@ -19,4 +19,12 @@
     <string name="txt_end_time">结束时间</string>
     <string name="txt_time_input_hint">输入时间（分:秒 或 秒数，最长 5 秒）</string>
     <string name="txt_select_part_toast">请选择要制作贴纸的视频片段（最多 5 秒）</string>
+    <string name="txt_overview_label">全视频进度条</string>
+    <string name="txt_clip_duration_format">%.1f秒 / 5.0秒</string>
+    <string name="txt_duration_1s">1秒</string>
+    <string name="txt_duration_2s">2秒</string>
+    <string name="txt_duration_3s">3秒</string>
+    <string name="txt_duration_4s">4秒</string>
+    <string name="txt_duration_5s">5秒</string>
+    <string name="txt_resolution">分辨率</string>
 </resources>

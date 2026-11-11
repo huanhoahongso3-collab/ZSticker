@@ -1,37 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    style="@style/VView"
-    android:gravity="center_horizontal"
-    android:background="#303030"
-    android:padding="14dp">
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="24dp"
+    app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+    app:cardCornerRadius="28dp"
+    app:cardElevation="6dp"
+    app:strokeWidth="0dp">
 
-    <ProgressBar
-        android:id="@+id/progress_trimmer"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:layout_marginTop="5dp"
-        />
-<!--
-  android:max="100"
-        style="?android:progressBarStyleHorizontal"
-        android:progressDrawable="@drawable/progress"-->
-    <TextView
-        style="@style/TxtSemiSmallStyle22"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="20dp"
-        android:id="@+id/txt_process"
-        android:textColor="@color/colorWhite"
-        android:text="@string/txt_trimming_video"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
 
-    <TextView
-        style="@style/TxtSemiSmallStyle22"
-        android:layout_gravity="end"
-        android:layout_marginTop="5dp"
-        android:padding="6dp"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:id="@+id/txt_cancel"
-        android:focusable="true"
-        android:textColor="@color/colorAccent"
-        android:text="@string/txt_cancel"/>
-</LinearLayout>
+        <TextView
+            android:id="@+id/txt_process"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/txt_trimming_video"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textColor="?attr/colorOnSurface"
+            android:textStyle="bold" />
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/progress_trimmer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="12dp"
+            android:indeterminate="true"
+            app:indicatorColor="?attr/colorPrimary"
+            app:trackColor="?attr/colorSurfaceContainerHighest"
+            app:trackCornerRadius="4dp"
+            app:trackThickness="8dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/txt_cancel"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginTop="4dp"
+            android:text="@string/txt_cancel" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

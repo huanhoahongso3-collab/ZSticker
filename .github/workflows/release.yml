@@ -45,17 +45,19 @@ jobs:
           distribution: temurin
           java-version: 25
 
-      - name: Download Gradle 8.14.4
+      - name: Download Gradle and generate wrapper if missing
         run: |
-          wget https://services.gradle.org/distributions/gradle-8.14.4-bin.zip -O gradle-8.14.4.zip
-          unzip gradle-8.14.4.zip -d gradle-dist
-          chmod +x gradle-dist/gradle-8.14.4/bin/gradle
-
-      - name: Generate Gradle wrapper if missing
-        run: |
+          if [ "${{ matrix.branch }}" = "main" ]; then
+            GRADLE_VER="9.4.0"
+          else
+            GRADLE_VER="8.14.4"
+          fi
+          wget "https://services.gradle.org/distributions/gradle-${GRADLE_VER}-bin.zip" -O "gradle-${GRADLE_VER}.zip"
+          unzip "gradle-${GRADLE_VER}.zip" -d gradle-dist
+          chmod +x "gradle-dist/gradle-${GRADLE_VER}/bin/gradle"
           if [ ! -f ./gradlew ]; then
-            echo "Gradle wrapper not found, generating..."
-            ./gradle-dist/gradle-8.14.4/bin/gradle wrapper --gradle-version 8.14.4
+            echo "Gradle wrapper not found, generating for Gradle ${GRADLE_VER}..."
+            "./gradle-dist/gradle-${GRADLE_VER}/bin/gradle" wrapper --gradle-version "${GRADLE_VER}"
           else
             echo "Gradle wrapper already exists."
           fi

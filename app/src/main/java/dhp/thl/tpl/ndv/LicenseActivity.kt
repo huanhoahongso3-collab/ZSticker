@@ -2,11 +2,14 @@ package dhp.thl.tpl.ndv
 
 import android.content.res.Configuration
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
@@ -27,6 +30,13 @@ class LicenseActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
 
         val materialColorEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false)
 
@@ -51,16 +61,18 @@ class LicenseActivity : BaseActivity() {
             findViewById<TextView>(R.id.txtContentTitle)?.text = boldTitle(getString(R.string.info_opensource_title))
             findViewById<TextView>(R.id.txtContentNote)?.text = getString(R.string.info_opensource_note)
 
-            // Handle edge-to-edge
-            window.statusBarColor = Color.TRANSPARENT
-            window.navigationBarColor = Color.TRANSPARENT
-            androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
-
+            recyclerView.clipToPadding = false
             ViewCompat.setOnApplyWindowInsetsListener(appBarLayout) { view, insets ->
-                val statusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
-                view.updatePadding(top = statusBarInsets.top)
+                val topInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.displayCutout())
+                view.updatePadding(left = topInsets.left, top = topInsets.top, right = topInsets.right)
                 insets
             }
+            ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { view, insets ->
+                val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars() or WindowInsetsCompat.Type.displayCutout())
+                view.updatePadding(left = navInsets.left, right = navInsets.right, bottom = navInsets.bottom)
+                insets
+            }
+            ViewCompat.requestApplyInsets(window.decorView)
 
             // Style Navigation Icon
             toolbar.navigationIcon = androidx.core.content.ContextCompat.getDrawable(this@LicenseActivity, R.drawable.ic_back_bold)
