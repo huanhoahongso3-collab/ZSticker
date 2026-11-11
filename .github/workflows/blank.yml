@@ -60,7 +60,7 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Build Debug and Release APKs
-        run: ./gradlew assembleDebug assembleRelease --stacktrace
+        run: ./gradlew assembleDebug assembleRelease -PskipLint --stacktrace
 
       - name: Remove keystore
         if: always()

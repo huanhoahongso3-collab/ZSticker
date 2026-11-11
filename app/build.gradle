@@ -44,6 +44,12 @@ android {
         }
     }
 
+    lint {
+        // The dev CI build passes -PskipLint to skip the release lintVital check for a faster build.
+        // Official release builds (release.yml) leave it on.
+        checkReleaseBuilds = !project.hasProperty('skipLint')
+    }
+
     // In-app language switching relies on our own attachBaseContext logic,
     // not the OS per-app-language API, so Play must not split language
     // resources by device locale or a manually selected language's strings
