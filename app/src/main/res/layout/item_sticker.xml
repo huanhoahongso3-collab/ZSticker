@@ -43,5 +43,33 @@
             android:letterSpacing="0.04"
             android:textStyle="bold"
             android:visibility="gone" />
+
+        <View
+            android:id="@+id/selectScrim"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/badgeFavorite"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:layout_gravity="top|start"
+            android:layout_margin="8dp"
+            android:contentDescription="@null"
+            android:padding="5dp"
+            android:src="@drawable/ic_star"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/selectCheck"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_gravity="top|end"
+            android:layout_margin="8dp"
+            android:contentDescription="@null"
+            android:padding="5dp"
+            android:src="@drawable/ic_check"
+            android:visibility="gone" />
     </com.google.android.material.card.MaterialCardView>
 </androidx.constraintlayout.widget.ConstraintLayout>

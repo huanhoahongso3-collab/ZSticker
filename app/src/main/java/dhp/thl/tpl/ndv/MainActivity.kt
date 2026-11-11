@@ -86,10 +86,25 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
             binding = binding,
             isVideoUri = { uri -> mediaImportManager.isVideoUri(uri) },
             cropLauncherProvider = { cropImage },
-            onStickerCreated = { bottomNavController.getHomeFragment()?.scrollToTop() }
+            onStickerCreated = { bottomNavController.getHomeFragment()?.scrollToTop() },
+            onSelectRequested = { file -> bottomNavController.getHomeFragment()?.startSelection(file) }
         )
 
         bottomNavController.setup()
+
+        // Back leaves multi-select mode before it leaves the app.
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                val home = bottomNavController.getHomeFragment()
+                if (home != null && home.isSelecting()) {
+                    home.exitSelection()
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                    isEnabled = true
+                }
+            }
+        })
 
         val startTab = if (savedInstanceState == null) {
             R.id.nav_home

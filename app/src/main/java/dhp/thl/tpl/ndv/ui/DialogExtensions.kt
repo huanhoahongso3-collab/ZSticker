@@ -1,12 +1,16 @@
 package dhp.thl.tpl.ndv.ui
 
 import android.content.Context
+import android.content.DialogInterface
 import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.RippleDrawable
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.view.WindowManager
+import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.RadioButton
@@ -166,6 +170,56 @@ fun BaseActivity.showPaneDialog(
         container.addView(card)
     }
 
+    dialog.showMonetDialog(this)
+}
+
+/**
+ * Themed single-line text prompt (new folder, rename...). [onConfirm] gets the trimmed, non-empty text.
+ */
+fun BaseActivity.showTextInputDialog(
+    title: String,
+    hint: String,
+    initial: String = "",
+    confirmLabel: String,
+    onConfirm: (String) -> Unit
+) {
+    val palette = ExpressiveThemeManager.resolvePalette(this)
+    val density = resources.displayMetrics.density
+    val input = EditText(this).apply {
+        this.hint = hint
+        setSingleLine()
+        setText(initial)
+        setSelection(text.length)
+        setTextColor(palette.onSurface)
+        setHintTextColor(palette.onSurfaceVariant)
+        highlightColor = ColorUtils.setAlphaComponent(palette.primary, 80)
+        backgroundTintList = ColorStateList.valueOf(palette.primary)
+        textCursorDrawable?.setTint(palette.primary)
+    }
+    val container = FrameLayout(this).apply {
+        val pad = (24 * density).toInt()
+        setPadding(pad, (8 * density).toInt(), pad, 0)
+        addView(input)
+    }
+    val dialog = MaterialAlertDialogBuilder(this)
+        .setTitle(boldTitle(title))
+        .setView(container)
+        .setPositiveButton(confirmLabel, null)
+        .setNegativeButton(getString(R.string.cancel), null)
+        .create()
+    dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+    dialog.setOnShowListener {
+        input.requestFocus()
+        dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
+            val value = input.text.toString().trim()
+            if (value.isEmpty()) {
+                input.error = getString(R.string.name_required)
+            } else {
+                dialog.dismiss()
+                onConfirm(value)
+            }
+        }
+    }
     dialog.showMonetDialog(this)
 }
 

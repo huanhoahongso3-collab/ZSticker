@@ -1,6 +1,7 @@
 package dhp.thl.tpl.ndv
 
 import android.content.res.ColorStateList
+import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.view.LayoutInflater
@@ -15,6 +16,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.android.material.card.MaterialCardView
+import java.io.File
 import dhp.thl.tpl.ndv.data.StickerListItem
 import dhp.thl.tpl.ndv.ui.theme.ExpressiveMotion
 import dhp.thl.tpl.ndv.ui.theme.ExpressivePalette
@@ -37,6 +39,18 @@ class StickerAdapter(
     }
 
     private var palette: ExpressivePalette? = null
+
+    /** While true (Home only), taps toggle [selectedNames] through [onToggleSelect] instead of sharing. */
+    var selectionMode: Boolean = false
+        private set
+    private var selectedNames: Set<String> = emptySet()
+    var onToggleSelect: ((File) -> Unit)? = null
+
+    fun setSelection(mode: Boolean, names: Set<String>) {
+        selectionMode = mode
+        selectedNames = names
+        if (itemCount > 0) notifyItemRangeChanged(0, itemCount)
+    }
 
     fun updatePalette(newPalette: ExpressivePalette) {
         if (palette != newPalette) {
@@ -116,7 +130,45 @@ class StickerAdapter(
                     .load(file)
                     .into(stickerHolder.image)
 
+                // Favorite star
+                if (item.isFavorite) {
+                    stickerHolder.badgeFavorite.visibility = View.VISIBLE
+                    stickerHolder.badgeFavorite.setColorFilter(pal.primary)
+                    stickerHolder.badgeFavorite.background = GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        setColor(ColorUtils.setAlphaComponent(pal.surface, 224))
+                    }
+                } else {
+                    stickerHolder.badgeFavorite.visibility = View.GONE
+                }
+
+                // Selection check + scrim (Home grid only)
+                val selecting = selectionMode && !item.isRecent
+                val selected = selecting && file.name in selectedNames
+                stickerHolder.selectScrim.visibility = if (selected) View.VISIBLE else View.GONE
+                stickerHolder.selectScrim.setBackgroundColor(ColorUtils.setAlphaComponent(pal.primary, 70))
+                if (selecting) {
+                    stickerHolder.selectCheck.visibility = View.VISIBLE
+                    stickerHolder.selectCheck.background = GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        if (selected) {
+                            setColor(pal.primary)
+                        } else {
+                            setColor(ColorUtils.setAlphaComponent(pal.surface, 200))
+                            setStroke((2 * density).toInt(), pal.outline)
+                        }
+                    }
+                    // Unselected: empty ring (tick tinted transparent). Selected: filled circle with a tick.
+                    stickerHolder.selectCheck.setColorFilter(if (selected) pal.onPrimary else Color.TRANSPARENT)
+                } else {
+                    stickerHolder.selectCheck.visibility = View.GONE
+                }
+
                 stickerHolder.card.setOnClickListener {
+                    if (selecting) {
+                        onToggleSelect?.invoke(file)
+                        return@setOnClickListener
+                    }
                     val uri = FileProvider.getUriForFile(
                         context,
                         "${context.packageName}.provider",
@@ -126,6 +178,10 @@ class StickerAdapter(
                 }
 
                 stickerHolder.card.setOnLongClickListener {
+                    if (selecting) {
+                        onToggleSelect?.invoke(file)
+                        return@setOnLongClickListener true
+                    }
                     val uri = Uri.fromFile(file)
                     if (item.isRecent) {
                         listener.onStickerLongClick(uri, true, item.recentEntry)
@@ -146,6 +202,9 @@ class StickerAdapter(
         val image: ImageView = view.findViewById(R.id.stickerImage)
         val card: MaterialCardView = view.findViewById(R.id.stickerCard)
         val badgeGif: TextView = view.findViewById(R.id.badgeGif)
+        val badgeFavorite: ImageView = view.findViewById(R.id.badgeFavorite)
+        val selectScrim: View = view.findViewById(R.id.selectScrim)
+        val selectCheck: ImageView = view.findViewById(R.id.selectCheck)
     }
 
     companion object {

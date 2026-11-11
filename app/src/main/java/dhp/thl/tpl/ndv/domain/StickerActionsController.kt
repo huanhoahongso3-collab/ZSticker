@@ -28,10 +28,12 @@ import dhp.thl.tpl.ndv.ProgressDialog
 import dhp.thl.tpl.ndv.R
 import dhp.thl.tpl.ndv.ToastUtils
 import dhp.thl.tpl.ndv.data.OriginalStore
+import dhp.thl.tpl.ndv.data.StickerMetaStore
 import dhp.thl.tpl.ndv.data.StickerRepository
 import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
 import dhp.thl.tpl.ndv.gif.GifProcessor
 import dhp.thl.tpl.ndv.ui.showMonetDialog
+import dhp.thl.tpl.ndv.ui.showFolderPicker
 import dhp.thl.tpl.ndv.ui.showPaneDialog
 import dhp.thl.tpl.ndv.ui.theme.ExpressiveThemeManager
 import java.io.File
@@ -50,7 +52,8 @@ class StickerActionsController(
     private val binding: ActivityMainBinding,
     private val isVideoUri: (Uri) -> Boolean,
     private val cropLauncherProvider: () -> ActivityResultLauncher<Intent>,
-    private val onStickerCreated: (() -> Unit)? = null
+    private val onStickerCreated: (() -> Unit)? = null,
+    private val onSelectRequested: ((File) -> Unit)? = null
 ) {
     private val mediaPipeBackgroundRemover by lazy { MediaPipeBackgroundRemover(activity) }
     private var isOperationCancelled = false
@@ -105,6 +108,16 @@ class StickerActionsController(
         val options = mutableListOf<OptionItem>()
         options.add(OptionItem(R.drawable.ic_export_gallery, activity.getString(R.string.export)))
 
+        val isFavorite = fileName in StickerMetaStore.meta.value.favorites
+        if (!isRecent) {
+            options.add(
+                if (isFavorite) OptionItem(R.drawable.ic_star_border, activity.getString(R.string.favorite_remove))
+                else OptionItem(R.drawable.ic_star, activity.getString(R.string.favorite_add))
+            )
+            options.add(OptionItem(R.drawable.ic_folder, activity.getString(R.string.move_to_folder)))
+            options.add(OptionItem(R.drawable.ic_check, activity.getString(R.string.select_action)))
+        }
+
         if (!isRecent && !isAnimated) {
             options.add(OptionItem(R.drawable.ic_remove_bg, activity.getString(R.string.remove_bg)))
             options.add(OptionItem(R.drawable.ic_border_sticker, activity.getString(R.string.border_sticker)))
@@ -125,6 +138,15 @@ class StickerActionsController(
         activity.showPaneDialog(title, options) { which ->
             when (options[which].text) {
                 activity.getString(R.string.export) -> exportSingleSticker(uri)
+                activity.getString(R.string.favorite_add) -> StickerMetaStore.setFavorite(activity, listOf(fileName), true)
+                activity.getString(R.string.favorite_remove) -> StickerMetaStore.setFavorite(activity, listOf(fileName), false)
+                activity.getString(R.string.move_to_folder) -> {
+                    val current = StickerMetaStore.meta.value.assignments[fileName]
+                    activity.showFolderPicker(current) { folderId ->
+                        StickerMetaStore.assign(activity, listOf(fileName), folderId)
+                    }
+                }
+                activity.getString(R.string.select_action) -> onSelectRequested?.invoke(File(activity.filesDir, fileName))
                 activity.getString(R.string.remove_bg) -> {
                     val onlineModeEnabled = activity.getSharedPreferences("settings", Context.MODE_PRIVATE)
                         .getBoolean("removebg_online_mode", false)
