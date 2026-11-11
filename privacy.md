@@ -115,7 +115,7 @@ Khi chế độ GIF động hoạt động:
 - Máy chủ **không lưu địa chỉ IP**. Bộ đếm giới hạn tốc độ chỉ dùng mã băm có muối của IP và mã cài đặt, và hết hạn trong vòng một ngày.
 - Tệp tự động bị xóa sau thời gian lưu giữ (mặc định 90 ngày), hoặc sớm hơn khi có yêu cầu gỡ nội dung vi phạm. Máy chủ có đường báo cáo lạm dụng.
 - Tệp trùng lặp chỉ được lưu một lần; ứng dụng ghi nhớ liên kết đã tải lên để tránh tải lại.
-- Bạn có thể đặt **máy chủ của riêng mình** trong *Tùy chọn > Máy chủ GIF động (API)*.
+- Bạn có thể đặt **máy chủ của riêng mình** trong *Tùy chọn > Máy chủ GIF động (API)*. Khi đó GIF được gửi tới máy chủ đó và tuân theo chính sách của người vận hành; ứng dụng không gửi khóa API chính thức tới máy chủ tùy chỉnh.
 
 Máy chủ chạy trên Vercel (lưu trữ: Vercel Blob; đếm giới hạn tốc độ: Upstash Redis) và là mã nguồn mở:
 
@@ -251,7 +251,7 @@ When Animated GIF mode is active:
 - The server **does not store IP addresses**. Rate-limit counters use only a salted hash of the IP and install id, and expire within a day.
 - Files are deleted automatically after the retention period (90 days by default), or sooner on a takedown request. The server has an abuse-report route.
 - Duplicate files are stored once, and the app remembers links it already uploaded to avoid uploading again.
-- You can set **your own server** in *Options > Animated GIF host (API)*.
+- You can set **your own server** in *Options > Animated GIF host (API)*. The GIF then goes to that server and is subject to its operator's policies; the app does not send the official API key to a custom server.
 
 The server runs on Vercel (storage: Vercel Blob; rate-limit counters: Upstash Redis) and is open source:
 

@@ -65,7 +65,7 @@ Máy chủ GIF động được cấu hình lúc biên dịch bằng biến môi
 | `ZS_GIF_API_KEY_ID` | Key id khớp với một cặp trong `API_KEYS` của máy chủ |
 | `ZS_GIF_API_SECRET` | Bí mật tương ứng, dùng để ký yêu cầu tải lên |
 
-Trên GitHub Actions, đặt chúng trong *Settings > Secrets and variables > Actions* (cùng tên). Nếu thiếu, tính năng GIF động bị tắt và ứng dụng gửi GIF thường. ⚠️ Mọi thứ nằm trong APK đều có thể bị trích xuất, nên đây chỉ là rào cản cho lạm dụng thông thường.
+Trên GitHub Actions, đặt chúng trong *Settings > Secrets and variables > Actions* (cùng tên). Nếu thiếu và bạn chưa đặt máy chủ riêng, tính năng GIF động bị tắt và ứng dụng gửi GIF thường. Khi bạn đặt **máy chủ riêng** (tự lưu trữ), ứng dụng **không gửi khóa chính thức** tới máy chủ đó; hãy chạy máy chủ ở chế độ `AUTH_MODE=open`. ⚠️ Mọi thứ nằm trong APK đều có thể bị trích xuất, nên đây chỉ là rào cản cho lạm dụng thông thường.
 
 ---
 
@@ -140,7 +140,7 @@ The animated GIF host is configured at build time through environment variables 
 | `ZS_GIF_API_KEY_ID` | Key id matching a pair in the server's `API_KEYS` |
 | `ZS_GIF_API_SECRET` | The matching secret, used to sign uploads |
 
-On GitHub Actions set them under *Settings > Secrets and variables > Actions* (same names). If they are missing, Animated GIF is disabled and the app sends a vanilla GIF. ⚠️ Anything inside an APK can be extracted, so this only deters casual abuse.
+On GitHub Actions set them under *Settings > Secrets and variables > Actions* (same names). If they are missing and you have not set your own server, Animated GIF is disabled and the app sends a vanilla GIF. When you set a **custom (self-hosted) server**, the app **does not send the official key** to it; run your server with `AUTH_MODE=open`. ⚠️ Anything inside an APK can be extracted, so this only deters casual abuse.
 
 ---
 

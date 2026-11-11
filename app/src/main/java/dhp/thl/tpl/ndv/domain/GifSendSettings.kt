@@ -44,6 +44,13 @@ object GifSendSettings {
 
     fun hostBaseUrl(context: Context): String = customHost(context) ?: DEFAULT_HOST_BASE_URL
 
+    /**
+     * The official API key is only ever used with the default host. A custom (self-hosted) host gets
+     * unsigned requests, so the key is never handed to a third-party server.
+     */
+    fun shouldSignRequests(context: Context): Boolean =
+        customHost(context) == null && GifApiCredentials.isConfigured
+
     /** True when the default host exists in this build or the user has set a custom host. */
     fun hasHost(context: Context): Boolean = hostBaseUrl(context).isNotBlank()
 
@@ -89,9 +96,10 @@ object AnimatedGifHost {
     /** Returns the public URL of the uploaded [gif], or null when the host is unavailable. */
     @Suppress("UNUSED_PARAMETER")
     fun upload(context: Context, gif: File): String? {
-        if (!GifSendSettings.hasHost(context) || !GifApiCredentials.isConfigured) return null
-        // TODO: compress [gif], then POST it signed with GifApiCredentials.sign() to
-        //       GifSendSettings.hostBaseUrl(context) + "/api/upload".
+        if (!GifSendSettings.hasHost(context)) return null
+        // TODO: compress [gif], then POST it to GifSendSettings.hostBaseUrl(context) + "/api/upload",
+        //       adding the User-Agent + GifApiCredentials.sign() headers only when
+        //       GifSendSettings.shouldSignRequests(context) is true (default host); custom hosts get none.
         return null
     }
 }
