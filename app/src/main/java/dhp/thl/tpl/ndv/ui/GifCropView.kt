@@ -89,16 +89,19 @@ class GifCropView @JvmOverloads constructor(
         crop.bottom.toInt().coerceAtLeast(crop.top.toInt() + 1)
     )
 
-    /** Locks the rectangle to [ratio] (width / height), shrinking it around its centre; null frees it. */
+    /**
+     * Locks the rectangle to [ratio] (width / height): the largest rectangle of that shape that fits in the
+     * GIF, centred on where the crop currently is. Null frees it again and leaves the rectangle as it is.
+     */
     fun setAspect(ratio: Float?) {
         aspect = ratio
         if (ratio != null && sourceW > 0) {
             val cx = crop.centerX()
             val cy = crop.centerY()
-            var w = crop.width()
+            var w = sourceW.toFloat()
             var h = w / ratio
-            if (h > crop.height()) {
-                h = crop.height()
+            if (h > sourceH) {
+                h = sourceH.toFloat()
                 w = h * ratio
             }
             crop.set(cx - w / 2f, cy - h / 2f, cx + w / 2f, cy + h / 2f)

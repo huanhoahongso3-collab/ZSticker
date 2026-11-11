@@ -181,12 +181,19 @@ class GifCropActivity : BaseActivity() {
             setOnClickListener { binding.cropView.setAspect(ratio) }
         }
 
-        binding.aspectGroup.removeAllViews()
-        binding.aspectGroup.addView(chip(getString(R.string.crop_aspect_free), null, true))
-        binding.aspectGroup.addView(chip(getString(R.string.crop_aspect_square), 1f, false))
-        binding.aspectGroup.addView(
-            chip(getString(R.string.crop_aspect_original), p.sourceWidth.toFloat() / p.sourceHeight, false)
+        val presets = listOf(
+            getString(R.string.crop_aspect_free) to null,
+            getString(R.string.crop_aspect_original) to p.sourceWidth.toFloat() / p.sourceHeight,
+            "1:1" to 1f,
+            "4:3" to 4f / 3f,
+            "3:4" to 3f / 4f,
+            "16:9" to 16f / 9f,
+            "9:16" to 9f / 16f
         )
+        binding.aspectGroup.removeAllViews()
+        presets.forEachIndexed { i, (label, ratio) ->
+            binding.aspectGroup.addView(chip(label, ratio, checked = i == 0))
+        }
     }
 
     private fun save() {

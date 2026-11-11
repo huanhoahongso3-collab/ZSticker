@@ -216,13 +216,19 @@ class EditorActivity : BaseActivity() {
         }
     }
 
+    private fun setSaveEnabled(enabled: Boolean) {
+        binding.btnSave.isEnabled = enabled
+        binding.btnSave.isClickable = enabled
+        binding.btnSave.alpha = if (enabled) 1f else 0.4f
+    }
+
     private fun updateHistoryButtons() {
         val view = binding.editorView
         binding.btnUndo.isEnabled = view.canUndo()
         binding.btnUndo.alpha = if (view.canUndo()) 1f else 0.35f
         binding.btnRedo.isEnabled = view.canRedo()
         binding.btnRedo.alpha = if (view.canRedo()) 1f else 0.35f
-        binding.btnSave.isEnabled = view.hasChanges()
+        setSaveEnabled(view.hasChanges())
     }
 
     private fun requestExit() {
@@ -241,7 +247,7 @@ class EditorActivity : BaseActivity() {
 
     private fun save() {
         val result = binding.editorView.renderResult()
-        binding.btnSave.isEnabled = false
+        setSaveEnabled(false)
         thread {
             val target = File(filesDir, "zsticker_${System.currentTimeMillis()}.png")
             val ok = try {
@@ -259,7 +265,7 @@ class EditorActivity : BaseActivity() {
                     setResult(RESULT_OK, Intent().putExtra(GifCropActivity.EXTRA_SAVED, true))
                     finish()
                 } else {
-                    binding.btnSave.isEnabled = true
+                    setSaveEnabled(true)
                     ToastUtils.showToast(this, getString(R.string.failed))
                 }
             }
@@ -279,8 +285,8 @@ class EditorActivity : BaseActivity() {
         binding.btnUndo.setColorFilter(palette.onSurface)
         binding.btnRedo.setColorFilter(palette.onSurface)
 
-        binding.btnSave.backgroundTintList = ColorStateList.valueOf(palette.primary)
-        binding.btnSave.setTextColor(palette.onPrimary)
+        binding.btnSave.setCardBackgroundColor(palette.primary)
+        binding.imgSave.setColorFilter(palette.onPrimary)
         binding.btnAddText.backgroundTintList = ColorStateList.valueOf(palette.secondaryContainer)
         binding.btnAddText.setTextColor(palette.onSecondaryContainer)
         binding.seekSize.progressTintList = ColorStateList.valueOf(palette.primary)
