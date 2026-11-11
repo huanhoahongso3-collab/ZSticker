@@ -50,12 +50,12 @@ class GifCropView @JvmOverloads constructor(
     private val handlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
         style = Paint.Style.STROKE
-        strokeWidth = 4f * density
+        strokeWidth = 5f * density
         strokeCap = Paint.Cap.ROUND
     }
 
-    private val slop = 28f * density
-    private val handleLen = 18f * density
+    private val slop = 36f * density
+    private val handleLen = 26f * density
     private val minSide get() = max(24f, min(sourceW, sourceH) * 0.08f)
 
     // Active drag
@@ -147,7 +147,7 @@ class GifCropView @JvmOverloads constructor(
     }
 
     private fun computeImageRect() {
-        val pad = 16f * density
+        val pad = 6f * density
         val availW = width - 2 * pad
         val availH = height - 2 * pad
         val scale = min(availW / sourceW, availH / sourceH)

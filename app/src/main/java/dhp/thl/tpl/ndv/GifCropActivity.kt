@@ -48,7 +48,7 @@ class GifCropActivity : BaseActivity() {
             if (!playing) return
             index = (index + 1) % p.frames.size
             showFrame(index, updateSeek = true)
-            handler.postDelayed(this, p.delaysMs[index].toLong())
+            handler.postDelayed(this, p.delaysMs[index].coerceAtLeast(20).toLong())
         }
     }
 
@@ -126,11 +126,17 @@ class GifCropActivity : BaseActivity() {
         binding.cropView.setSource(loaded.sourceWidth, loaded.sourceHeight)
         binding.seekTimeline.max = loaded.frames.size - 1
         binding.seekTimeline.isEnabled = true
-        binding.btnPlay.isEnabled = true
+        setPlayEnabled(true)
         binding.btnSave.isEnabled = true
         buildAspectChips(loaded)
         showFrame(0, updateSeek = true)
         play()
+    }
+
+    private fun setPlayEnabled(enabled: Boolean) {
+        binding.btnPlay.isEnabled = enabled
+        binding.btnPlay.isClickable = enabled
+        binding.btnPlay.alpha = if (enabled) 1f else 0.4f
     }
 
     private fun showFrame(i: Int, updateSeek: Boolean) {
@@ -146,7 +152,7 @@ class GifCropActivity : BaseActivity() {
         val p = preview ?: return
         if (playing) return
         playing = true
-        binding.btnPlay.setIconResource(R.drawable.ic_pause)
+        binding.imgPlay.setImageResource(R.drawable.ic_pause)
         binding.btnPlay.contentDescription = getString(R.string.crop_pause)
         handler.postDelayed(tick, p.delaysMs[index].toLong())
     }
@@ -154,7 +160,7 @@ class GifCropActivity : BaseActivity() {
     private fun pause() {
         playing = false
         handler.removeCallbacks(tick)
-        binding.btnPlay.setIconResource(R.drawable.ic_play)
+        binding.imgPlay.setImageResource(R.drawable.ic_play)
         binding.btnPlay.contentDescription = getString(R.string.crop_play)
     }
 
@@ -195,7 +201,7 @@ class GifCropActivity : BaseActivity() {
             val ok = GifProcessor.transform(
                 src = source,
                 dst = target,
-                maxSide = 512,
+                maxSide = MAX_OUTPUT_SIDE,
                 crop = rect,
                 frameStep = 1,
                 quality = 10
@@ -228,8 +234,10 @@ class GifCropActivity : BaseActivity() {
 
         binding.btnSave.backgroundTintList = ColorStateList.valueOf(palette.primary)
         binding.btnSave.setTextColor(palette.onPrimary)
-        binding.btnPlay.backgroundTintList = ColorStateList.valueOf(palette.primary)
-        binding.btnPlay.iconTint = ColorStateList.valueOf(palette.onPrimary)
+        binding.btnPlay.setCardBackgroundColor(palette.primary)
+        binding.imgPlay.setColorFilter(palette.onPrimary)
+        setPlayEnabled(false)
+        binding.btnSave.iconTint = ColorStateList.valueOf(palette.onPrimary)
         binding.seekTimeline.progressTintList = ColorStateList.valueOf(palette.primary)
         binding.seekTimeline.thumbTintList = ColorStateList.valueOf(palette.primary)
         binding.txtTime.setTextColor(palette.onSurfaceVariant)
@@ -258,6 +266,8 @@ class GifCropActivity : BaseActivity() {
     }
 
     companion object {
+        /** Longest side of the saved GIF; the crop is never scaled up, only down past this. */
+        private const val MAX_OUTPUT_SIDE = 1024
         const val EXTRA_GIF_NAME = "gif_name"
         const val EXTRA_SAVED = "gif_saved"
     }
