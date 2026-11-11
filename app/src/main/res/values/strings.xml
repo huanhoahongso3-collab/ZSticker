@@ -123,4 +123,12 @@
     <string name="gif_host_invalid">Enter a valid https:// address</string>
     <string name="gif_host_unavailable">Animated GIF host isn\'t available yet, sent as a vanilla GIF</string>
     <string name="gif_host_not_configured">No default server in this build. Set your own address.</string>
+    <string name="gif_upload_notice_title">Upload GIF?</string>
+    <string name="gif_upload_notice_message">To keep this sticker animated, a compressed copy of the GIF is uploaded to %1$s so Zalo and the people you send it to can load it. Anyone with the link can view it. The original stays on your device, and this GIF will not be uploaded again.</string>
+    <string name="gif_uploading">Uploading GIF…</string>
+    <string name="gif_upload_failed">Couldn\'t upload the GIF (%1$s), sent as a vanilla GIF</string>
+    <string name="gif_upload_rate_limited">Upload limit reached, sent as a vanilla GIF</string>
+    <string name="import_legacy_title">Import legacy backup</string>
+    <string name="import_legacy_note">Restore a backup made by an older version of ZSticker (.zip). Newer .zsticker backups use Import above.</string>
+    <string name="import_failed_hint">Not a valid backup. Backups from older versions need \u201cImport legacy backup\u201d.</string>
 </resources>

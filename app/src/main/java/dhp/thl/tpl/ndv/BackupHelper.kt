@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import dhp.thl.tpl.ndv.domain.StickerLinkTable
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.ZipParameters
 import net.lingala.zip4j.model.enums.AesKeyStrength
@@ -21,22 +22,40 @@ import java.util.*
 
 object BackupHelper {
 
-    private const val PASSWORD = "zalonotfound"
+    /** File extension of current backups (a password-protected zip). */
+    const val EXTENSION = "zsticker"
+
+    /**
+     * Password of backups made before v6.8 (.zip). It is part of that old format and only used by
+     * "Import legacy backup".
+     */
+    private const val LEGACY_PASSWORD = "zalonotfound"
+
+    /**
+     * Password of current .zsticker backups, injected at build time from CI (ZS_BACKUP_PASSWORD), not
+     * stored in the repository. Builds without it write and read unencrypted .zsticker files.
+     * Note: a password inside an APK can be extracted, so this is obfuscation more than secrecy.
+     */
+    private fun backupPassword(): CharArray? =
+        BuildConfig.BACKUP_PASSWORD.takeIf { it.isNotEmpty() }?.toCharArray()
 
     fun exportBackup(context: Context, outStream: OutputStream, type: String, onProgress: ((Float) -> Unit)? = null, isCancelled: () -> Boolean = { false }): Boolean {
-        val tempFile = File(context.cacheDir, "export_temp.zip")
+        val tempFile = File(context.cacheDir, "export_temp.$EXTENSION")
         if (tempFile.exists()) tempFile.delete()
 
         try {
-            val zipFile = ZipFile(tempFile, PASSWORD.toCharArray())
+            val password = backupPassword()
+            val zipFile = if (password != null) ZipFile(tempFile, password) else ZipFile(tempFile)
             val params = ZipParameters().apply {
-                isEncryptFiles = true
-                encryptionMethod = EncryptionMethod.AES
-                aesKeyStrength = AesKeyStrength.KEY_STRENGTH_256
+                if (password != null) {
+                    isEncryptFiles = true
+                    encryptionMethod = EncryptionMethod.AES
+                    aesKeyStrength = AesKeyStrength.KEY_STRENGTH_256
+                }
             }
 
             val metadata = JSONObject()
-            metadata.put("version", 2)
+            metadata.put("version", 3)
             metadata.put("type", type)
             metadata.put("export_date", SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()))
             
@@ -61,6 +80,15 @@ object BackupHelper {
                 }
                 metadata.put("timestamps", timestamps)
                 contents.add("images")
+
+                // Hosted GIF links, so restored stickers are not uploaded again.
+                val linksFile = StickerLinkTable.file(context)
+                if (linksFile.exists()) {
+                    val p = ZipParameters(params)
+                    p.fileNameInZip = "links/${linksFile.name}"
+                    zipFile.addFile(linksFile, p)
+                    contents.add("links")
+                }
             }
 
             if (type == "history" || type == "all") {
@@ -113,8 +141,18 @@ object BackupHelper {
         }
     }
 
-    fun importBackup(context: Context, uri: Uri, onProgress: ((Float) -> Unit)? = null, isCancelled: () -> Boolean = { false }): Boolean {
-        val tempFile = File(context.cacheDir, "import_temp.zip")
+    /**
+     * Restores a backup. [legacy] = true reads backups made before v6.8 (older password and format);
+     * otherwise a current .zsticker backup is expected.
+     */
+    fun importBackup(
+        context: Context,
+        uri: Uri,
+        onProgress: ((Float) -> Unit)? = null,
+        isCancelled: () -> Boolean = { false },
+        legacy: Boolean = false
+    ): Boolean {
+        val tempFile = File(context.cacheDir, "import_temp.$EXTENSION")
         if (tempFile.exists()) tempFile.delete()
 
         try {
@@ -128,7 +166,12 @@ object BackupHelper {
             
             // Check if encrypted
             if (zipFile.isEncrypted) {
-                zipFile.setPassword(PASSWORD.toCharArray())
+                val password = if (legacy) LEGACY_PASSWORD.toCharArray() else backupPassword()
+                if (password == null) {
+                    tempFile.delete()
+                    return false
+                }
+                zipFile.setPassword(password)
             }
 
             // Extract to temp folder first to detect content
@@ -196,6 +239,16 @@ object BackupHelper {
                     }
                     processed++
                     onProgress?.invoke(0.7f + (processed.toFloat() / total * 0.3f))
+                }
+            }
+
+            // Restore hosted GIF links (merged with the ones already on this device)
+            val linksFile = File(extractDir, "links/sticker_links.json")
+            if (linksFile.exists()) {
+                try {
+                    StickerLinkTable.importJson(context, linksFile.readText())
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
 

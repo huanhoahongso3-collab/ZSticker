@@ -123,4 +123,12 @@
     <string name="gif_host_invalid">Nhập địa chỉ https:// hợp lệ</string>
     <string name="gif_host_unavailable">Máy chủ GIF động chưa khả dụng, đã gửi GIF thường</string>
     <string name="gif_host_not_configured">Bản dựng này chưa có máy chủ mặc định. Hãy nhập địa chỉ của bạn.</string>
+    <string name="gif_upload_notice_title">Tải GIF lên?</string>
+    <string name="gif_upload_notice_message">Để nhãn dán này vẫn chuyển động, một bản GIF đã nén sẽ được tải lên %1$s để Zalo và người nhận có thể tải về. Ai có đường dẫn đều xem được. Bản gốc vẫn ở trên thiết bị của bạn và GIF này sẽ không được tải lên lần nữa.</string>
+    <string name="gif_uploading">Đang tải GIF lên…</string>
+    <string name="gif_upload_failed">Không tải được GIF (%1$s), đã gửi GIF thường</string>
+    <string name="gif_upload_rate_limited">Đã đạt giới hạn tải lên, đã gửi GIF thường</string>
+    <string name="import_legacy_title">Nhập bản sao lưu cũ</string>
+    <string name="import_legacy_note">Khôi phục bản sao lưu tạo bởi phiên bản ZSticker cũ (.zip). Bản sao lưu .zsticker mới dùng mục Nhập ở trên.</string>
+    <string name="import_failed_hint">Không phải tệp sao lưu hợp lệ. Bản sao lưu từ phiên bản cũ cần dùng \u201cNhập bản sao lưu cũ\u201d.</string>
 </resources>

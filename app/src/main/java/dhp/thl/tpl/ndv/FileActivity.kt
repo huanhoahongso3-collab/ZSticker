@@ -46,31 +46,45 @@ class FileActivity : BaseActivity() {
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
-            result.data?.data?.let { uri ->
-                val progressDialog = ProgressDialog.newInstance(getString(R.string.importing_backup))
-                isOperationCancelled = false
-                progressDialog.onCancel = { isOperationCancelled = true }
-                progressDialog.showSafe(supportFragmentManager, "import")
+            result.data?.data?.let { uri -> runImport(uri, legacy = false) }
+        }
+    }
 
-                thread {
-                    val success = BackupHelper.importBackup(
+    private val importLegacyLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            result.data?.data?.let { uri -> runImport(uri, legacy = true) }
+        }
+    }
+
+    private fun runImport(uri: Uri, legacy: Boolean) {
+        val progressDialog = ProgressDialog.newInstance(getString(R.string.importing_backup))
+        isOperationCancelled = false
+        progressDialog.onCancel = { isOperationCancelled = true }
+        progressDialog.showSafe(supportFragmentManager, "import")
+
+        thread {
+            val success = BackupHelper.importBackup(
+                this,
+                uri,
+                { progress -> runOnUiThread { progressDialog.updateProgress(progress) } },
+                { isOperationCancelled },
+                legacy
+            )
+            runOnUiThread {
+                progressDialog.dismissSafe()
+                if (isOperationCancelled) {
+                    ToastUtils.showToast(this, getString(R.string.failed))
+                } else if (success) {
+                    ToastUtils.showToast(this, getString(R.string.success))
+                    setResult(RESULT_OK, Intent().putExtra("did_import", true))
+                    restartApp()
+                } else {
+                    ToastUtils.showToast(
                         this,
-                        uri,
-                        { progress -> runOnUiThread { progressDialog.updateProgress(progress) } },
-                        { isOperationCancelled }
+                        getString(if (legacy) R.string.not_a_backup_file else R.string.import_failed_hint)
                     )
-                    runOnUiThread {
-                        progressDialog.dismissSafe()
-                        if (isOperationCancelled) {
-                            ToastUtils.showToast(this, getString(R.string.failed))
-                        } else if (success) {
-                            ToastUtils.showToast(this, getString(R.string.success))
-                            setResult(RESULT_OK, Intent().putExtra("did_import", true))
-                            restartApp()
-                        } else {
-                            ToastUtils.showToast(this, getString(R.string.not_a_backup_file))
-                        }
-                    }
                 }
             }
         }
@@ -107,16 +121,26 @@ class FileActivity : BaseActivity() {
 
         ExpressiveMotion.attachPressSpring(binding.btnBack, 0.90f)
         ExpressiveMotion.attachPressSpring(binding.cardImport, 0.97f)
+        ExpressiveMotion.attachPressSpring(binding.cardImportLegacy, 0.97f)
         ExpressiveMotion.attachPressSpring(binding.cardExportGallery, 0.97f)
 
         binding.btnBack.setOnClickListener { finish() }
 
+        // .zsticker has no registered MIME type, so the picker must list every file.
         binding.cardImport.setOnClickListener {
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE)
-                type = "application/zip"
+                type = "*/*"
             }
             importLauncher.launch(intent)
+        }
+
+        binding.cardImportLegacy.setOnClickListener {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "*/*"
+            }
+            importLegacyLauncher.launch(intent)
         }
 
         binding.itemExportHeader.setOnClickListener {
@@ -210,11 +234,13 @@ class FileActivity : BaseActivity() {
         binding.imgBack.setColorFilter(palette.onSecondaryContainer)
 
         ExpressiveThemeManager.styleSegmentedCard(binding.cardImport, GroupPosition.TOP, palette)
+        ExpressiveThemeManager.styleSegmentedCard(binding.cardImportLegacy, GroupPosition.MIDDLE, palette)
         ExpressiveThemeManager.styleSegmentedCard(binding.cardExport, GroupPosition.MIDDLE, palette)
         ExpressiveThemeManager.styleSegmentedCard(binding.cardExportGallery, GroupPosition.BOTTOM, palette)
 
         listOf(
             binding.imgImport,
+            binding.imgImportLegacy,
             binding.imgExportHeader,
             binding.imgExportGallery
         ).forEach { icon ->
@@ -243,6 +269,7 @@ class FileActivity : BaseActivity() {
 
         listOf(
             binding.titleImport,
+            binding.titleImportLegacy,
             binding.titleExport,
             binding.titleExportGallery,
             binding.txtExportImage,
@@ -253,6 +280,7 @@ class FileActivity : BaseActivity() {
 
         listOf(
             binding.noteImport,
+            binding.noteImportLegacy,
             binding.noteExport,
             binding.noteExportGallery
         ).forEach { it.setTextColor(palette.onSurfaceVariant) }
@@ -261,8 +289,8 @@ class FileActivity : BaseActivity() {
     private fun startFilePicker(type: String) {
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
-            this.type = "application/zip"
-            putExtra(Intent.EXTRA_TITLE, "${type}_backup_${System.currentTimeMillis()}.zip")
+            this.type = "application/octet-stream"
+            putExtra(Intent.EXTRA_TITLE, "${type}_backup_${System.currentTimeMillis()}.${BackupHelper.EXTENSION}")
         }
         createDocumentLauncher.launch(intent)
     }

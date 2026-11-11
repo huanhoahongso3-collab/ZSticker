@@ -86,20 +86,3 @@ object GifApiCredentials {
             .joinToString("") { "%02x".format(it) }
     }
 }
-
-/**
- * Uploads animated GIFs to the GIF host so Zalo can load them by URL.
- * The server is not built yet, so [upload] always reports "unavailable" (null) and callers fall back
- * to the vanilla GIF flow.
- */
-object AnimatedGifHost {
-    /** Returns the public URL of the uploaded [gif], or null when the host is unavailable. */
-    @Suppress("UNUSED_PARAMETER")
-    fun upload(context: Context, gif: File): String? {
-        if (!GifSendSettings.hasHost(context)) return null
-        // TODO: compress [gif], then POST it to GifSendSettings.hostBaseUrl(context) + "/api/upload",
-        //       adding the User-Agent + GifApiCredentials.sign() headers only when
-        //       GifSendSettings.shouldSignRequests(context) is true (default host); custom hosts get none.
-        return null
-    }
-}

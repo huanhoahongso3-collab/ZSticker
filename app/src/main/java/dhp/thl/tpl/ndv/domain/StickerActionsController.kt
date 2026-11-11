@@ -29,6 +29,7 @@ import dhp.thl.tpl.ndv.R
 import dhp.thl.tpl.ndv.ToastUtils
 import dhp.thl.tpl.ndv.data.StickerRepository
 import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
+import dhp.thl.tpl.ndv.gif.GifProcessor
 import dhp.thl.tpl.ndv.ui.showMonetDialog
 import dhp.thl.tpl.ndv.ui.showPaneDialog
 import dhp.thl.tpl.ndv.ui.theme.ExpressiveThemeManager
@@ -79,25 +80,96 @@ class StickerActionsController(
     }
 
     /**
-     * Animated GIF mode: uploads the GIF to the GIF host, then shares a still first-frame sticker that
-     * carries the hosted URL so the Zalo module can attach the animation. While the host is unavailable
-     * it falls back to the vanilla GIF flow.
+     * Animated GIF mode: uploads a compressed copy of the GIF to the GIF host (once; later sends reuse the
+     * cached link), then shares a still first-frame sticker that carries the hosted URL so the Zalo module
+     * can attach the animation. Any failure falls back to the vanilla GIF flow.
      */
     private fun sendAnimatedGif(file: File) {
+        if (!GifSendSettings.hasHost(activity)) {
+            ToastUtils.showToast(activity, activity.getString(R.string.gif_host_not_configured))
+            shareToZalo(file)
+            return
+        }
+        // A cached link means nothing is uploaded, so there is nothing to warn about.
+        val needsNotice = !GifHostClient.isCached(activity, file)
+        confirmGifUpload(file, needsNotice) { uploadAndShare(file) }
+    }
+
+    private fun confirmGifUpload(file: File, needsNotice: Boolean, onConfirmed: () -> Unit) {
+        val prefs = activity.getSharedPreferences("settings", Context.MODE_PRIVATE)
+        if (!needsNotice || prefs.getBoolean("dont_show_gif_upload_notice", false)) {
+            onConfirmed()
+            return
+        }
+        val palette = ExpressiveThemeManager.resolvePalette(activity)
+        val dialogView = LayoutInflater.from(activity).inflate(R.layout.dialog_warning, null)
+        val dialog = MaterialAlertDialogBuilder(activity).setView(dialogView).create()
+        val titleView = dialogView.findViewById<TextView>(R.id.dialog_title)
+        val messageView = dialogView.findViewById<TextView>(R.id.dialog_message)
+        val iconView = dialogView.findViewById<ImageView>(R.id.icon_warning)
+        val checkBox = dialogView.findViewById<MaterialCheckBox>(R.id.cb_dont_show_again)
+
+        titleView.text = activity.boldTitle(activity.getString(R.string.gif_upload_notice_title))
+        titleView.setTextColor(palette.onSurface)
+        messageView.text = activity.getString(
+            R.string.gif_upload_notice_message,
+            GifSendSettings.hostBaseUrl(activity).removePrefix("https://")
+        )
+        messageView.setTextColor(palette.onSurfaceVariant)
+        messageView.setLinkTextColor(palette.primary)
+
+        iconView.setImageResource(R.drawable.ic_export_image)
+        iconView.setColorFilter(palette.primary)
+
+        val btnCancel = dialogView.findViewById<MaterialButton>(R.id.btn_cancel)
+        val btnContinue = dialogView.findViewById<MaterialButton>(R.id.btn_continue)
+        btnCancel.setTextColor(palette.primary)
+        checkBox.buttonTintList = ColorStateList.valueOf(palette.primary)
+        checkBox.setTextColor(palette.onSurface)
+        btnContinue.setTextColor(palette.onPrimary)
+        btnContinue.backgroundTintList = ColorStateList.valueOf(palette.primary)
+
+        btnCancel.setOnClickListener { dialog.dismiss() }
+        btnContinue.setOnClickListener {
+            if (checkBox.isChecked) {
+                prefs.edit().putBoolean("dont_show_gif_upload_notice", true).apply()
+            }
+            dialog.dismiss()
+            onConfirmed()
+        }
+        dialog.showMonetDialog(activity)
+    }
+
+    private fun uploadAndShare(file: File) {
+        val progressDialog = ProgressDialog.newInstance(activity.getString(R.string.gif_uploading))
+        var cancelled = false
+        progressDialog.onCancel = { cancelled = true }
+        progressDialog.showSafe(activity.supportFragmentManager, "gif_upload")
+
         thread {
-            val animatedUrl = try {
-                AnimatedGifHost.upload(activity, file)
+            val result = try {
+                GifHostClient.upload(activity, file) { p ->
+                    activity.runOnUiThread { progressDialog.updateProgress(p * 0.8f) }
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
-                null
+                GifHostClient.Result.Failure(GifHostClient.Reason.NETWORK, e.message)
             }
             activity.runOnUiThread {
+                progressDialog.dismissSafe()
+                if (cancelled) return@runOnUiThread
                 try {
-                    if (animatedUrl == null) {
-                        ToastUtils.showToast(activity, activity.getString(R.string.gif_host_unavailable))
-                        shareToZalo(file)
-                    } else {
-                        shareAnimatedSticker(file, animatedUrl)
+                    when (result) {
+                        is GifHostClient.Result.Success -> shareAnimatedSticker(file, result.url)
+                        is GifHostClient.Result.Failure -> {
+                            val message = if (result.reason == GifHostClient.Reason.RATE_LIMITED) {
+                                activity.getString(R.string.gif_upload_rate_limited)
+                            } else {
+                                activity.getString(R.string.gif_upload_failed, result.reason.name.lowercase())
+                            }
+                            ToastUtils.showToast(activity, message)
+                            shareToZalo(file)
+                        }
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -170,6 +242,9 @@ class StickerActionsController(
         if (!isRecent && !isAnimated) {
             options.add(OptionItem(R.drawable.ic_remove_bg, activity.getString(R.string.remove_bg)))
             options.add(OptionItem(R.drawable.ic_border_sticker, activity.getString(R.string.border_sticker)))
+        }
+        // Photos and GIFs can be cropped; videos cannot.
+        if (!isRecent && (!isAnimated || fileName.endsWith(".gif", ignoreCase = true))) {
             options.add(OptionItem(R.drawable.ic_crop, activity.getString(R.string.crop)))
         }
 
@@ -433,11 +508,35 @@ class StickerActionsController(
         }
     }
 
+    /** The GIF being cropped: uCrop edits its first frame, the chosen region is then applied to every frame. */
+    private var pendingGifCrop: File? = null
+
     private fun startCrop(uri: Uri) {
         val fileName = uri.lastPathSegment?.lowercase() ?: ""
-        if (fileName.endsWith(".gif") || isVideoUri(uri)) {
+        if (isVideoUri(uri)) {
             ToastUtils.showToast(activity, activity.getString(R.string.unsupported_file_type))
             return
+        }
+
+        var cropSource = uri
+        if (fileName.endsWith(".gif")) {
+            val gif = File(activity.filesDir, uri.lastPathSegment ?: "")
+            val frame = try {
+                GifProcessor.firstFrame(gif)
+            } catch (_: Exception) {
+                null
+            }
+            if (frame == null) {
+                ToastUtils.showToast(activity, activity.getString(R.string.unsupported_file_type))
+                return
+            }
+            val framePng = File(activity.cacheDir, "gif_crop_src_${System.currentTimeMillis()}.png")
+            FileOutputStream(framePng).use { frame.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            frame.recycle()
+            pendingGifCrop = gif
+            cropSource = Uri.fromFile(framePng)
+        } else {
+            pendingGifCrop = null
         }
 
         val palette = ExpressiveThemeManager.resolvePalette(activity)
@@ -454,7 +553,7 @@ class StickerActionsController(
             setFreeStyleCropEnabled(true)
         }
 
-        val intent = UCrop.of(uri, destinationUri)
+        val intent = UCrop.of(cropSource, destinationUri)
             .withOptions(options)
             .getIntent(activity)
 
@@ -462,20 +561,62 @@ class StickerActionsController(
     }
 
     fun handleCropResult(result: ActivityResult) {
-        if (result.resultCode == Activity.RESULT_OK) {
-            val resultUri = result.data?.let { UCrop.getOutput(it) }
-            if (resultUri != null) {
-                try {
-                    val file = File(activity.filesDir, "zsticker_${System.currentTimeMillis()}.png")
-                    activity.contentResolver.openInputStream(resultUri)?.use { input ->
-                        FileOutputStream(file).use { out -> input.copyTo(out) }
-                    }
+        val gifToCrop = pendingGifCrop
+        pendingGifCrop = null
+
+        if (result.resultCode != Activity.RESULT_OK) return
+        val data = result.data ?: return
+
+        if (gifToCrop != null) {
+            cropGif(gifToCrop, data)
+            return
+        }
+
+        val resultUri = UCrop.getOutput(data)
+        if (resultUri != null) {
+            try {
+                val file = File(activity.filesDir, "zsticker_${System.currentTimeMillis()}.png")
+                activity.contentResolver.openInputStream(resultUri)?.use { input ->
+                    FileOutputStream(file).use { out -> input.copyTo(out) }
+                }
+                StickerRepository.refreshHome(activity) {
+                    onStickerCreated?.invoke()
+                }
+                ToastUtils.showToast(activity, activity.getString(R.string.success))
+            } catch (e: Exception) {
+                e.printStackTrace()
+                ToastUtils.showToast(activity, activity.getString(R.string.failed))
+            }
+        }
+    }
+
+    /** Applies the region uCrop chose on the first frame to every frame of [gif] and saves a new sticker. */
+    private fun cropGif(gif: File, data: Intent) {
+        // uCrop reports the crop as offset + size in source pixels (keys are com.yalantis.ucrop.*).
+        val prefix = "com.yalantis.ucrop"
+        val x = data.getIntExtra("$prefix.OffsetX", 0)
+        val y = data.getIntExtra("$prefix.OffsetY", 0)
+        val w = data.getIntExtra("$prefix.ImageWidth", 0)
+        val h = data.getIntExtra("$prefix.ImageHeight", 0)
+        if (w <= 0 || h <= 0) {
+            ToastUtils.showToast(activity, activity.getString(R.string.failed))
+            return
+        }
+        val region = android.graphics.Rect(x, y, x + w, y + h)
+
+        showLoadingOverlay()
+        thread {
+            val target = File(activity.filesDir, "zsticker_${System.currentTimeMillis()}.gif")
+            val ok = GifProcessor.transform(gif, target, maxSide = 512, crop = region, frameStep = 1, quality = 10)
+            if (!ok) target.delete()
+            activity.runOnUiThread {
+                binding.progressBar.visibility = View.GONE
+                if (ok) {
                     StickerRepository.refreshHome(activity) {
                         onStickerCreated?.invoke()
                     }
                     ToastUtils.showToast(activity, activity.getString(R.string.success))
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                } else {
                     ToastUtils.showToast(activity, activity.getString(R.string.failed))
                 }
             }

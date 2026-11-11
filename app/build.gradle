@@ -25,6 +25,7 @@ android {
         buildConfigField "String", "GIF_HOST_URL", "\"${zsConfig('ZS_GIF_HOST_URL')}\""
         buildConfigField "String", "GIF_API_KEY_ID", "\"${zsConfig('ZS_GIF_API_KEY_ID')}\""
         buildConfigField "String", "GIF_API_SECRET", "\"${zsConfig('ZS_GIF_API_SECRET')}\""
+        buildConfigField "String", "BACKUP_PASSWORD", "\"${zsConfig('ZS_BACKUP_PASSWORD')}\""
     }
 
     // Only include resources for supported languages
@@ -140,4 +141,7 @@ dependencies {
 
     // Video trimmer with Media3 preview & timeline (MIT License, no ffmpeg)
     implementation project(':video-trimmer')
+
+    // Xposed API stubs for the optional Zalo module (not packaged; the framework supplies the real classes)
+    compileOnly project(':xposed-stub')
 }

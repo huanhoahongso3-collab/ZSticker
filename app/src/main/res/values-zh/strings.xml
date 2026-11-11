@@ -123,4 +123,12 @@
     <string name="gif_host_invalid">请输入有效的 https:// 地址</string>
     <string name="gif_host_unavailable">动态 GIF 托管暂不可用，已作为普通 GIF 发送</string>
     <string name="gif_host_not_configured">此版本没有默认服务器，请设置你自己的地址。</string>
+    <string name="gif_upload_notice_title">上传 GIF？</string>
+    <string name="gif_upload_notice_message">为了让这个贴纸保持动画，GIF 的压缩副本将上传到 %1$s，以便 Zalo 和接收者加载。任何拥有链接的人都可以查看。原文件保留在你的设备上，此 GIF 不会再次上传。</string>
+    <string name="gif_uploading">正在上传 GIF…</string>
+    <string name="gif_upload_failed">无法上传 GIF（%1$s），已作为普通 GIF 发送</string>
+    <string name="gif_upload_rate_limited">已达到上传限制，已作为普通 GIF 发送</string>
+    <string name="import_legacy_title">导入旧版备份</string>
+    <string name="import_legacy_note">恢复由旧版 ZSticker 创建的备份（.zip）。新的 .zsticker 备份请使用上方的导入。</string>
+    <string name="import_failed_hint">不是有效的备份。旧版本的备份需使用\u201c导入旧版备份\u201d。</string>
 </resources>

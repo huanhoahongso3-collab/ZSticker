@@ -73,6 +73,7 @@ jobs:
           ZS_GIF_HOST_URL: ${{ secrets.ZS_GIF_HOST_URL }}
           ZS_GIF_API_KEY_ID: ${{ secrets.ZS_GIF_API_KEY_ID }}
           ZS_GIF_API_SECRET: ${{ secrets.ZS_GIF_API_SECRET }}
+          ZS_BACKUP_PASSWORD: ${{ secrets.ZS_BACKUP_PASSWORD }}
           SIGNING_STORE_FILE: ${{ runner.temp }}/release.keystore
           SIGNING_STORE_PASSWORD: ${{ secrets.PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.ALIAS }}

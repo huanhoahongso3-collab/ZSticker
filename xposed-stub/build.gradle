@@ -1,0 +1,9 @@
+// Compile-time stubs of the Xposed API used by dhp.thl.tpl.ndv.xposed.ZaloHook.
+// Added with compileOnly, so none of these classes are packaged: the Xposed framework (LSPosed / NPatch)
+// provides the real implementation inside the target process.
+apply plugin: 'java-library'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
