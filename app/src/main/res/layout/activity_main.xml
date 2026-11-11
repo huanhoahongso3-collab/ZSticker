@@ -203,6 +203,7 @@
 
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/addButton"
+                style="@style/Widget.Material3Expressive.FloatingActionButton"
                 android:layout_width="60dp"
                 android:layout_height="60dp"
                 android:layout_marginStart="22dp"

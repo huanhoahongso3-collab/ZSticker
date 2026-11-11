@@ -59,7 +59,7 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnEmptyAddSticker"
-            style="@style/Widget.Material3.Button"
+            style="@style/Widget.Material3Expressive.Button"
             android:layout_width="wrap_content"
             android:layout_height="52dp"
             android:layout_marginTop="22dp"
