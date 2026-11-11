@@ -6,30 +6,30 @@ on:
   pull_request:
     branches: [ main ]
 
+# Needed to publish the rolling "dev" prerelease on pushes to main.
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Set up JDK 17
       - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 25
 
-      # 3️⃣ Download Gradle 9.4.0
       - name: Download Gradle 9.4.0
         run: |
           wget https://services.gradle.org/distributions/gradle-9.4.0-bin.zip -O gradle-9.4.0.zip
           unzip gradle-9.4.0.zip -d gradle-dist
           chmod +x gradle-dist/gradle-9.4.0/bin/gradle
 
-      # 4️⃣ Generate Gradle wrapper if missing
       - name: Generate Gradle wrapper if missing
         run: |
           if [ ! -f ./gradlew ]; then
@@ -39,25 +39,72 @@ jobs:
             echo "Gradle wrapper already exists."
           fi
 
-      # 5️⃣ Grant execute permission for gradlew
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      # 6️⃣ Build Debug and Release APKs
-      - name: Build Debug and Release APKs
+      # Pushes to main get a signed release APK. Pull requests have no access to secrets,
+      # so they build unsigned (app/build.gradle only signs when SIGNING_STORE_FILE is set).
+      - name: Decode release keystore (push only)
+        if: github.event_name == 'push'
         run: |
-          ./gradlew assembleDebug assembleRelease --stacktrace
+          echo "${{ secrets.BKS }}" | base64 -d > "${{ runner.temp }}/release.keystore"
+          {
+            echo "SIGNING_STORE_FILE=${{ runner.temp }}/release.keystore"
+            echo "SIGNING_STORE_PASSWORD=${{ secrets.PASSWORD }}"
+            echo "SIGNING_KEY_ALIAS=${{ secrets.ALIAS }}"
+            echo "SIGNING_KEY_PASSWORD=${{ secrets.PASSWORD }}"
+          } >> "$GITHUB_ENV"
 
-      # 7️⃣ Upload Debug APK artifact
+      - name: Build Debug and Release APKs
+        run: ./gradlew assembleDebug assembleRelease --stacktrace
+
+      - name: Remove keystore
+        if: always()
+        run: rm -f "${{ runner.temp }}/release.keystore"
+
+      - name: Collect outputs
+        run: |
+          mkdir -p out
+          cp app/build/outputs/apk/debug/app-debug.apk out/ZSticker-dev-debug.apk
+          REL=$(ls app/build/outputs/apk/release/*.apk | head -n1)
+          if [ "${{ github.event_name }}" = "push" ]; then
+            cp "$REL" out/ZSticker-dev.apk
+          else
+            cp "$REL" out/ZSticker-dev-unsigned.apk
+          fi
+          ls -la out
+
       - name: Upload Debug APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: ZSticker-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: out/ZSticker-dev-debug.apk
 
-      # 8️⃣ Upload Unsigned Release APK artifact
-      - name: Upload Unsigned Release APK artifact
+      - name: Upload Release APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ZSticker-release-unsigned-apk
-          path: app/build/outputs/apk/release/app-release-unsigned.apk
+          name: ZSticker-release-apk
+          path: |
+            out/ZSticker-dev.apk
+            out/ZSticker-dev-unsigned.apk
+          if-no-files-found: ignore
+
+      # Rolling prerelease: delete the previous "dev" release + tag and recreate it on this commit,
+      # so "dev" always holds the latest main build.
+      - name: Publish dev prerelease
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SHORT=$(git rev-parse --short HEAD)
+          VERSION=$(grep -oP "versionName\s+'\K[^']+" app/build.gradle)
+          gh release delete dev --cleanup-tag --yes || true
+          gh release create dev out/ZSticker-dev.apk out/ZSticker-dev-debug.apk \
+            --prerelease \
+            --target "${{ github.sha }}" \
+            --title "Dev build ($SHORT)" \
+            --notes "Latest development build from \`main\` at ${{ github.sha }} (app version $VERSION).
+          Unstable: may contain unfinished features. Replaced on every push to \`main\`.
+
+          - \`ZSticker-dev.apk\`: signed release build
+          - \`ZSticker-dev-debug.apk\`: debug build"
