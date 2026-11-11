@@ -36,7 +36,15 @@ Dự án lấy cảm hứng từ **Zamoji** — ứng dụng chính thức của
 * **Tách nền ảnh (Background Removal):** Cung cấp 2 cơ chế (tùy chỉnh trong Cài đặt):
   * **Offline:** Chạy hoàn toàn trên thiết bị thông qua *Google MediaPipe Tasks Vision* (Mã nguồn mở, Apache 2.0). Dữ liệu hoàn toàn không rời khỏi thiết bị.
   * **Online:** Sử dụng mô hình *BRIA-RMBG-1.4* hosted trên HuggingFace Spaces. Endpoint proxy (`bria14proxy.vercel.app`) chỉ đóng vai trò trung gian kết nối giữa Android và HuggingFace API, hoàn toàn không lưu trữ dữ liệu hay thu thập thông tin cá nhân ([Xem mã nguồn proxy](https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY)).
+* **GIF động (Animated GIF):** Trong Cài đặt có hai chế độ gửi GIF — *GIF thường* (gửi như Zalo mặc định, hiển thị là GIF) và *GIF động* (gửi dưới dạng nhãn dán vẫn chuyển động). Chế độ GIF động tải bản nén của GIF lên một máy chủ lưu trữ để Zalo có thể tải ảnh động qua URL, cần thêm module Zalo. Máy chủ là mã nguồn mở: [ZSticker-gif-proxy](https://github.com/huanhoahongso3-collab/ZSticker-gif-proxy) (Next.js + Vercel Blob), bạn có thể tự triển khai và đặt địa chỉ trong *Tùy chọn > Máy chủ GIF động (API)*. ⚠️ *Đang phát triển:* máy chủ mặc định chưa được triển khai, nên hiện tại ứng dụng tự động quay về gửi GIF thường và không tải gì lên.
 * **Giao diện:** Thiết kế theo chuẩn Google Material Design 3 (Material You).
+
+---
+
+### 📥 Tải về
+
+* **Bản phát hành chính thức:** [Releases](https://github.com/huanhoahongso3-collab/ZSticker/releases) — ổn định, đã ký.
+* **Bản dev:** bản [pre-release `dev`](https://github.com/huanhoahongso3-collab/ZSticker/releases/tag/dev) luôn là bản dựng mới nhất từ nhánh `main` (đã ký, thay thế sau mỗi lần cập nhật). Có thể chưa ổn định hoặc còn tính năng dang dở.
 
 ---
 
@@ -89,7 +97,15 @@ It was inspired by **Zamoji** — an official VNG application that integrates st
 * **Background Removal:** Offers two configurable engines in Settings:
   * **Offline:** Powered on-device by *Google MediaPipe Tasks Vision* (Apache 2.0 open-source). Zero data leaves your device.
   * **Online:** Powered by the *BRIA-RMBG-1.4* model hosted on HuggingFace Spaces. The endpoint proxy (`bria14proxy.vercel.app`) acts strictly as a bridge between Android and the HuggingFace API — no personal data or images are logged or stored ([View proxy source code](https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY)).
+* **Animated GIF:** Settings offer two ways to send a GIF — *Vanilla GIF* (sent as Zalo normally does, shown as a GIF) and *Animated GIF* (sent as a sticker that keeps moving). Animated mode uploads a compressed copy of the GIF to a host so Zalo can load the animation by URL, and needs an extra Zalo module. The server is open source: [ZSticker-gif-proxy](https://github.com/huanhoahongso3-collab/ZSticker-gif-proxy) (Next.js + Vercel Blob). You can self-host it and set its address in *Options > Animated GIF host (API)*. ⚠️ *Work in progress:* the default server is not deployed yet, so for now the app falls back to a vanilla GIF and uploads nothing.
 * **UI/UX:** Updated to Google Material Design 3 (Material You).
+
+---
+
+### 📥 Downloads
+
+* **Official releases:** [Releases](https://github.com/huanhoahongso3-collab/ZSticker/releases) — stable and signed.
+* **Dev build:** the [`dev` pre-release](https://github.com/huanhoahongso3-collab/ZSticker/releases/tag/dev) always holds the latest build of `main` (signed, replaced on every push). It may be unstable or contain unfinished features.
 
 ---
 
