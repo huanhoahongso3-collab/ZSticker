@@ -21,7 +21,6 @@ import android.widget.TextView
 import androidx.core.graphics.ColorUtils
 import androidx.core.widget.ImageViewCompat
 import androidx.fragment.app.Fragment
-import com.google.android.material.shape.RelativeCornerSize
 import com.google.android.material.shape.ShapeAppearanceModel
 import dhp.thl.tpl.ndv.BaseActivity
 import dhp.thl.tpl.ndv.R
@@ -54,7 +53,7 @@ class BottomNavController(
     private var currentPalette: ExpressivePalette? = null
 
     fun setup() {
-        enforceCircularAddButton()
+        enforceRoundedAddButton()
         ExpressiveMotion.attachPressSpring(binding.addButton, pressedScale = 0.90f)
         ExpressiveMotion.attachPressSpring(binding.navTabHome, pressedScale = 0.94f)
         ExpressiveMotion.attachPressSpring(binding.navTabRecents, pressedScale = 0.94f)
@@ -104,17 +103,15 @@ class BottomNavController(
     fun getOptionsFragment(): OptionsFragment? =
         activity.supportFragmentManager.findFragmentByTag(TAG_OPTIONS) as? OptionsFragment
 
-    private fun enforceCircularAddButton() {
-        val circleModel = ShapeAppearanceModel.builder()
-            .setAllCornerSizes(RelativeCornerSize(0.5f))
+    private fun enforceRoundedAddButton() {
+        val cornerPx = ADD_BUTTON_CORNER_DP * activity.resources.displayMetrics.density
+        val roundedModel = ShapeAppearanceModel.builder()
+            .setAllCornerSizes(cornerPx)
             .build()
-        binding.addButton.shapeAppearanceModel = circleModel
+        binding.addButton.shapeAppearanceModel = roundedModel
         binding.addButton.outlineProvider = object : ViewOutlineProvider() {
             override fun getOutline(view: View, outline: Outline) {
-                val size = minOf(view.width, view.height)
-                val left = (view.width - size) / 2
-                val top = (view.height - size) / 2
-                outline.setOval(left, top, left + size, top + size)
+                outline.setRoundRect(0, 0, view.width, view.height, cornerPx)
             }
         }
         binding.addButton.clipToOutline = true
@@ -299,7 +296,7 @@ class BottomNavController(
         animateNewSelection: Boolean = false
     ) {
         currentPalette = palette
-        enforceCircularAddButton()
+        enforceRoundedAddButton()
         updateHeaderTitleAndBadge(palette)
 
         // 74% opacity = (255 * 0.74).roundToInt() = 189
@@ -408,6 +405,8 @@ class BottomNavController(
     }
 
     companion object {
+        private const val ADD_BUTTON_CORNER_DP = 20f
+
         const val TAG_HOME = "screen_home"
         const val TAG_RECENTS = "screen_recents"
         const val TAG_OPTIONS = "screen_options"

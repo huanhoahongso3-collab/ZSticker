@@ -213,8 +213,8 @@
                 app:hoveredFocusedTranslationZ="0dp"
                 app:maxImageSize="26dp"
                 app:pressedTranslationZ="0dp"
-                app:shapeAppearance="@style/ShapeAppearance.ZSticker.FullCircle"
-                app:shapeAppearanceOverlay="@style/ShapeAppearance.ZSticker.FullCircle"
+                app:shapeAppearance="@style/ShapeAppearance.ZSticker.RoundedFab"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.ZSticker.RoundedFab"
                 app:srcCompat="@drawable/ic_add"
                 app:tint="?attr/colorOnPrimary" />
 

@@ -48,6 +48,11 @@
         <item name="cornerSize">20dp</item>
     </style>
 
+    <style name="ShapeAppearance.ZSticker.RoundedFab" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">20dp</item>
+    </style>
+
     <style name="ShapeAppearance.ZSticker.FullCircle" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>

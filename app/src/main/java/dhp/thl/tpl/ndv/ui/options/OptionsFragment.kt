@@ -12,6 +12,7 @@ import android.os.SystemClock
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.content.res.ColorStateList
 import android.widget.EditText
 import android.widget.FrameLayout
 import androidx.activity.result.contract.ActivityResultContracts
@@ -35,6 +36,7 @@ import dhp.thl.tpl.ndv.domain.GifSendMode
 import dhp.thl.tpl.ndv.domain.GifSendSettings
 import dhp.thl.tpl.ndv.databinding.FragmentOptionsBinding
 import dhp.thl.tpl.ndv.ui.showDestructiveDialog
+import dhp.thl.tpl.ndv.ui.showMonetDialog
 import dhp.thl.tpl.ndv.ui.showPaneDialog
 import dhp.thl.tpl.ndv.ui.theme.ExpressiveMotion
 import dhp.thl.tpl.ndv.ui.theme.ExpressivePalette
@@ -502,6 +504,19 @@ class OptionsFragment : Fragment() {
             setSingleLine()
             setText(GifSendSettings.customHost(hostActivity) ?: "")
             setSelection(text.length)
+
+            // Follow the app palette (Monet / stock) like the other dialogs.
+            val palette = ExpressiveThemeManager.resolvePalette(hostActivity)
+            setTextColor(palette.onSurface)
+            setHintTextColor(palette.onSurfaceVariant)
+            highlightColor = androidx.core.graphics.ColorUtils.setAlphaComponent(palette.primary, 80)
+            backgroundTintList = ColorStateList.valueOf(palette.primary)
+            if (Build.VERSION.SDK_INT >= 29) {
+                textCursorDrawable?.setTint(palette.primary)
+                textSelectHandle?.setTint(palette.primary)
+                textSelectHandleLeft?.setTint(palette.primary)
+                textSelectHandleRight?.setTint(palette.primary)
+            }
         }
         val container = FrameLayout(hostActivity).apply {
             val pad = (24 * density).toInt()
@@ -531,7 +546,7 @@ class OptionsFragment : Fragment() {
                 }
             }
         }
-        dialog.show()
+        dialog.showMonetDialog(hostActivity)
     }
 
     override fun onDestroyView() {
