@@ -31,6 +31,7 @@ import dhp.thl.tpl.ndv.R
 import dhp.thl.tpl.ndv.ToastUtils
 import dhp.thl.tpl.ndv.data.StickerRepository
 import dhp.thl.tpl.ndv.databinding.FragmentOptionsBinding
+import dhp.thl.tpl.ndv.ui.WhatsNew
 import dhp.thl.tpl.ndv.ui.showDestructiveDialog
 import dhp.thl.tpl.ndv.ui.showMonetDialog
 import dhp.thl.tpl.ndv.ui.showPaneDialog
@@ -107,6 +108,7 @@ class OptionsFragment : Fragment() {
             binding.cardRemoveRecent,
             binding.cardRemoveAll,
             binding.cardVersion,
+            binding.cardWhatsNew,
             binding.cardRepo,
             binding.cardLicense,
             binding.cardOpenSource
@@ -182,6 +184,9 @@ class OptionsFragment : Fragment() {
         binding.switchAutoResize.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean("auto_resize_share", isChecked).apply()
         }
+
+        // What's new in this version
+        binding.cardWhatsNew.setOnClickListener { WhatsNew.show(hostActivity) }
 
         // 4. Language
         val currentLang = prefs.getString("lang", "system") ?: "system"
@@ -370,6 +375,7 @@ class OptionsFragment : Fragment() {
 
         // Group 3 Segmented Cards
         ExpressiveThemeManager.styleSegmentedCard(b.cardVersion, GroupPosition.TOP, palette)
+        ExpressiveThemeManager.styleSegmentedCard(b.cardWhatsNew, GroupPosition.MIDDLE, palette)
         ExpressiveThemeManager.styleSegmentedCard(b.cardRepo, GroupPosition.MIDDLE, palette)
         ExpressiveThemeManager.styleSegmentedCard(b.cardLicense, GroupPosition.MIDDLE, palette)
         ExpressiveThemeManager.styleSegmentedCard(b.cardOpenSource, GroupPosition.BOTTOM, palette)
@@ -384,6 +390,7 @@ class OptionsFragment : Fragment() {
             b.imgLanguage,
             b.imgFiles,
             b.imgVersion,
+            b.imgWhatsNew,
             b.imgRepo,
             b.imgLicense,
             b.imgOpenSource
@@ -419,6 +426,7 @@ class OptionsFragment : Fragment() {
             b.titleLanguage,
             b.titleFiles,
             b.titleVersion,
+            b.titleWhatsNew,
             b.titleRepo,
             b.titleLicense,
             b.titleOpenSource
@@ -432,6 +440,7 @@ class OptionsFragment : Fragment() {
             b.subtitleAutoResize,
             b.txtCurrentLanguage,
             b.txtVersion,
+            b.subtitleWhatsNew,
             b.subtitleRepo,
             b.subtitleLicense,
             b.subtitleOpenSource

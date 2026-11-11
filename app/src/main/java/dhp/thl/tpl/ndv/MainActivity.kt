@@ -20,6 +20,7 @@ import dhp.thl.tpl.ndv.domain.MediaImportManager
 import dhp.thl.tpl.ndv.domain.StickerActionsController
 import dhp.thl.tpl.ndv.ui.BottomNavController
 import dhp.thl.tpl.ndv.ui.MainThemeApplier
+import dhp.thl.tpl.ndv.ui.WhatsNew
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
@@ -124,6 +125,11 @@ class MainActivity : BaseActivity(), StickerAdapter.StickerListener {
 
         binding.addButton.setOnClickListener {
             launchMediaPicker()
+        }
+
+        // After an update, tell people what changed (once; "Don't show again" opts out for good).
+        if (savedInstanceState == null) {
+            binding.root.post { WhatsNew.showIfNeeded(this) }
         }
 
         lifecycleScope.launch {

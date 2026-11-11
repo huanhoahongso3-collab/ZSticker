@@ -161,4 +161,19 @@
     <string name="editor_keep">继续编辑</string>
     <string name="editor_no_original">此贴纸没有保存原始照片，无法还原。</string>
     <string name="editor_size">大小</string>
+    <string name="whats_new_title">%1$s 新功能</string>
+    <string name="whats_new_card_title">新功能</string>
+    <string name="whats_new_card_subtitle">此版本的更改</string>
+    <string name="whats_new_got_it">知道了</string>
+    <string-array name="changelog_6_7">
+        <item>收藏和文件夹：给贴纸加星标，并用全部、收藏和文件夹标签筛选主页</item>
+        <item>一次选择多个贴纸，批量收藏、移动、描边、导出或删除</item>
+        <item>全新贴纸编辑器：橡皮擦、可找回已移除背景的还原画笔、绘制和文字，支持撤销和重做</item>
+        <item>边播放边裁剪 GIF，带时间轴、播放/暂停和常用比例</item>
+        <item>导入短视频，实时预览裁剪并转换为 GIF 贴纸</item>
+        <item>备份现在是无密码的 .zsticker 文件；旧版本的备份请用“导入旧版备份”打开</item>
+        <item>抠图和分享新增自动裁剪与自动缩小选项</item>
+        <item>Material 3 Expressive 新设计：悬浮导航栏、圆角添加按钮和更流畅的标签切换动画</item>
+        <item>修复：GIF 编码崩溃、视频导入、语言旗帜和 Play Console 警告</item>
+    </string-array>
 </resources>

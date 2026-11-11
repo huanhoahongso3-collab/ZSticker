@@ -161,4 +161,19 @@
     <string name="editor_keep">Keep editing</string>
     <string name="editor_no_original">No original photo is saved for this sticker, so there is nothing to restore.</string>
     <string name="editor_size">Size</string>
+    <string name="whats_new_title">What’s new in %1$s</string>
+    <string name="whats_new_card_title">What’s new</string>
+    <string name="whats_new_card_subtitle">Changes in this version</string>
+    <string name="whats_new_got_it">Got it</string>
+    <string-array name="changelog_6_7">
+        <item>Favorites and folders: star stickers and filter the Home grid with All, Favorites and folder chips</item>
+        <item>Select several stickers at once to favorite, move, add a border, export or delete them</item>
+        <item>New sticker editor: eraser, a restore brush that brings back removed background, drawing and text, with undo and redo</item>
+        <item>Crop GIFs while they play, with a timeline, play/pause and aspect presets</item>
+        <item>Import short videos with a live trimmer and turn them into GIF stickers</item>
+        <item>Backups are now .zsticker files without a password; backups from older versions open with Import legacy backup</item>
+        <item>Auto-crop and auto-resize options for background removal and sharing</item>
+        <item>Material 3 Expressive redesign: floating navigation bar, rounded add button and smoother tab animations</item>
+        <item>Fixes: GIF encoding crash, video import, language flags and Play Console warnings</item>
+    </string-array>
 </resources>

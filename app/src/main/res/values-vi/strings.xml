@@ -161,4 +161,19 @@
     <string name="editor_keep">Tiếp tục sửa</string>
     <string name="editor_no_original">Nhãn dán này không còn ảnh gốc nên không có gì để khôi phục.</string>
     <string name="editor_size">Cỡ</string>
+    <string name="whats_new_title">Có gì mới trong %1$s</string>
+    <string name="whats_new_card_title">Có gì mới</string>
+    <string name="whats_new_card_subtitle">Thay đổi trong phiên bản này</string>
+    <string name="whats_new_got_it">Đã hiểu</string>
+    <string-array name="changelog_6_7">
+        <item>Yêu thích và thư mục: gắn sao nhãn dán và lọc lưới bằng các nút Tất cả, Yêu thích và thư mục</item>
+        <item>Chọn nhiều nhãn dán cùng lúc để yêu thích, chuyển thư mục, thêm viền, xuất hoặc xóa</item>
+        <item>Trình chỉnh sửa mới: tẩy, cọ khôi phục phần nền đã xóa, vẽ và thêm chữ, có hoàn tác và làm lại</item>
+        <item>Cắt GIF trong khi GIF đang chạy, có thanh thời gian, phát/tạm dừng và tỉ lệ khung có sẵn</item>
+        <item>Nhập video ngắn với trình cắt xem trước trực tiếp và chuyển thành nhãn dán GIF</item>
+        <item>Bản sao lưu giờ là tệp .zsticker không có mật khẩu; bản sao lưu từ phiên bản cũ mở bằng Nhập bản sao lưu cũ</item>
+        <item>Tùy chọn tự động cắt và tự động thu nhỏ cho xóa nền và chia sẻ</item>
+        <item>Thiết kế lại theo Material 3 Expressive: thanh điều hướng nổi, nút thêm bo tròn và chuyển tab mượt hơn</item>
+        <item>Sửa lỗi: treo khi mã hóa GIF, nhập video, cờ ngôn ngữ và cảnh báo Play Console</item>
+    </string-array>
 </resources>
