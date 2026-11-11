@@ -46,6 +46,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <TextView
+                        android:includeFontPadding="false"
                 android:id="@+id/txtHeaderTitle"
                 style="@style/TextAppearance.Material3.HeadlineSmall"
                 android:layout_width="wrap_content"
@@ -85,11 +86,14 @@
                     android:id="@+id/itemImport"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:baselineAligned="false"
                     android:gravity="center_vertical"
+                    android:minHeight="76dp"
                     android:orientation="horizontal"
                     android:padding="16dp">
 
                     <ImageView
+                    android:layout_gravity="center_vertical"
                         android:id="@+id/imgImport"
                         android:layout_width="42dp"
                         android:layout_height="42dp"
@@ -105,6 +109,7 @@
                         android:orientation="vertical">
 
                         <TextView
+                        android:includeFontPadding="false"
                             android:id="@+id/titleImport"
                             style="@style/TextAppearance.Material3.TitleMedium"
                             android:layout_width="wrap_content"
@@ -113,6 +118,7 @@
                             android:textStyle="bold" />
 
                         <TextView
+                        android:includeFontPadding="false"
                             android:id="@+id/noteImport"
                             style="@style/TextAppearance.Material3.BodySmall"
                             android:layout_width="wrap_content"
@@ -144,11 +150,14 @@
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:focusable="true"
+                        android:baselineAligned="false"
                         android:gravity="center_vertical"
+                        android:minHeight="76dp"
                         android:orientation="horizontal"
                         android:padding="16dp">
 
                         <ImageView
+                    android:layout_gravity="center_vertical"
                             android:id="@+id/imgExportHeader"
                             android:layout_width="42dp"
                             android:layout_height="42dp"
@@ -164,6 +173,7 @@
                             android:orientation="vertical">
 
                             <TextView
+                        android:includeFontPadding="false"
                                 android:id="@+id/titleExport"
                                 style="@style/TextAppearance.Material3.TitleMedium"
                                 android:layout_width="wrap_content"
@@ -172,6 +182,7 @@
                                 android:textStyle="bold" />
 
                             <TextView
+                        android:includeFontPadding="false"
                                 android:id="@+id/noteExport"
                                 style="@style/TextAppearance.Material3.BodySmall"
                                 android:layout_width="wrap_content"
@@ -181,6 +192,7 @@
                         </LinearLayout>
 
                         <ImageView
+                    android:layout_gravity="center_vertical"
                             android:id="@+id/imgExpand"
                             android:layout_width="34dp"
                             android:layout_height="34dp"
@@ -205,6 +217,7 @@
                             style="@style/InfoItemStyle"
                             android:paddingVertical="12dp">
                             <ImageView
+                    android:layout_gravity="center_vertical"
                                 android:id="@+id/imgExportImage"
                                 android:layout_width="34dp"
                                 android:layout_height="34dp"
@@ -213,6 +226,7 @@
                                 android:src="@drawable/ic_export_image"
                                 android:contentDescription="@null" />
                             <TextView
+                        android:includeFontPadding="false"
                                 android:id="@+id/txtExportImage"
                                 style="@style/TextAppearance.Material3.BodyLarge"
                                 android:layout_width="wrap_content"
@@ -225,6 +239,7 @@
                             style="@style/InfoItemStyle"
                             android:paddingVertical="12dp">
                             <ImageView
+                    android:layout_gravity="center_vertical"
                                 android:id="@+id/imgExportHistory"
                                 android:layout_width="34dp"
                                 android:layout_height="34dp"
@@ -233,6 +248,7 @@
                                 android:src="@drawable/ic_export_history"
                                 android:contentDescription="@null" />
                             <TextView
+                        android:includeFontPadding="false"
                                 android:id="@+id/txtExportHistory"
                                 style="@style/TextAppearance.Material3.BodyLarge"
                                 android:layout_width="wrap_content"
@@ -245,6 +261,7 @@
                             style="@style/InfoItemStyle"
                             android:paddingVertical="12dp">
                             <ImageView
+                    android:layout_gravity="center_vertical"
                                 android:id="@+id/imgExportSettings"
                                 android:layout_width="34dp"
                                 android:layout_height="34dp"
@@ -253,6 +270,7 @@
                                 android:src="@drawable/ic_export_settings"
                                 android:contentDescription="@null" />
                             <TextView
+                        android:includeFontPadding="false"
                                 android:id="@+id/txtExportSettings"
                                 style="@style/TextAppearance.Material3.BodyLarge"
                                 android:layout_width="wrap_content"
@@ -265,6 +283,7 @@
                             style="@style/InfoItemStyle"
                             android:paddingVertical="12dp">
                             <ImageView
+                    android:layout_gravity="center_vertical"
                                 android:id="@+id/imgExportAll"
                                 android:layout_width="34dp"
                                 android:layout_height="34dp"
@@ -273,6 +292,7 @@
                                 android:src="@drawable/ic_export_all"
                                 android:contentDescription="@null" />
                             <TextView
+                        android:includeFontPadding="false"
                                 android:id="@+id/txtExportAll"
                                 style="@style/TextAppearance.Material3.BodyLarge"
                                 android:layout_width="wrap_content"
@@ -299,11 +319,14 @@
                     android:id="@+id/itemExportGallery"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:baselineAligned="false"
                     android:gravity="center_vertical"
+                    android:minHeight="76dp"
                     android:orientation="horizontal"
                     android:padding="16dp">
 
                     <ImageView
+                    android:layout_gravity="center_vertical"
                         android:id="@+id/imgExportGallery"
                         android:layout_width="42dp"
                         android:layout_height="42dp"
@@ -319,6 +342,7 @@
                         android:orientation="vertical">
 
                         <TextView
+                        android:includeFontPadding="false"
                             android:id="@+id/titleExportGallery"
                             style="@style/TextAppearance.Material3.TitleMedium"
                             android:layout_width="wrap_content"
@@ -327,6 +351,7 @@
                             android:textStyle="bold" />
 
                         <TextView
+                        android:includeFontPadding="false"
                             android:id="@+id/noteExportGallery"
                             style="@style/TextAppearance.Material3.BodySmall"
                             android:layout_width="wrap_content"

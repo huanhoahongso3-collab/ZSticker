@@ -19,6 +19,7 @@
 
         <!-- GROUP 1: APPEARANCE & SETTINGS -->
         <TextView
+                        android:includeFontPadding="false"
             android:id="@+id/headerSettings"
             style="@style/TextAppearance.Material3.LabelLarge"
             android:layout_width="match_parent"
@@ -44,12 +45,14 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:baselineAligned="false"
                 android:gravity="center_vertical"
                 android:minHeight="76dp"
                 android:orientation="horizontal"
                 android:padding="16dp">
 
                 <ImageView
+                    android:layout_gravity="center_vertical"
                     android:id="@+id/imgTheme"
                     android:layout_width="42dp"
                     android:layout_height="42dp"
@@ -65,6 +68,7 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:includeFontPadding="false"
                         android:id="@+id/titleTheme"
                         style="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_width="wrap_content"
@@ -73,6 +77,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:includeFontPadding="false"
                         android:id="@+id/txtCurrentTheme"
                         style="@style/TextAppearance.Material3.BodySmall"
                         android:layout_width="wrap_content"
@@ -97,12 +102,14 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:baselineAligned="false"
                 android:gravity="center_vertical"
                 android:minHeight="76dp"
                 android:orientation="horizontal"
                 android:padding="16dp">
 
                 <ImageView
+                    android:layout_gravity="center_vertical"
                     android:id="@+id/imgMaterialColor"
                     android:layout_width="42dp"
                     android:layout_height="42dp"
@@ -119,6 +126,7 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:includeFontPadding="false"
                         android:id="@+id/titleMaterialColor"
                         style="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_width="wrap_content"
@@ -127,6 +135,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:includeFontPadding="false"
                         android:id="@+id/subtitleMaterialColor"
                         style="@style/TextAppearance.Material3.BodySmall"
                         android:layout_width="wrap_content"
@@ -158,12 +167,14 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:baselineAligned="false"
                 android:gravity="center_vertical"
                 android:minHeight="76dp"
                 android:orientation="horizontal"
                 android:padding="16dp">
 
                 <ImageView
+                    android:layout_gravity="center_vertical"
                     android:id="@+id/imgOnlineRemoveBg"
                     android:layout_width="42dp"
                     android:layout_height="42dp"
@@ -180,6 +191,7 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:includeFontPadding="false"
                         android:id="@+id/titleOnlineRemoveBg"
                         style="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_width="wrap_content"
@@ -188,6 +200,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:includeFontPadding="false"
                         android:id="@+id/subtitleOnlineRemoveBg"
                         style="@style/TextAppearance.Material3.BodySmall"
                         android:layout_width="wrap_content"
@@ -219,12 +232,14 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:baselineAligned="false"
                 android:gravity="center_vertical"
                 android:minHeight="76dp"
                 android:orientation="horizontal"
                 android:padding="16dp">
 
                 <ImageView
+                    android:layout_gravity="center_vertical"
                     android:id="@+id/imgLanguage"
                     android:layout_width="42dp"
                     android:layout_height="42dp"
@@ -240,6 +255,7 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:includeFontPadding="false"
                         android:id="@+id/titleLanguage"
                         style="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_width="wrap_content"
@@ -248,6 +264,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:includeFontPadding="false"
                         android:id="@+id/txtCurrentLanguage"
                         style="@style/TextAppearance.Material3.BodySmall"
                         android:layout_width="wrap_content"
@@ -261,6 +278,7 @@
 
         <!-- GROUP 2: DATA & STORAGE -->
         <TextView
+                        android:includeFontPadding="false"
             android:id="@+id/headerStorage"
             style="@style/TextAppearance.Material3.LabelLarge"
             android:layout_width="match_parent"
@@ -286,12 +304,14 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:baselineAligned="false"
                 android:gravity="center_vertical"
                 android:minHeight="76dp"
                 android:orientation="horizontal"
                 android:padding="16dp">
 
                 <ImageView
+                    android:layout_gravity="center_vertical"
                     android:id="@+id/imgFiles"
                     android:layout_width="42dp"
                     android:layout_height="42dp"
@@ -301,6 +321,7 @@
                     android:contentDescription="@null" />
 
                 <TextView
+                        android:includeFontPadding="false"
                     android:id="@+id/titleFiles"
                     style="@style/TextAppearance.Material3.TitleMedium"
                     android:layout_width="0dp"
@@ -325,12 +346,14 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:baselineAligned="false"
                 android:gravity="center_vertical"
                 android:minHeight="76dp"
                 android:orientation="horizontal"
                 android:padding="16dp">
 
                 <ImageView
+                    android:layout_gravity="center_vertical"
                     android:id="@+id/imgRemoveRecent"
                     android:layout_width="42dp"
                     android:layout_height="42dp"
@@ -340,6 +363,7 @@
                     android:contentDescription="@null" />
 
                 <TextView
+                        android:includeFontPadding="false"
                     android:id="@+id/txtRemoveRecent"
                     style="@style/TextAppearance.Material3.TitleMedium"
                     android:layout_width="0dp"
@@ -364,12 +388,14 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:baselineAligned="false"
                 android:gravity="center_vertical"
                 android:minHeight="76dp"
                 android:orientation="horizontal"
                 android:padding="16dp">
 
                 <ImageView
+                    android:layout_gravity="center_vertical"
                     android:id="@+id/imgRemoveAll"
                     android:layout_width="42dp"
                     android:layout_height="42dp"
@@ -379,6 +405,7 @@
                     android:contentDescription="@null" />
 
                 <TextView
+                        android:includeFontPadding="false"
                     android:id="@+id/txtRemoveAll"
                     style="@style/TextAppearance.Material3.TitleMedium"
                     android:layout_width="0dp"
@@ -392,6 +419,7 @@
 
         <!-- GROUP 3: ABOUT -->
         <TextView
+                        android:includeFontPadding="false"
             android:id="@+id/headerGeneral"
             style="@style/TextAppearance.Material3.LabelLarge"
             android:layout_width="match_parent"
@@ -417,12 +445,14 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:baselineAligned="false"
                 android:gravity="center_vertical"
                 android:minHeight="76dp"
                 android:orientation="horizontal"
                 android:padding="16dp">
 
                 <ImageView
+                    android:layout_gravity="center_vertical"
                     android:id="@+id/imgVersion"
                     android:layout_width="42dp"
                     android:layout_height="42dp"
@@ -438,6 +468,7 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:includeFontPadding="false"
                         android:id="@+id/titleVersion"
                         style="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_width="wrap_content"
@@ -446,6 +477,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:includeFontPadding="false"
                         android:id="@+id/txtVersion"
                         style="@style/TextAppearance.Material3.BodySmall"
                         android:layout_width="wrap_content"
@@ -470,12 +502,14 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:baselineAligned="false"
                 android:gravity="center_vertical"
                 android:minHeight="76dp"
                 android:orientation="horizontal"
                 android:padding="16dp">
 
                 <ImageView
+                    android:layout_gravity="center_vertical"
                     android:id="@+id/imgRepo"
                     android:layout_width="42dp"
                     android:layout_height="42dp"
@@ -491,6 +525,7 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:includeFontPadding="false"
                         android:id="@+id/titleRepo"
                         style="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_width="wrap_content"
@@ -499,6 +534,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:includeFontPadding="false"
                         android:id="@+id/subtitleRepo"
                         style="@style/TextAppearance.Material3.BodySmall"
                         android:layout_width="wrap_content"
@@ -523,12 +559,14 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:baselineAligned="false"
                 android:gravity="center_vertical"
                 android:minHeight="76dp"
                 android:orientation="horizontal"
                 android:padding="16dp">
 
                 <ImageView
+                    android:layout_gravity="center_vertical"
                     android:id="@+id/imgLicense"
                     android:layout_width="42dp"
                     android:layout_height="42dp"
@@ -544,6 +582,7 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:includeFontPadding="false"
                         android:id="@+id/titleLicense"
                         style="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_width="wrap_content"
@@ -552,6 +591,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:includeFontPadding="false"
                         android:id="@+id/subtitleLicense"
                         style="@style/TextAppearance.Material3.BodySmall"
                         android:layout_width="wrap_content"
@@ -576,12 +616,14 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:baselineAligned="false"
                 android:gravity="center_vertical"
                 android:minHeight="76dp"
                 android:orientation="horizontal"
                 android:padding="16dp">
 
                 <ImageView
+                    android:layout_gravity="center_vertical"
                     android:id="@+id/imgOpenSource"
                     android:layout_width="42dp"
                     android:layout_height="42dp"
@@ -597,6 +639,7 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:includeFontPadding="false"
                         android:id="@+id/titleOpenSource"
                         style="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_width="wrap_content"
@@ -605,6 +648,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:includeFontPadding="false"
                         android:id="@+id/subtitleOpenSource"
                         style="@style/TextAppearance.Material3.BodySmall"
                         android:layout_width="wrap_content"
