@@ -213,7 +213,7 @@ public class ActVideoTrimmer extends LocalizationActivity {
         try {
             isMonetEnabled = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("material_color_enabled", false);
             if (isMonetEnabled) {
-                primaryColor = MonetCompat.getInstance().getAccentColor(this);
+                primaryColor = MonetCompat.getInstance().getAccentColor(this, null);
             } else {
                 primaryColor = ContextCompat.getColor(this, R.color.trimmer_orange_primary);
             }
