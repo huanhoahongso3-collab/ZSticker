@@ -32,16 +32,6 @@ private fun isFlagIcon(iconRes: Int): Boolean {
 }
 
 
-/** Flags are already round artwork: drop the squircle badge/padding so they render clean and centered. */
-private fun styleFlagIcon(iconView: ImageView) {
-    iconView.background = null
-    iconView.clearColorFilter()
-    iconView.setPadding(0, 0, 0, 0)
-    iconView.scaleType = ImageView.ScaleType.FIT_CENTER
-    iconView.scaleX = 1.25f
-    iconView.scaleY = 1.25f
-}
-
 /**
  * Displays an Android 16 Material 3 Expressive Segmented Grouped List Dialog.
  * Works identically for both Dynamic Wallpaper Color and Stock Orange (`#F57C00` seed).
@@ -122,9 +112,13 @@ fun BaseActivity.showPaneDialog(
                     imageView = iconView,
                     badgeBgColor = if (isSelected) palette.surfaceContainerLowest else palette.secondaryContainer,
                     iconTint = palette.onSecondaryContainer,
-                    tintIcon = !flag
+                    tintIcon = !flag,
+                    circle = true
                 )
-                if (flag) styleFlagIcon(iconView)
+                if (flag) {
+                    val fp = (8f * density).toInt()
+                    iconView.setPadding(fp, fp, fp, fp)
+                }
             }
         } else {
             LayoutInflater.from(this).inflate(R.layout.item_icon_text, card, false).also { v ->
@@ -143,7 +137,8 @@ fun BaseActivity.showPaneDialog(
                     ExpressiveThemeManager.styleSquircleIcon(
                         imageView = iconView,
                         badgeBgColor = palette.errorContainer,
-                        iconTint = palette.onErrorContainer
+                        iconTint = palette.onErrorContainer,
+                        circle = true
                     )
                 } else {
                     textView.setTextColor(palette.onSurface)
@@ -152,9 +147,13 @@ fun BaseActivity.showPaneDialog(
                         imageView = iconView,
                         badgeBgColor = palette.secondaryContainer,
                         iconTint = palette.onSecondaryContainer,
-                        tintIcon = !flag
+                        tintIcon = !flag,
+                        circle = true
                     )
-                    if (flag) styleFlagIcon(iconView)
+                    if (flag) {
+                        val fp = (8f * density).toInt()
+                        iconView.setPadding(fp, fp, fp, fp)
+                    }
                 }
             }
         }

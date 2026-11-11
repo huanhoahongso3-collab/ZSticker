@@ -314,12 +314,17 @@ object ExpressiveThemeManager {
         imageView: ImageView,
         @ColorInt badgeBgColor: Int,
         @ColorInt iconTint: Int,
-        tintIcon: Boolean = true
+        tintIcon: Boolean = true,
+        circle: Boolean = false
     ) {
         val density = imageView.resources.displayMetrics.density
         val bg = GradientDrawable().apply {
-            shape = GradientDrawable.RECTANGLE
-            cornerRadius = 14f * density
+            if (circle) {
+                shape = GradientDrawable.OVAL
+            } else {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = 14f * density
+            }
             setColor(badgeBgColor)
         }
         imageView.background = bg
