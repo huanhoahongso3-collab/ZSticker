@@ -36,7 +36,6 @@ Dự án lấy cảm hứng từ **Zamoji** — ứng dụng chính thức của
 * **Tách nền ảnh (Background Removal):** Cung cấp 2 cơ chế (tùy chỉnh trong Cài đặt):
   * **Offline:** Chạy hoàn toàn trên thiết bị thông qua *Google MediaPipe Tasks Vision* (Mã nguồn mở, Apache 2.0). Dữ liệu hoàn toàn không rời khỏi thiết bị.
   * **Online:** Sử dụng mô hình *BRIA-RMBG-1.4* hosted trên HuggingFace Spaces. Endpoint proxy (`bria14proxy.vercel.app`) chỉ đóng vai trò trung gian kết nối giữa Android và HuggingFace API, hoàn toàn không lưu trữ dữ liệu hay thu thập thông tin cá nhân ([Xem mã nguồn proxy](https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY)).
-* **GIF động (Animated GIF):** Trong Cài đặt có hai chế độ gửi GIF — *GIF thường* (gửi như Zalo mặc định, hiển thị là GIF) và *GIF động* (gửi dưới dạng nhãn dán vẫn chuyển động). Chế độ GIF động nén một bản sao của GIF và tải lên máy chủ lưu trữ để Zalo tải ảnh động qua URL. Lần đầu tải lên sẽ có thông báo; liên kết đã tải được lưu trong bảng cục bộ (đi kèm bản sao lưu) để không tải lại. Máy chủ mặc định là mã nguồn mở [ZSticker-gif-proxy](https://github.com/huanhoahongso3-collab/ZSticker-gif-proxy) (Next.js + Vercel Blob); bạn có thể dùng **máy chủ khác hoặc tự lưu trữ** trong *Tùy chọn > Máy chủ GIF động (API)* — chỉ cần tuân theo [hợp đồng API tối thiểu](https://github.com/huanhoahongso3-collab/ZSticker-gif-proxy/blob/main/docs/API.md#compatible-servers). Với máy chủ tùy chỉnh, ứng dụng không gửi khóa API chính thức.
 * **Cắt GIF:** Giữ lâu một GIF rồi chọn *Cắt* như với ảnh; vùng cắt áp dụng cho mọi khung hình.
 * **Sao lưu `.zsticker`:** Sao lưu là tệp zip có mật khẩu (đuôi `.zsticker`, mật khẩu được nhúng lúc biên dịch từ CI, không có trong mã nguồn). Bản sao lưu từ phiên bản cũ (`.zip`) khôi phục bằng nút *Nhập bản sao lưu cũ*.
 * **Giao diện:** Thiết kế theo chuẩn Google Material Design 3 (Material You).
@@ -59,16 +58,13 @@ Dự án lấy cảm hứng từ **Zamoji** — ứng dụng chính thức của
 
 ### 🔧 Cấu hình khi tự biên dịch
 
-Máy chủ GIF động được cấu hình lúc biên dịch bằng biến môi trường (hoặc gradle property), **không có giá trị nào được ghi cứng trong mã nguồn**:
+Mật khẩu của tệp sao lưu `.zsticker` được nhúng lúc biên dịch từ biến môi trường (hoặc gradle property), **không được ghi cứng trong mã nguồn**:
 
 | Biến | Ý nghĩa |
 |---|---|
-| `ZS_GIF_HOST_URL` | Địa chỉ máy chủ mặc định, ví dụ `https://tên-dự-án.vercel.app` |
-| `ZS_GIF_API_KEY_ID` | Key id khớp với một cặp trong `API_KEYS` của máy chủ |
-| `ZS_GIF_API_SECRET` | Bí mật tương ứng, dùng để ký yêu cầu tải lên |
 | `ZS_BACKUP_PASSWORD` | Mật khẩu của tệp sao lưu `.zsticker` (để trống = không mã hóa) |
 
-Trên GitHub Actions, đặt chúng trong *Settings > Secrets and variables > Actions* (cùng tên). Nếu thiếu `ZS_GIF_*` và bạn chưa đặt máy chủ riêng, tính năng GIF động bị tắt và ứng dụng gửi GIF thường. Hãy giữ `ZS_BACKUP_PASSWORD` cố định giữa các bản dựng, nếu không bản sao lưu cũ sẽ không mở được. Khi bạn đặt **máy chủ riêng** (tự lưu trữ), ứng dụng **không gửi khóa chính thức** tới máy chủ đó; hãy chạy máy chủ ở chế độ `AUTH_MODE=open`. ⚠️ Mọi thứ nằm trong APK đều có thể bị trích xuất, nên đây chỉ là rào cản cho lạm dụng thông thường.
+Trên GitHub Actions, đặt nó trong *Settings > Secrets and variables > Actions* (cùng tên). Hãy giữ giá trị này cố định giữa các bản dựng, nếu không bản sao lưu cũ sẽ không mở được. ⚠️ Mọi thứ nằm trong APK đều có thể bị trích xuất, nên mật khẩu này chỉ mang tính che giấu.
 
 ---
 
@@ -114,7 +110,6 @@ It was inspired by **Zamoji** — an official VNG application that integrates st
 * **Background Removal:** Offers two configurable engines in Settings:
   * **Offline:** Powered on-device by *Google MediaPipe Tasks Vision* (Apache 2.0 open-source). Zero data leaves your device.
   * **Online:** Powered by the *BRIA-RMBG-1.4* model hosted on HuggingFace Spaces. The endpoint proxy (`bria14proxy.vercel.app`) acts strictly as a bridge between Android and the HuggingFace API — no personal data or images are logged or stored ([View proxy source code](https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY)).
-* **Animated GIF:** Settings offer two ways to send a GIF — *Vanilla GIF* (sent as Zalo normally does, shown as a GIF) and *Animated GIF* (sent as a sticker that keeps moving). Animated mode compresses a copy of the GIF and uploads it to a host so Zalo can load the animation by URL. The first upload shows a notice, and uploaded links are kept in a local table (included in backups) so a GIF is never uploaded twice. The default server is the open-source [ZSticker-gif-proxy](https://github.com/huanhoahongso3-collab/ZSticker-gif-proxy) (Next.js + Vercel Blob); you can use **another or a self-hosted server** in *Options > Animated GIF host (API)* — it only has to follow the [minimal API contract](https://github.com/huanhoahongso3-collab/ZSticker-gif-proxy/blob/main/docs/API.md#compatible-servers). With a custom server the app does not send the official API key.
 * **GIF crop:** Long-press a GIF and choose *Crop* like for photos; the chosen region is applied to every frame.
 * **`.zsticker` backups:** Backups are password-protected zip files (`.zsticker`; the password is injected at build time from CI and is not in the source). Backups from older versions (`.zip`) are restored with the *Import legacy backup* button.
 * **UI/UX:** Updated to Google Material Design 3 (Material You).
@@ -137,16 +132,13 @@ It was inspired by **Zamoji** — an official VNG application that integrates st
 
 ### 🔧 Build configuration
 
-The animated GIF host is configured at build time through environment variables (or gradle properties); **nothing is hardcoded in the repository**:
+The password of `.zsticker` backups is injected at build time from an environment variable (or gradle property); **it is not hardcoded in the repository**:
 
 | Variable | Meaning |
 |---|---|
-| `ZS_GIF_HOST_URL` | Default server address, for example `https://your-project.vercel.app` |
-| `ZS_GIF_API_KEY_ID` | Key id matching a pair in the server's `API_KEYS` |
-| `ZS_GIF_API_SECRET` | The matching secret, used to sign uploads |
 | `ZS_BACKUP_PASSWORD` | Password of `.zsticker` backups (empty = unencrypted) |
 
-On GitHub Actions set them under *Settings > Secrets and variables > Actions* (same names). If `ZS_GIF_*` are missing and you have not set your own server, Animated GIF is disabled and the app sends a vanilla GIF. Keep `ZS_BACKUP_PASSWORD` the same across builds, or older backups will not open. When you set a **custom (self-hosted) server**, the app **does not send the official key** to it; run your server with `AUTH_MODE=open`. ⚠️ Anything inside an APK can be extracted, so this only deters casual abuse.
+On GitHub Actions set it under *Settings > Secrets and variables > Actions* (same name). Keep the value the same across builds, or older backups will not open. ⚠️ Anything inside an APK can be extracted, so this password is obscurity, not secrecy.
 
 ---
 

@@ -1,9 +1,8 @@
 apply plugin: 'com.android.application'
 apply plugin: 'org.jetbrains.kotlin.plugin.compose'
 
-// Build-time configuration for the animated GIF host. Values come from the environment (CI secrets)
-// or from gradle properties; nothing is hardcoded in the repository. Missing values become empty
-// strings, which disables the feature (the app then sends a vanilla GIF).
+// Build-time configuration. Values come from the environment (CI secrets) or from gradle properties;
+// nothing is hardcoded in the repository. Missing values become empty strings.
 def zsConfig = { String name ->
     (System.getenv(name) ?: (project.findProperty(name) ?: "")).toString()
             .replace("\\", "\\\\").replace("\"", "\\\"")
@@ -22,9 +21,6 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField "String", "GIF_HOST_URL", "\"${zsConfig('ZS_GIF_HOST_URL')}\""
-        buildConfigField "String", "GIF_API_KEY_ID", "\"${zsConfig('ZS_GIF_API_KEY_ID')}\""
-        buildConfigField "String", "GIF_API_SECRET", "\"${zsConfig('ZS_GIF_API_SECRET')}\""
         buildConfigField "String", "BACKUP_PASSWORD", "\"${zsConfig('ZS_BACKUP_PASSWORD')}\""
     }
 

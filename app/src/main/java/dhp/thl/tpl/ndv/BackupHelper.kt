@@ -7,7 +7,6 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
-import dhp.thl.tpl.ndv.domain.StickerLinkTable
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.ZipParameters
 import net.lingala.zip4j.model.enums.AesKeyStrength
@@ -80,15 +79,6 @@ object BackupHelper {
                 }
                 metadata.put("timestamps", timestamps)
                 contents.add("images")
-
-                // Hosted GIF links, so restored stickers are not uploaded again.
-                val linksFile = StickerLinkTable.file(context)
-                if (linksFile.exists()) {
-                    val p = ZipParameters(params)
-                    p.fileNameInZip = "links/${linksFile.name}"
-                    zipFile.addFile(linksFile, p)
-                    contents.add("links")
-                }
             }
 
             if (type == "history" || type == "all") {
@@ -239,16 +229,6 @@ object BackupHelper {
                     }
                     processed++
                     onProgress?.invoke(0.7f + (processed.toFloat() / total * 0.3f))
-                }
-            }
-
-            // Restore hosted GIF links (merged with the ones already on this device)
-            val linksFile = File(extractDir, "links/sticker_links.json")
-            if (linksFile.exists()) {
-                try {
-                    StickerLinkTable.importJson(context, linksFile.readText())
-                } catch (e: Exception) {
-                    e.printStackTrace()
                 }
             }
 

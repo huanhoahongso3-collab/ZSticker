@@ -13,7 +13,7 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 
 /**
- * Frame-level GIF operations shared by the upload path and the GIF crop feature:
+ * Frame-level GIF operations used by the GIF crop feature:
  * decode every frame, optionally crop / downscale / drop frames, and re-encode.
  */
 object GifProcessor {
@@ -28,19 +28,6 @@ object GifProcessor {
         override fun release(array: IntArray) {}
     }
 
-    /** One step of the progressive upload compression ladder. */
-    private class Step(val maxSide: Int, val frameStep: Int, val quality: Int)
-
-    // Strongest last. The hosted copy is converted to WebP server-side anyway, so it only has to stay
-    // clearly recognisable; the original sticker on the device is never touched.
-    private val uploadLadder = listOf(
-        Step(384, 1, 10),
-        Step(320, 2, 14),
-        Step(256, 2, 20),
-        Step(192, 3, 28),
-        Step(160, 3, 40)
-    )
-
     /** First frame of [file] at its full resolution, or null when it cannot be decoded. */
     fun firstFrame(file: File): Bitmap? {
         val bytes = file.readBytes()
@@ -51,24 +38,6 @@ object GifProcessor {
         val decoder = StandardGifDecoder(bitmapProvider, header, ByteBuffer.wrap(bytes))
         decoder.advance()
         return decoder.nextFrame?.copy(Bitmap.Config.ARGB_8888, false)
-    }
-
-    /**
-     * Compresses [src] into [dst] for hosting, trying progressively stronger settings until the file is
-     * at most [maxBytes]. Returns true when [dst] was written (even if the last attempt is still larger,
-     * the server decides whether it accepts it).
-     */
-    fun compressForUpload(src: File, dst: File, maxBytes: Long, onProgress: ((Float) -> Unit)? = null): Boolean {
-        var wrote = false
-        for ((index, step) in uploadLadder.withIndex()) {
-            val ok = transform(src, dst, step.maxSide, null, step.frameStep, step.quality) { p ->
-                onProgress?.invoke((index + p) / uploadLadder.size)
-            }
-            if (!ok) return wrote
-            wrote = true
-            if (dst.length() <= maxBytes) return true
-        }
-        return wrote
     }
 
     /**

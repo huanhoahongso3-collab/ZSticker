@@ -1,6 +1,6 @@
 # Chính Sách Quyền Riêng Tư
 
-_Last Updated: November 11, 2026_
+_Last Updated: August 11, 2026_
 
 ## 📑 Điều hướng / Navigation
 
@@ -9,7 +9,6 @@ _Last Updated: November 11, 2026_
   - [Thu thập dữ liệu](#thu-thập-dữ-liệu)
   - [Truy cập Internet](#truy-cập-internet)
   - [Tính năng Xóa nền](#tính-năng-xóa-nền)
-  - [Chế độ GIF động](#chế-độ-gif-động)
   - [Dịch vụ bên thứ ba](#dịch-vụ-bên-thứ-ba)
   - [Minh bạch mã nguồn mở](#minh-bạch-mã-nguồn-mở)
   - [Giấy phép mã nguồn mở](#giấy-phép-mã-nguồn-mở)
@@ -21,7 +20,6 @@ _Last Updated: November 11, 2026_
   - [Data Collection](#data-collection)
   - [Internet Access](#internet-access)
   - [Remove Background](#remove-background)
-  - [Animated GIF Mode](#animated-gif-mode)
   - [Third-Party Services](#third-party-services)
   - [Open Source Transparency](#open-source-transparency)
   - [Open Source Licenses](#open-source-licenses)
@@ -57,8 +55,6 @@ Tính năng **Xóa nền (Remove Background)** có hai chế độ, có thể ch
 
 - **Ngoại tuyến (Offline)**: xử lý hoàn toàn trên thiết bị bằng Google MediaPipe Tasks Vision, **không yêu cầu Internet** và hình ảnh không rời khỏi máy của bạn.
 - **Trực tuyến (Online)**: yêu cầu kết nối Internet và gửi hình ảnh đến dịch vụ bên thứ ba như mô tả bên dưới.
-
-Chế độ **GIF động** (không bật mặc định) cũng cần Internet để tải GIF đã nén lên máy chủ lưu trữ, xem [Chế độ GIF động](#chế-độ-gif-động).
 
 ## Tính năng Xóa nền
 
@@ -98,40 +94,13 @@ https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY
 
 Nếu bạn **không sử dụng chế độ Trực tuyến của tính năng Xóa nền**, ứng dụng không gửi hình ảnh hoặc dữ liệu qua proxy này.
 
-## Chế độ GIF động
-
-Tùy chọn **Chế độ gửi GIF** trong Cài đặt có hai giá trị:
-
-- **GIF thường** (mặc định): GIF được gửi trực tiếp sang Zalo trên thiết bị. **Không có gì được tải lên.**
-- **GIF động**: ứng dụng nén một bản sao của GIF và tải lên máy chủ lưu trữ để Zalo và người nhận có thể tải ảnh động qua URL. Bản gốc vẫn ở trên thiết bị của bạn.
-
-Khi chế độ GIF động hoạt động:
-
-- Lần tải lên đầu tiên của mỗi GIF, ứng dụng hiển thị thông báo cho bạn biết GIF sẽ được tải lên và tới máy chủ nào (có thể chọn không hiện lại). Bạn có thể hủy ở bước này; khi đó không có gì được tải lên.
-- Máy chủ lưu **tệp nhãn dán đã chuyển đổi** (WebP động), đặt tên theo mã băm của tệp. Không có tên, tài khoản hay mã thiết bị nào được lưu cùng tệp.
-- **Bất kỳ ai có đường dẫn đều xem được tệp.** Đừng tải lên nội dung riêng tư.
-- Máy chủ **không lưu địa chỉ IP**. Bộ đếm giới hạn tốc độ chỉ dùng mã băm có muối của IP và mã cài đặt, và hết hạn trong vòng một ngày.
-- Tệp tự động bị xóa sau thời gian lưu giữ (mặc định 90 ngày), hoặc sớm hơn khi có yêu cầu gỡ nội dung vi phạm. Máy chủ có đường báo cáo lạm dụng.
-- Tệp trùng lặp chỉ được lưu một lần. Ứng dụng ghi nhớ các liên kết đã tải lên trong một bảng **lưu trên thiết bị** (mã băm của GIF, máy chủ, URL, thời điểm) để tránh tải lại; bảng này nằm trong bản sao lưu của bạn và không được gửi đi đâu.
-- Nếu tải lên thất bại (mạng, giới hạn tốc độ, máy chủ từ chối), ứng dụng gửi GIF thường.
-- Với máy chủ tùy chỉnh, ứng dụng chỉ gửi bản GIF đã nén cùng User-Agent `ZSticker/<phiên bản>`; không gửi khóa API, chữ ký hay mã cài đặt.
-- Bạn có thể đặt **máy chủ của riêng mình** trong *Tùy chọn > Máy chủ GIF động (API)*. Khi đó GIF được gửi tới máy chủ đó và tuân theo chính sách của người vận hành; ứng dụng không gửi khóa API chính thức tới máy chủ tùy chỉnh.
-
-Máy chủ chạy trên Vercel (lưu trữ: Vercel Blob; đếm giới hạn tốc độ: Upstash Redis) và là mã nguồn mở:
-
-https://github.com/huanhoahongso3-collab/ZSticker-gif-proxy
-
-Nếu bạn **không dùng chế độ GIF động**, ứng dụng không gửi GIF hay dữ liệu nào qua máy chủ này.
-
 ## Dịch vụ bên thứ ba
 
-Ứng dụng chỉ sử dụng dịch vụ bên thứ ba sau khi bạn sử dụng chế độ Trực tuyến của tính năng Xóa nền, hoặc chế độ GIF động (khi máy chủ khả dụng):
+Ứng dụng chỉ sử dụng dịch vụ bên thứ ba sau khi bạn sử dụng chế độ Trực tuyến của tính năng Xóa nền:
 
 | Dịch vụ | Mục đích |
 |---|---|
 | Hugging Face | Lưu trữ và chạy mô hình BRIA-RMBG-1.4 để xóa nền hình ảnh |
-| Vercel (Vercel Blob) | Lưu trữ tệp nhãn dán động đã chuyển đổi của chế độ GIF động |
-| Upstash | Bộ đếm giới hạn tốc độ (chỉ chứa mã băm có muối, hết hạn trong một ngày) |
 
 Dữ liệu được xử lý bởi Hugging Face tuân theo Chính sách quyền riêng tư và Điều khoản dịch vụ của Hugging Face.
 
@@ -194,8 +163,6 @@ The **Remove Background** feature has two modes, switchable in Settings:
 - **Offline**: processed fully on-device using Google MediaPipe Tasks Vision, **does not require internet access**, and your images never leave your device.
 - **Online**: requires an internet connection and sends your image to a third-party service as described below.
 
-The **Animated GIF** mode (off by default) also needs internet access to upload the compressed GIF to a host, see [Animated GIF Mode](#animated-gif-mode).
-
 ## Remove Background
 
 ### Offline Mode
@@ -234,40 +201,13 @@ https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY
 
 If you do **not** use the Online mode of the Remove Background feature, the application does not send your images or data through this proxy.
 
-## Animated GIF Mode
-
-The **GIF sending mode** option in Settings has two values:
-
-- **Vanilla GIF** (default): the GIF is handed to Zalo directly on your device. **Nothing is uploaded.**
-- **Animated GIF**: the app compresses a copy of the GIF and uploads it to a host so Zalo and the recipient can load the animation by URL. The original stays on your device.
-
-When Animated GIF mode is active:
-
-- The first time each GIF is uploaded, the app shows a notice saying the GIF will be uploaded and to which server (you can choose not to see it again). You can cancel there, and then nothing is uploaded.
-- The server stores the **converted sticker file** (animated WebP), named after the hash of the file. No name, account or device id is stored with it.
-- **Anyone with the link can view the file.** Do not upload anything private.
-- The server **does not store IP addresses**. Rate-limit counters use only a salted hash of the IP and install id, and expire within a day.
-- Files are deleted automatically after the retention period (90 days by default), or sooner on a takedown request. The server has an abuse-report route.
-- Duplicate files are stored once. The app remembers uploaded links in a table **stored on your device** (GIF hash, server, URL, time) to avoid uploading again; the table is part of your backups and is not sent anywhere.
-- If an upload fails (network, rate limit, server rejection), the app sends a vanilla GIF.
-- With a custom server the app sends only the compressed GIF and a `ZSticker/<version>` User-Agent; no API key, signature or install id.
-- You can set **your own server** in *Options > Animated GIF host (API)*. The GIF then goes to that server and is subject to its operator's policies; the app does not send the official API key to a custom server.
-
-The server runs on Vercel (storage: Vercel Blob; rate-limit counters: Upstash Redis) and is open source:
-
-https://github.com/huanhoahongso3-collab/ZSticker-gif-proxy
-
-If you do **not** use Animated GIF mode, the application does not send any GIF or data to this server.
-
 ## Third-Party Services
 
-The application uses the following third-party services only when you use the Online mode of the Remove Background feature, or the Animated GIF mode (once the server is available):
+The application uses the following third-party service only when you use the Online mode of the Remove Background feature:
 
 | Service | Purpose |
 |---|---|
 | Hugging Face | Hosts and runs the BRIA-RMBG-1.4 model for image background removal |
-| Vercel (Vercel Blob) | Stores the converted animated sticker files of the Animated GIF mode |
-| Upstash | Rate-limit counters (salted hashes only, expire within a day) |
 
 Any data processed by Hugging Face is subject to Hugging Face's own Privacy Policy and Terms of Service.
 

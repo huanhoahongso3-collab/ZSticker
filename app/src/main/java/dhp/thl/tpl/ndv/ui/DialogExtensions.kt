@@ -6,8 +6,6 @@ import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.RippleDrawable
 import android.view.LayoutInflater
-import android.transition.TransitionManager
-import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -101,20 +99,6 @@ fun BaseActivity.showPaneDialog(
                 textView.text = item.text
                 textView.setTextColor(if (isSelected) palette.onSecondaryContainer else palette.onSurface)
                 radioButton.isChecked = isSelected
-                val descView = v.findViewById<TextView>(R.id.item_description)
-                val expandArrow = v.findViewById<ImageView>(R.id.item_expand)
-                if (item.description != null) {
-                    descView.text = item.description
-                    descView.setTextColor(palette.onSurfaceVariant)
-                    expandArrow.visibility = View.VISIBLE
-                    expandArrow.imageTintList = ColorStateList.valueOf(palette.onSurfaceVariant)
-                    expandArrow.setOnClickListener {
-                        val expand = descView.visibility != View.VISIBLE
-                        TransitionManager.beginDelayedTransition(container)
-                        descView.visibility = if (expand) View.VISIBLE else View.GONE
-                        expandArrow.animate().rotation(if (expand) 270f else 90f).setDuration(200L).start()
-                    }
-                }
                 radioButton.buttonTintList = ColorStateList(
                     arrayOf(
                         intArrayOf(android.R.attr.state_checked),
