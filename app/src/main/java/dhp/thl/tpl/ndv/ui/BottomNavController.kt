@@ -214,8 +214,8 @@ class BottomNavController(
                 .start()
             ExpressiveMotion.springTranslationY(rootView, 0f, dampingRatio = 0.74f, stiffness = 420f)
         } else {
+            ExpressiveMotion.resetToRest(rootView)
             rootView.alpha = 1f
-            rootView.translationY = 0f
         }
     }
 

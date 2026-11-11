@@ -25,25 +25,64 @@ object ExpressiveMotion {
 
     val emphasizedDecelerate = PathInterpolator(0.05f, 0.7f, 0.1f, 1.0f)
 
+    private const val TAG_SCALE_X = 0x7A5C0001
+    private const val TAG_SCALE_Y = 0x7A5C0002
+    private const val TAG_TRANS_Y = 0x7A5C0003
+
+    /**
+     * One reusable SpringAnimation per view+property. Starting a new spring while an older one is
+     * still running on the same property used to leave both fighting, so a view could settle at the
+     * pressed scale / offset and look randomly misaligned. Reusing a single spring retargets it instead.
+     */
+    private fun springFor(
+        view: View,
+        tagKey: Int,
+        property: DynamicAnimation.ViewProperty,
+        target: Float
+    ): SpringAnimation {
+        val existing = view.getTag(tagKey) as? SpringAnimation
+        if (existing != null) return existing
+        return SpringAnimation(view, property, target).also {
+            it.spring = SpringForce(target)
+            view.setTag(tagKey, it)
+        }
+    }
+
+    private fun retarget(
+        anim: SpringAnimation,
+        target: Float,
+        dampingRatio: Float,
+        stiffness: Float
+    ) {
+        val force = anim.spring ?: SpringForce(target).also { anim.spring = it }
+        force.dampingRatio = dampingRatio
+        force.stiffness = stiffness
+        anim.animateToFinalPosition(target)
+    }
+
     fun springScale(
         view: View,
         targetScale: Float,
         dampingRatio: Float = SPATIAL_DAMPING,
         stiffness: Float = SPATIAL_STIFFNESS
     ) {
-        SpringAnimation(view, DynamicAnimation.SCALE_X, targetScale).apply {
-            spring.dampingRatio = dampingRatio
-            spring.stiffness = stiffness
-            start()
-        }
-        SpringAnimation(view, DynamicAnimation.SCALE_Y, targetScale).apply {
-            spring.dampingRatio = dampingRatio
-            spring.stiffness = stiffness
-            start()
-        }
+        retarget(springFor(view, TAG_SCALE_X, DynamicAnimation.SCALE_X, targetScale), targetScale, dampingRatio, stiffness)
+        retarget(springFor(view, TAG_SCALE_Y, DynamicAnimation.SCALE_Y, targetScale), targetScale, dampingRatio, stiffness)
+    }
+
+    /** Immediately stop any running springs and snap the view to its resting transform. */
+    fun resetToRest(view: View) {
+        (view.getTag(TAG_SCALE_X) as? SpringAnimation)?.cancel()
+        (view.getTag(TAG_SCALE_Y) as? SpringAnimation)?.cancel()
+        (view.getTag(TAG_TRANS_Y) as? SpringAnimation)?.cancel()
+        view.scaleX = 1f
+        view.scaleY = 1f
+        view.translationY = 0f
     }
 
     fun springPopIn(view: View, initialScale: Float = 0.76f) {
+        (view.getTag(TAG_SCALE_X) as? SpringAnimation)?.cancel()
+        (view.getTag(TAG_SCALE_Y) as? SpringAnimation)?.cancel()
         view.scaleX = initialScale
         view.scaleY = initialScale
         springScale(view, 1f, dampingRatio = 0.52f, stiffness = 460f)
@@ -55,13 +94,7 @@ object ExpressiveMotion {
         dampingRatio: Float = 0.72f,
         stiffness: Float = 380f
     ) {
-        SpringAnimation(view, DynamicAnimation.TRANSLATION_Y, targetY).apply {
-            spring = SpringForce(targetY).apply {
-                this.dampingRatio = dampingRatio
-                this.stiffness = stiffness
-            }
-            start()
-        }
+        retarget(springFor(view, TAG_TRANS_Y, DynamicAnimation.TRANSLATION_Y, targetY), targetY, dampingRatio, stiffness)
     }
 
     /**
