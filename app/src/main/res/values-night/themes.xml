@@ -1,5 +1,5 @@
 <resources>
-    <style name="Theme.ZSticker" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.ZSticker" parent="Theme.Material3Expressive.DayNight.NoActionBar">
         <!-- Stock Orange (#F57C00) M3 Tonal Roles (Dark) -->
         <item name="colorPrimary">@color/dark_orange_primary</item>
         <item name="colorOnPrimary">@color/dark_orange_on_primary</item>
