@@ -9,8 +9,6 @@ import android.provider.MediaStore
 import android.util.Log
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.ZipParameters
-import net.lingala.zip4j.model.enums.AesKeyStrength
-import net.lingala.zip4j.model.enums.EncryptionMethod
 import org.json.JSONObject
 import java.io.File
 import java.io.FileInputStream
@@ -21,37 +19,22 @@ import java.util.*
 
 object BackupHelper {
 
-    /** File extension of current backups (a password-protected zip). */
+    /** File extension of current backups (a plain zip file). */
     const val EXTENSION = "zsticker"
 
     /**
      * Password of backups made before v6.8 (.zip). It is part of that old format and only used by
-     * "Import legacy backup".
+     * "Import legacy backup". Current .zsticker backups are plain zip files without a password.
      */
     private const val LEGACY_PASSWORD = "zalonotfound"
-
-    /**
-     * Password of current .zsticker backups, injected at build time from CI (ZS_BACKUP_PASSWORD), not
-     * stored in the repository. Builds without it write and read unencrypted .zsticker files.
-     * Note: a password inside an APK can be extracted, so this is obfuscation more than secrecy.
-     */
-    private fun backupPassword(): CharArray? =
-        BuildConfig.BACKUP_PASSWORD.takeIf { it.isNotEmpty() }?.toCharArray()
 
     fun exportBackup(context: Context, outStream: OutputStream, type: String, onProgress: ((Float) -> Unit)? = null, isCancelled: () -> Boolean = { false }): Boolean {
         val tempFile = File(context.cacheDir, "export_temp.$EXTENSION")
         if (tempFile.exists()) tempFile.delete()
 
         try {
-            val password = backupPassword()
-            val zipFile = if (password != null) ZipFile(tempFile, password) else ZipFile(tempFile)
-            val params = ZipParameters().apply {
-                if (password != null) {
-                    isEncryptFiles = true
-                    encryptionMethod = EncryptionMethod.AES
-                    aesKeyStrength = AesKeyStrength.KEY_STRENGTH_256
-                }
-            }
+            val zipFile = ZipFile(tempFile)
+            val params = ZipParameters()
 
             val metadata = JSONObject()
             metadata.put("version", 3)
@@ -154,14 +137,13 @@ object BackupHelper {
 
             val zipFile = ZipFile(tempFile)
             
-            // Check if encrypted
+            // Only backups from older versions are encrypted, and only "Import legacy backup" opens them.
             if (zipFile.isEncrypted) {
-                val password = if (legacy) LEGACY_PASSWORD.toCharArray() else backupPassword()
-                if (password == null) {
+                if (!legacy) {
                     tempFile.delete()
                     return false
                 }
-                zipFile.setPassword(password)
+                zipFile.setPassword(LEGACY_PASSWORD.toCharArray())
             }
 
             // Extract to temp folder first to detect content

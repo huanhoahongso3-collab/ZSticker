@@ -70,7 +70,6 @@ jobs:
 
       - name: Build signed release APK and AAB
         env:
-          ZS_BACKUP_PASSWORD: ${{ secrets.ZS_BACKUP_PASSWORD }}
           SIGNING_STORE_FILE: ${{ runner.temp }}/release.keystore
           SIGNING_STORE_PASSWORD: ${{ secrets.PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.ALIAS }}

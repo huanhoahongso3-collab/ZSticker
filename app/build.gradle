@@ -1,12 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'org.jetbrains.kotlin.plugin.compose'
 
-// Build-time configuration. Values come from the environment (CI secrets) or from gradle properties;
-// nothing is hardcoded in the repository. Missing values become empty strings.
-def zsConfig = { String name ->
-    (System.getenv(name) ?: (project.findProperty(name) ?: "")).toString()
-            .replace("\\", "\\\\").replace("\"", "\\\"")
-}
 
 android {
     namespace 'dhp.thl.tpl.ndv'
@@ -20,8 +14,6 @@ android {
         versionName '6.7'
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-
-        buildConfigField "String", "BACKUP_PASSWORD", "\"${zsConfig('ZS_BACKUP_PASSWORD')}\""
     }
 
     // Only include resources for supported languages
@@ -83,7 +75,6 @@ android {
     }
 
     buildFeatures {
-        buildConfig true
         viewBinding true
         compose true
     }

@@ -37,7 +37,7 @@ Dự án lấy cảm hứng từ **Zamoji** — ứng dụng chính thức của
   * **Offline:** Chạy hoàn toàn trên thiết bị thông qua *Google MediaPipe Tasks Vision* (Mã nguồn mở, Apache 2.0). Dữ liệu hoàn toàn không rời khỏi thiết bị.
   * **Online:** Sử dụng mô hình *BRIA-RMBG-1.4* hosted trên HuggingFace Spaces. Endpoint proxy (`bria14proxy.vercel.app`) chỉ đóng vai trò trung gian kết nối giữa Android và HuggingFace API, hoàn toàn không lưu trữ dữ liệu hay thu thập thông tin cá nhân ([Xem mã nguồn proxy](https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY)).
 * **Cắt GIF:** Giữ lâu một GIF rồi chọn *Cắt* như với ảnh; vùng cắt áp dụng cho mọi khung hình.
-* **Sao lưu `.zsticker`:** Sao lưu là tệp zip có mật khẩu (đuôi `.zsticker`, mật khẩu được nhúng lúc biên dịch từ CI, không có trong mã nguồn). Bản sao lưu từ phiên bản cũ (`.zip`) khôi phục bằng nút *Nhập bản sao lưu cũ*.
+* **Sao lưu `.zsticker`:** Sao lưu là một tệp zip thông thường (đuôi `.zsticker`, không có mật khẩu). Bản sao lưu từ phiên bản cũ (`.zip`, có mật khẩu) khôi phục bằng nút *Nhập bản sao lưu cũ*.
 * **Giao diện:** Thiết kế theo chuẩn Google Material Design 3 (Material You).
 
 ---
@@ -53,18 +53,6 @@ Dự án lấy cảm hứng từ **Zamoji** — ứng dụng chính thức của
 
 * **Android OS:** Hỗ trợ tối thiểu **Android 10 (SDK 29)**, khuyến nghị **Android 16 (SDK 36)**.
 * **Đa ngôn ngữ:** Tiếng Việt, Tiếng Anh, Tiếng Nga, Tiếng Trung giản thể.
-
----
-
-### 🔧 Cấu hình khi tự biên dịch
-
-Mật khẩu của tệp sao lưu `.zsticker` được nhúng lúc biên dịch từ biến môi trường (hoặc gradle property), **không được ghi cứng trong mã nguồn**:
-
-| Biến | Ý nghĩa |
-|---|---|
-| `ZS_BACKUP_PASSWORD` | Mật khẩu của tệp sao lưu `.zsticker` (để trống = không mã hóa) |
-
-Trên GitHub Actions, đặt nó trong *Settings > Secrets and variables > Actions* (cùng tên). Hãy giữ giá trị này cố định giữa các bản dựng, nếu không bản sao lưu cũ sẽ không mở được. ⚠️ Mọi thứ nằm trong APK đều có thể bị trích xuất, nên mật khẩu này chỉ mang tính che giấu.
 
 ---
 
@@ -111,7 +99,7 @@ It was inspired by **Zamoji** — an official VNG application that integrates st
   * **Offline:** Powered on-device by *Google MediaPipe Tasks Vision* (Apache 2.0 open-source). Zero data leaves your device.
   * **Online:** Powered by the *BRIA-RMBG-1.4* model hosted on HuggingFace Spaces. The endpoint proxy (`bria14proxy.vercel.app`) acts strictly as a bridge between Android and the HuggingFace API — no personal data or images are logged or stored ([View proxy source code](https://github.com/huanhoahongso3-collab/BRIA-RMBG-1.4-PROXY)).
 * **GIF crop:** Long-press a GIF and choose *Crop* like for photos; the chosen region is applied to every frame.
-* **`.zsticker` backups:** Backups are password-protected zip files (`.zsticker`; the password is injected at build time from CI and is not in the source). Backups from older versions (`.zip`) are restored with the *Import legacy backup* button.
+* **`.zsticker` backups:** Backups are plain zip files (`.zsticker`, no password). Backups from older versions (`.zip`, password-protected) are restored with the *Import legacy backup* button.
 * **UI/UX:** Updated to Google Material Design 3 (Material You).
 
 ---
@@ -127,18 +115,6 @@ It was inspired by **Zamoji** — an official VNG application that integrates st
 
 * **Android OS:** Minimum **Android 10 (SDK 29)**, recommended **Android 16 (SDK 36)**.
 * **Localization:** English, Vietnamese, Russian, and Simplified Chinese.
-
----
-
-### 🔧 Build configuration
-
-The password of `.zsticker` backups is injected at build time from an environment variable (or gradle property); **it is not hardcoded in the repository**:
-
-| Variable | Meaning |
-|---|---|
-| `ZS_BACKUP_PASSWORD` | Password of `.zsticker` backups (empty = unencrypted) |
-
-On GitHub Actions set it under *Settings > Secrets and variables > Actions* (same name). Keep the value the same across builds, or older backups will not open. ⚠️ Anything inside an APK can be extracted, so this password is obscurity, not secrecy.
 
 ---
 
