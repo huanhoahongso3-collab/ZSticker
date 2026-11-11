@@ -12,6 +12,8 @@ import android.os.SystemClock
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.FrameLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.updatePadding
@@ -29,6 +31,8 @@ import dhp.thl.tpl.ndv.OptionItem
 import dhp.thl.tpl.ndv.R
 import dhp.thl.tpl.ndv.ToastUtils
 import dhp.thl.tpl.ndv.data.StickerRepository
+import dhp.thl.tpl.ndv.domain.GifSendMode
+import dhp.thl.tpl.ndv.domain.GifSendSettings
 import dhp.thl.tpl.ndv.databinding.FragmentOptionsBinding
 import dhp.thl.tpl.ndv.ui.showDestructiveDialog
 import dhp.thl.tpl.ndv.ui.showPaneDialog
@@ -100,6 +104,8 @@ class OptionsFragment : Fragment() {
             binding.cardOnlineRemoveBg,
             binding.cardAutoCrop,
             binding.cardAutoResize,
+            binding.cardGifMode,
+            binding.cardGifHost,
             binding.cardLanguage,
             binding.cardFiles,
             binding.cardRemoveRecent,
@@ -180,6 +186,27 @@ class OptionsFragment : Fragment() {
         binding.switchAutoResize.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean("auto_resize_share", isChecked).apply()
         }
+
+        // 3c. GIF sending mode (vanilla / animated) and animated-GIF host
+        refreshGifSettingsTexts()
+        binding.cardGifMode.setOnClickListener {
+            val items = listOf(
+                OptionItem(
+                    R.drawable.ic_import_image,
+                    getString(R.string.gif_mode_vanilla) + "\n" + getString(R.string.gif_mode_vanilla_desc)
+                ),
+                OptionItem(
+                    R.drawable.ic_export_image,
+                    getString(R.string.gif_mode_animated) + "\n" + getString(R.string.gif_mode_animated_desc)
+                )
+            )
+            val selected = GifSendSettings.mode(hostActivity).ordinal
+            hostActivity.showPaneDialog(getString(R.string.gif_mode_dialog_title), items, selected) { which ->
+                GifSendSettings.setMode(hostActivity, GifSendMode.values()[which])
+                refreshGifSettingsTexts()
+            }
+        }
+        binding.cardGifHost.setOnClickListener { showGifHostDialog(hostActivity) }
 
         // 4. Language
         val currentLang = prefs.getString("lang", "system") ?: "system"
@@ -349,6 +376,8 @@ class OptionsFragment : Fragment() {
         ExpressiveThemeManager.styleSegmentedCard(b.cardOnlineRemoveBg, GroupPosition.MIDDLE, palette)
         ExpressiveThemeManager.styleSegmentedCard(b.cardAutoCrop, GroupPosition.MIDDLE, palette)
         ExpressiveThemeManager.styleSegmentedCard(b.cardAutoResize, GroupPosition.MIDDLE, palette)
+        ExpressiveThemeManager.styleSegmentedCard(b.cardGifMode, GroupPosition.MIDDLE, palette)
+        ExpressiveThemeManager.styleSegmentedCard(b.cardGifHost, GroupPosition.MIDDLE, palette)
         ExpressiveThemeManager.styleSegmentedCard(b.cardLanguage, GroupPosition.BOTTOM, palette)
 
         // Group 2 Segmented Cards
@@ -379,6 +408,8 @@ class OptionsFragment : Fragment() {
             b.imgOnlineRemoveBg,
             b.imgAutoCrop,
             b.imgAutoResize,
+            b.imgGifMode,
+            b.imgGifHost,
             b.imgLanguage,
             b.imgFiles,
             b.imgVersion,
@@ -414,6 +445,8 @@ class OptionsFragment : Fragment() {
             b.titleOnlineRemoveBg,
             b.titleAutoCrop,
             b.titleAutoResize,
+            b.titleGifMode,
+            b.titleGifHost,
             b.titleLanguage,
             b.titleFiles,
             b.titleVersion,
@@ -428,6 +461,8 @@ class OptionsFragment : Fragment() {
             b.subtitleOnlineRemoveBg,
             b.subtitleAutoCrop,
             b.subtitleAutoResize,
+            b.txtGifMode,
+            b.txtGifHost,
             b.txtCurrentLanguage,
             b.txtVersion,
             b.subtitleRepo,
@@ -440,6 +475,58 @@ class OptionsFragment : Fragment() {
         ExpressiveThemeManager.styleSwitch(b.switchOnlineRemoveBg, palette)
         ExpressiveThemeManager.styleSwitch(b.switchAutoCrop, palette)
         ExpressiveThemeManager.styleSwitch(b.switchAutoResize, palette)
+    }
+
+    private fun refreshGifSettingsTexts() {
+        val ctx = requireContext()
+        binding.txtGifMode.text = getString(
+            if (GifSendSettings.mode(ctx) == GifSendMode.ANIMATED) R.string.gif_mode_animated else R.string.gif_mode_vanilla
+        )
+        val custom = GifSendSettings.customHost(ctx)
+        binding.txtGifHost.text = if (custom != null) {
+            getString(R.string.gif_host_custom, custom)
+        } else {
+            getString(R.string.gif_host_default, GifSendSettings.DEFAULT_HOST_BASE_URL)
+        }
+    }
+
+    private fun showGifHostDialog(hostActivity: BaseActivity) {
+        val density = resources.displayMetrics.density
+        val input = EditText(hostActivity).apply {
+            hint = getString(R.string.gif_host_dialog_hint)
+            setSingleLine()
+            setText(GifSendSettings.customHost(hostActivity) ?: "")
+            setSelection(text.length)
+        }
+        val container = FrameLayout(hostActivity).apply {
+            val pad = (24 * density).toInt()
+            setPadding(pad, (8 * density).toInt(), pad, 0)
+            addView(input)
+        }
+        val dialog = MaterialAlertDialogBuilder(hostActivity)
+            .setTitle(R.string.gif_host_dialog_title)
+            .setMessage(R.string.gif_host_dialog_message)
+            .setView(container)
+            .setPositiveButton(R.string.gif_host_save, null)
+            .setNeutralButton(R.string.gif_host_reset) { _, _ ->
+                GifSendSettings.setCustomHost(hostActivity, null)
+                refreshGifSettingsTexts()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE).setOnClickListener {
+                val value = input.text.toString().trim()
+                if (value.isEmpty() || GifSendSettings.isValidHost(value)) {
+                    GifSendSettings.setCustomHost(hostActivity, value)
+                    refreshGifSettingsTexts()
+                    dialog.dismiss()
+                } else {
+                    input.error = getString(R.string.gif_host_invalid)
+                }
+            }
+        }
+        dialog.show()
     }
 
     override fun onDestroyView() {

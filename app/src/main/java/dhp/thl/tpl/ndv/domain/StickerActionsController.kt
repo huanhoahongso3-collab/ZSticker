@@ -66,6 +66,70 @@ class StickerActionsController(
             val file = File(activity.filesDir, uri.lastPathSegment ?: "")
             if (!file.exists()) return
 
+            val isGif = file.name.endsWith(".gif", ignoreCase = true)
+            if (isGif && GifSendSettings.mode(activity) == GifSendMode.ANIMATED) {
+                sendAnimatedGif(file)
+            } else {
+                shareToZalo(file)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ToastUtils.showToast(activity, activity.getString(R.string.zalo_share_failed))
+        }
+    }
+
+    /**
+     * Animated GIF mode: uploads the GIF to the GIF host, then shares a still first-frame sticker that
+     * carries the hosted URL so the Zalo module can attach the animation. While the host is unavailable
+     * it falls back to the vanilla GIF flow.
+     */
+    private fun sendAnimatedGif(file: File) {
+        thread {
+            val animatedUrl = try {
+                AnimatedGifHost.upload(activity, file)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+            activity.runOnUiThread {
+                try {
+                    if (animatedUrl == null) {
+                        ToastUtils.showToast(activity, activity.getString(R.string.gif_host_unavailable))
+                        shareToZalo(file)
+                    } else {
+                        shareAnimatedSticker(file, animatedUrl)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    ToastUtils.showToast(activity, activity.getString(R.string.zalo_share_failed))
+                }
+            }
+        }
+    }
+
+    private fun shareAnimatedSticker(file: File, animatedUrl: String) {
+        val cacheDir = File(activity.filesDir, "zalo_cache").apply { mkdirs() }
+        val frame = File(cacheDir, "frame_${file.nameWithoutExtension}.png")
+        if (!frame.exists() || frame.lastModified() < file.lastModified()) {
+            val bitmap = android.graphics.BitmapFactory.decodeFile(file.absolutePath)
+                ?: throw IllegalStateException("Cannot decode first GIF frame")
+            FileOutputStream(frame).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        }
+        val contentUri = FileProvider.getUriForFile(activity, "${activity.packageName}.provider", frame)
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "image/png"
+            putExtra(Intent.EXTRA_STREAM, contentUri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            putExtra("type", 3)
+            putExtra(GifSendSettings.EXTRA_ANIMATED_URL, animatedUrl)
+            setClassName("com.zing.zalo", "com.zing.zalo.ui.TempShareViaActivity")
+        }
+        activity.startActivity(intent)
+        StickerRepository.recordRecentUsage(activity, file.name)
+    }
+
+    private fun shareToZalo(file: File) {
+        try {
             val isAnimated = file.name.endsWith(".gif", ignoreCase = true)
             val shareFile = if (isAnimated) {
                 ImageUtils.getZaloAnimatedSticker(activity, file)
