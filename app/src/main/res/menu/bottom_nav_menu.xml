@@ -10,6 +10,6 @@
         android:title="@string/nav_recents" />
     <item
         android:id="@+id/nav_options"
-        android:icon="@drawable/ic_more_horiz"
+        android:icon="@drawable/ic_settings_gear"
         android:title="@string/nav_options" />
 </menu>

@@ -181,7 +181,7 @@
                             android:id="@+id/iconNavOptions"
                             android:layout_width="22dp"
                             android:layout_height="22dp"
-                            android:src="@drawable/ic_more_horiz"
+                            android:src="@drawable/ic_settings_gear"
                             android:contentDescription="@string/nav_options" />
 
                         <TextView
