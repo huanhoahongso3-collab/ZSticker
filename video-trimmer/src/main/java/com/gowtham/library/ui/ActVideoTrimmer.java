@@ -64,6 +64,7 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.SeekParameters;
 import com.google.android.exoplayer2.audio.AudioAttributes;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
@@ -113,6 +114,7 @@ public class ActVideoTrimmer extends LocalizationActivity {
     private View progressCircular;
 
     private TextView txtStartDuration, txtCurrentDuration, txtClipDuration, txtEndDuration;
+    private TextView txtTotalVideoDuration;
     private MaterialButton btnDoneTrim;
     private MaterialButton resChangeSpinner;
     private Slider sliderOverview;
@@ -152,20 +154,39 @@ public class ActVideoTrimmer extends LocalizationActivity {
     private boolean isFilmstripScrolling = false;
     private boolean isProgrammaticScroll = false;
     private boolean isOverviewDragging = false;
+    private boolean isRangeDragging = false;
+    private boolean isUserScrubActive = false;
+    private boolean wasPlayingBeforeScrub = true;
+    private boolean hasRefinedDurationFromPlayer = false;
+    private long lastLiveScrubElapsedMs = 0L;
+    private long pendingScrubTargetMs = -1L;
     private MaterialButton chipDur1s, chipDur2s, chipDur3s, chipDur4s, chipDur5s;
+
+    private final Runnable pendingScrubRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (videoPlayer != null && isUserScrubbing() && pendingScrubTargetMs >= 0L) {
+                lastLiveScrubElapsedMs = SystemClock.elapsedRealtime();
+                videoPlayer.seekTo(pendingScrubTargetMs);
+                pendingScrubTargetMs = -1L;
+            }
+        }
+    };
 
     private final Runnable updatePlayheadRunnable = new Runnable() {
         @Override
         public void run() {
             try {
-                if (videoPlayer != null && videoPlayer.getPlayWhenReady()) {
-                    long currentMs = videoPlayer.getCurrentPosition();
+                if (videoPlayer != null && videoPlayer.getPlayWhenReady() && !isUserScrubbing()) {
+                    long currentMs = Math.max(0L, Math.min(totalDurationMs, videoPlayer.getCurrentPosition()));
                     if (txtCurrentDuration != null) {
-                        txtCurrentDuration.setText(TrimmerUtils.formatSeconds(currentMs / 1000L));
+                        txtCurrentDuration.setText(TrimmerUtils.formatMillisPrecise(currentMs));
                     }
 
-                    // Loop seamlessly if exceeding endMs
-                    if (currentMs >= endMs || currentMs < startMs) {
+                    // Only force an early loop if endMs is strictly before the end of the file;
+                    // when endMs reaches the end of the video, let ExoPlayer play every frame to STATE_ENDED.
+                    boolean trimEndsBeforeEof = endMs < (totalDurationMs - 45L);
+                    if ((trimEndsBeforeEof && currentMs >= endMs) || currentMs < (startMs - 80L)) {
                         seekToMs(startMs);
                         currentMs = startMs;
                     }
@@ -175,12 +196,15 @@ public class ActVideoTrimmer extends LocalizationActivity {
                         float playheadPercent = msToOverlayPercent(currentMs);
                         rangeOverlay.setPlayheadPercent(playheadPercent);
                     }
+
+                    // Advance full-video scrubber along with playback (0% .. 100%)
+                    setOverviewSliderValueSafe(currentMs);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
                 if (seekHandler != null) {
-                    seekHandler.postDelayed(this, 50);
+                    seekHandler.postDelayed(this, 33);
                 }
             }
         }
@@ -247,14 +271,16 @@ public class ActVideoTrimmer extends LocalizationActivity {
 
     private void setupWindowInsets() {
         View rootView = findViewById(R.id.root_view);
-        Toolbar toolbar = findViewById(R.id.toolbar);
+        View appBarLayout = findViewById(R.id.app_bar_layout);
         View bottomCard = findViewById(R.id.bottom_control_card);
 
         ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
             Insets statusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.displayCutout());
             Insets navBarInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars() | WindowInsetsCompat.Type.displayCutout());
 
-            toolbar.setPadding(statusBarInsets.left, statusBarInsets.top, statusBarInsets.right, 0);
+            if (appBarLayout != null) {
+                appBarLayout.setPadding(statusBarInsets.left, statusBarInsets.top, statusBarInsets.right, 0);
+            }
 
             if (bottomCard != null) {
                 ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) bottomCard.getLayoutParams();
@@ -324,6 +350,7 @@ public class ActVideoTrimmer extends LocalizationActivity {
         txtCurrentDuration = findViewById(R.id.txt_current_duration);
         txtClipDuration = findViewById(R.id.txt_clip_duration);
         txtEndDuration = findViewById(R.id.txt_end_duration);
+        txtTotalVideoDuration = findViewById(R.id.txt_total_video_duration);
 
         btnDoneTrim = findViewById(R.id.btn_done_trim);
         resChangeSpinner = findViewById(R.id.txt_change_res);
@@ -390,8 +417,12 @@ public class ActVideoTrimmer extends LocalizationActivity {
         }
     }
 
+    private long getEffectiveMinClipMs() {
+        return Math.max(100L, Math.min(MIN_CLIP_DURATION_MS, totalDurationMs));
+    }
+
     private void updateQuickDurationChipsState() {
-        long currentDurationMs = Math.max(MIN_CLIP_DURATION_MS, endMs - startMs);
+        long currentDurationMs = Math.max(getEffectiveMinClipMs(), endMs - startMs);
         styleDurationChip(chipDur1s, 1000L, currentDurationMs);
         styleDurationChip(chipDur2s, 2000L, currentDurationMs);
         styleDurationChip(chipDur3s, 3000L, currentDurationMs);
@@ -405,7 +436,7 @@ public class ActVideoTrimmer extends LocalizationActivity {
         chip.setEnabled(isAvailable);
         chip.setAlpha(isAvailable ? 1.0f : 0.38f);
 
-        boolean isSelected = isAvailable && Math.abs(currentDurationMs - chipDurationMs) <= 250L;
+        boolean isSelected = isAvailable && Math.abs(currentDurationMs - Math.min(chipDurationMs, totalDurationMs)) <= 250L;
         if (isSelected) {
             int onPrimary = ColorUtils.calculateLuminance(primaryColor) > 0.5 ? Color.parseColor("#1C1B1F") : Color.WHITE;
             chip.setBackgroundTintList(ColorStateList.valueOf(primaryColor));
@@ -419,7 +450,8 @@ public class ActVideoTrimmer extends LocalizationActivity {
     }
 
     private void applyClipDuration(long durationMs) {
-        durationMs = Math.max(MIN_CLIP_DURATION_MS, Math.min(durationMs, Math.min(MAX_CLIP_DURATION_MS, totalDurationMs)));
+        long minClip = getEffectiveMinClipMs();
+        durationMs = Math.max(minClip, Math.min(durationMs, Math.min(MAX_CLIP_DURATION_MS, totalDurationMs)));
         long newEnd = startMs + durationMs;
         if (newEnd > totalDurationMs) {
             newEnd = totalDurationMs;
@@ -462,6 +494,7 @@ public class ActVideoTrimmer extends LocalizationActivity {
     private void initPlayer() {
         try {
             videoPlayer = new ExoPlayer.Builder(this).build();
+            videoPlayer.setSeekParameters(SeekParameters.EXACT);
             playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
             playerView.setPlayer(videoPlayer);
             AudioAttributes audioAttributes = new AudioAttributes.Builder()
@@ -480,13 +513,18 @@ public class ActVideoTrimmer extends LocalizationActivity {
             setSelectedVideoRes(selectVideoRes);
 
             Executors.newSingleThreadExecutor().execute(() -> {
-                long durationSec = TrimmerUtils.getDuration(ActVideoTrimmer.this, fileUri);
-                totalDurationMs = Math.max(1000L, durationSec * 1000L);
+                long exactDurationMs = TrimmerUtils.getDurationMillis(ActVideoTrimmer.this, fileUri);
+                totalDurationMs = Math.max(200L, exactDurationMs);
+                hasRefinedDurationFromPlayer = false;
 
                 runOnUiThread(() -> {
                     if (progressCircular != null) progressCircular.setVisibility(View.GONE);
                     imagePlayPause.setOnClickListener(v -> onVideoClicked());
-                    Objects.requireNonNull(playerView.getVideoSurfaceView()).setOnClickListener(v -> onVideoClicked());
+                    View surfaceView = playerView.getVideoSurfaceView();
+                    if (surfaceView != null) {
+                        surfaceView.setOnClickListener(v -> onVideoClicked());
+                    }
+                    playerView.setOnClickListener(v -> onVideoClicked());
 
                     initTrimData();
                     buildMediaSource();
@@ -556,17 +594,39 @@ public class ActVideoTrimmer extends LocalizationActivity {
             videoPlayer.addListener(new Player.Listener() {
                 @Override
                 public void onPlayWhenReadyChanged(boolean playWhenReady, int reason) {
-                    imagePlayPause.setVisibility(playWhenReady ? View.GONE : View.VISIBLE);
+                    if (!isUserScrubbing() && imagePlayPause != null) {
+                        imagePlayPause.setVisibility(playWhenReady ? View.GONE : View.VISIBLE);
+                    }
                 }
 
                 @Override
                 public void onPlaybackStateChanged(int state) {
                     if (state == Player.STATE_ENDED) {
-                        isVideoEnded = true;
-                        imagePlayPause.setVisibility(View.VISIBLE);
+                        if (!isUserScrubbing() && videoPlayer != null) {
+                            // Ensure short/end-aligned videos reach 100% and seamlessly loop back to startMs
+                            setOverviewSliderValueSafe(endMs);
+                            if (rangeOverlay != null) {
+                                rangeOverlay.setPlayheadPercent(rangeOverlay.getEndPercent());
+                            }
+                            isVideoEnded = false;
+                            seekToMs(startMs);
+                            videoPlayer.setPlayWhenReady(true);
+                            if (imagePlayPause != null) {
+                                imagePlayPause.setVisibility(View.GONE);
+                            }
+                        }
                     } else if (state == Player.STATE_READY) {
+                        if (!hasRefinedDurationFromPlayer && videoPlayer != null) {
+                            hasRefinedDurationFromPlayer = true;
+                            long playerDur = videoPlayer.getDuration();
+                            if (playerDur > 0L && playerDur != C.TIME_UNSET && Math.abs(playerDur - totalDurationMs) > 35L) {
+                                refineTotalDurationFromPlayer(playerDur);
+                            }
+                        }
                         isVideoEnded = false;
-                        imagePlayPause.setVisibility(View.GONE);
+                        if (!isUserScrubbing() && imagePlayPause != null && videoPlayer != null) {
+                            imagePlayPause.setVisibility(videoPlayer.getPlayWhenReady() ? View.GONE : View.VISIBLE);
+                        }
                         startProgress();
                     }
                 }
@@ -576,40 +636,161 @@ public class ActVideoTrimmer extends LocalizationActivity {
         }
     }
 
+    private void refineTotalDurationFromPlayer(long playerDur) {
+        boolean wasPinnedToEnd = endMs >= (totalDurationMs - 60L);
+        boolean wasDefaultOpeningRange = (startMs == 0L) && (wasPinnedToEnd || endMs >= MAX_CLIP_DURATION_MS);
+        totalDurationMs = Math.max(200L, playerDur);
+        if (wasDefaultOpeningRange) {
+            startMs = 0L;
+            endMs = Math.min(totalDurationMs, MAX_CLIP_DURATION_MS);
+        } else {
+            long minClip = getEffectiveMinClipMs();
+            endMs = wasPinnedToEnd ? totalDurationMs : Math.min(endMs, totalDurationMs);
+            startMs = Math.max(0L, Math.min(startMs, endMs - minClip));
+            if (endMs - startMs > MAX_CLIP_DURATION_MS) {
+                endMs = startMs + MAX_CLIP_DURATION_MS;
+            }
+        }
+        setupTwoTierTimeline();
+    }
+
     private long getViewportDurationMs() {
-        return Math.max(1000L, Math.min(totalDurationMs, MAX_CLIP_DURATION_MS));
+        return Math.max(200L, Math.min(totalDurationMs, MAX_CLIP_DURATION_MS));
+    }
+
+    private boolean isUserScrubbing() {
+        return isUserScrubActive || isRangeDragging || isOverviewDragging || (isFilmstripScrolling && !isProgrammaticScroll);
+    }
+
+    private void beginUserScrub() {
+        if (!isUserScrubActive) {
+            isUserScrubActive = true;
+            wasPlayingBeforeScrub = (videoPlayer != null && videoPlayer.getPlayWhenReady()) || isVideoEnded;
+            if (videoPlayer != null) {
+                videoPlayer.setPlayWhenReady(false);
+            }
+            if (imagePlayPause != null) {
+                imagePlayPause.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    private void liveScrubPreviewToMs(long targetMs, boolean isFinal, boolean fromOverview) {
+        long clampedMs = Math.max(0L, Math.min(totalDurationMs, targetMs));
+        if (txtCurrentDuration != null) {
+            txtCurrentDuration.setText(TrimmerUtils.formatMillisPrecise(clampedMs));
+        }
+        if (rangeOverlay != null) {
+            rangeOverlay.setPlayheadPercent(msToOverlayPercent(clampedMs));
+        }
+        if (!isOverviewDragging) {
+            setOverviewSliderValueSafe(clampedMs);
+        }
+
+        if (videoPlayer == null) {
+            if (isFinal) {
+                isUserScrubActive = false;
+            }
+            return;
+        }
+
+        if (!isFinal) {
+            long now = SystemClock.elapsedRealtime();
+            boolean playerBusy = videoPlayer.getPlaybackState() == Player.STATE_BUFFERING;
+            long minIntervalMs = playerBusy ? 95L : 33L;
+            if (now - lastLiveScrubElapsedMs >= minIntervalMs) {
+                if (seekHandler != null) {
+                    seekHandler.removeCallbacks(pendingScrubRunnable);
+                }
+                pendingScrubTargetMs = -1L;
+                lastLiveScrubElapsedMs = now;
+                videoPlayer.seekTo(clampedMs);
+            } else if (seekHandler != null) {
+                pendingScrubTargetMs = clampedMs;
+                seekHandler.removeCallbacks(pendingScrubRunnable);
+                seekHandler.postDelayed(pendingScrubRunnable, 40L);
+            }
+        } else {
+            if (seekHandler != null) {
+                seekHandler.removeCallbacks(pendingScrubRunnable);
+            }
+            pendingScrubTargetMs = -1L;
+            isUserScrubActive = false;
+            isVideoEnded = false;
+
+            if (wasPlayingBeforeScrub) {
+                long resumeMs = (fromOverview && clampedMs >= startMs && clampedMs < (endMs - 80L))
+                        ? clampedMs
+                        : startMs;
+                videoPlayer.seekTo(Math.max(0L, resumeMs));
+                videoPlayer.setPlayWhenReady(true);
+                if (imagePlayPause != null) {
+                    imagePlayPause.setVisibility(View.GONE);
+                }
+            } else {
+                videoPlayer.seekTo(clampedMs);
+                if (imagePlayPause != null) {
+                    imagePlayPause.setVisibility(View.VISIBLE);
+                }
+            }
+        }
+    }
+
+    private void handleOverviewScrub(long scrubTimeMs, boolean isFinal) {
+        long clampedTimeMs = Math.max(0L, Math.min(totalDurationMs, scrubTimeMs));
+        long clipLen = Math.max(getEffectiveMinClipMs(), endMs - startMs);
+        if (totalDurationMs > clipLen) {
+            float fraction = (float) clampedTimeMs / (float) Math.max(1L, totalDurationMs);
+            long maxStart = totalDurationMs - clipLen;
+            startMs = Math.max(0L, Math.min(maxStart, Math.round(fraction * maxStart)));
+            endMs = startMs + clipLen;
+            syncTimelineViewsWithoutSeek(true, clampedTimeMs);
+        }
+        liveScrubPreviewToMs(clampedTimeMs, isFinal, true);
     }
 
     private void setupTwoTierTimeline() {
         final long viewportDurationMs = getViewportDurationMs();
+        final long minClipMs = getEffectiveMinClipMs();
 
-        // Setup Tier 1: Full-video overview slider for videos > 5s
-        if (totalDurationMs > MAX_CLIP_DURATION_MS) {
+        // Setup Tier 1: Full-video scrubber spanning 0%..100% of totalDurationMs for ALL videos
+        if (layoutOverviewSlider != null) {
             layoutOverviewSlider.setVisibility(View.VISIBLE);
-            sliderOverview.setValueFrom(0f);
-            sliderOverview.setValueTo((float) totalDurationMs);
-            sliderOverview.setValue(0f);
+        }
+        if (txtTotalVideoDuration != null) {
+            txtTotalVideoDuration.setText(TrimmerUtils.formatMillisPrecise(totalDurationMs));
+        }
+        if (sliderOverview != null) {
+            float safeMax = (float) Math.max(1L, totalDurationMs);
             sliderOverview.clearOnSliderTouchListeners();
             sliderOverview.clearOnChangeListeners();
+            sliderOverview.setValueFrom(0f);
+            sliderOverview.setValue(0f);
+            sliderOverview.setValueTo(safeMax);
+            setOverviewSliderValueSafe(startMs);
+
             sliderOverview.addOnSliderTouchListener(new Slider.OnSliderTouchListener() {
                 @Override
                 public void onStartTrackingTouch(@NonNull Slider slider) {
                     isOverviewDragging = true;
+                    beginUserScrub();
                 }
 
                 @Override
                 public void onStopTrackingTouch(@NonNull Slider slider) {
+                    long targetMs = Math.round(slider.getValue());
                     isOverviewDragging = false;
-                    panClipToTargetStart((long) slider.getValue());
+                    handleOverviewScrub(targetMs, true);
                 }
             });
             sliderOverview.addOnChangeListener((slider, value, fromUser) -> {
-                if (fromUser && isOverviewDragging) {
-                    panClipToTargetStart((long) value);
+                if (fromUser) {
+                    if (!isOverviewDragging) {
+                        beginUserScrub();
+                    }
+                    handleOverviewScrub(Math.round(value), !isOverviewDragging);
                 }
             });
-        } else {
-            layoutOverviewSlider.setVisibility(View.GONE);
         }
 
         // Setup Tier 2: Zoomed scrollable filmstrip (RecyclerView)
@@ -633,81 +814,93 @@ public class ActVideoTrimmer extends LocalizationActivity {
         rvFilmstrip.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-                isFilmstripScrolling = (newState != RecyclerView.SCROLL_STATE_IDLE);
-                if (!isFilmstripScrolling && !isProgrammaticScroll) {
-                    seekToMs(startMs);
+                if (isProgrammaticScroll) return;
+                if (newState != RecyclerView.SCROLL_STATE_IDLE) {
+                    if (!isFilmstripScrolling) {
+                        isFilmstripScrolling = true;
+                        beginUserScrub();
+                    }
+                } else if (isFilmstripScrolling) {
+                    isFilmstripScrolling = false;
+                    liveScrubPreviewToMs(startMs, true, false);
                 }
             }
 
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 if (isProgrammaticScroll || !isFilmstripScrolling) return;
+                long vpDur = getViewportDurationMs();
+                long minClip = getEffectiveMinClipMs();
                 int offset = recyclerView.computeHorizontalScrollOffset();
                 int range = recyclerView.computeHorizontalScrollRange() - recyclerView.computeHorizontalScrollExtent();
-                if (range > 0 && totalDurationMs > viewportDurationMs) {
+                if (range > 0 && totalDurationMs > vpDur) {
                     float scrollFraction = Math.max(0f, Math.min(1f, (float) offset / (float) range));
-                    long maxWindowStart = totalDurationMs - viewportDurationMs;
+                    long maxWindowStart = totalDurationMs - vpDur;
                     windowStartMs = Math.round(scrollFraction * maxWindowStart);
 
                     float sPct = rangeOverlay != null ? rangeOverlay.getStartPercent() : 0f;
                     float ePct = rangeOverlay != null ? rangeOverlay.getEndPercent() : 1f;
-                    startMs = windowStartMs + Math.round(sPct * viewportDurationMs);
-                    endMs = windowStartMs + Math.round(ePct * viewportDurationMs);
+                    startMs = windowStartMs + Math.round(sPct * vpDur);
+                    endMs = windowStartMs + Math.round(ePct * vpDur);
                     if (endMs > totalDurationMs) {
                         endMs = totalDurationMs;
                     }
-                    if (endMs - startMs < MIN_CLIP_DURATION_MS) {
-                        startMs = Math.max(0L, endMs - MIN_CLIP_DURATION_MS);
+                    if (endMs - startMs < minClip) {
+                        startMs = Math.max(0L, endMs - minClip);
                     }
 
-                    updateTimeLabels();
-                    updateOverviewSlider();
+                    updateTimeLabels(startMs);
+                    liveScrubPreviewToMs(startMs, false, false);
                 }
             }
         });
 
         // Setup TrimmerRangeOverlayView
-        float minSpan = Math.min(1f, (float) MIN_CLIP_DURATION_MS / (float) viewportDurationMs);
+        float minSpan = Math.min(1f, (float) minClipMs / (float) viewportDurationMs);
         rangeOverlay.setAllowCenterDrag(totalDurationMs <= MAX_CLIP_DURATION_MS);
         rangeOverlay.setRange(0f, 1f, minSpan, 1.0f);
-        rangeOverlay.setOnTrimRangeListener((startPercent, endPercent, isFinal) -> {
+        rangeOverlay.setOnTrimRangeListener((startPercent, endPercent, dragMode, isFinal) -> {
+            if (!isFinal && !isRangeDragging) {
+                isRangeDragging = true;
+                beginUserScrub();
+            }
+
             long vpDuration = getViewportDurationMs();
+            long minClip = getEffectiveMinClipMs();
             long newStart = windowStartMs + Math.round(startPercent * vpDuration);
             long newEnd = windowStartMs + Math.round(endPercent * vpDuration);
 
-            newStart = Math.max(0L, Math.min(newStart, totalDurationMs - MIN_CLIP_DURATION_MS));
-            newEnd = Math.max(newStart + MIN_CLIP_DURATION_MS, Math.min(newEnd, totalDurationMs));
+            newStart = Math.max(0L, Math.min(newStart, totalDurationMs - minClip));
+            newEnd = Math.max(newStart + minClip, Math.min(newEnd, totalDurationMs));
             if (newEnd - newStart > MAX_CLIP_DURATION_MS) {
-                newEnd = newStart + MAX_CLIP_DURATION_MS;
+                if (dragMode == TrimmerRangeOverlayView.DRAG_LEFT) {
+                    newStart = Math.max(0L, newEnd - MAX_CLIP_DURATION_MS);
+                } else {
+                    newEnd = Math.min(totalDurationMs, newStart + MAX_CLIP_DURATION_MS);
+                }
             }
 
             startMs = newStart;
             endMs = newEnd;
 
-            updateTimeLabels();
-            updateOverviewSlider();
+            long previewMs = (dragMode == TrimmerRangeOverlayView.DRAG_RIGHT) ? endMs : startMs;
+            updateTimeLabels(previewMs);
 
             if (isFinal) {
-                seekToMs(startMs);
+                isRangeDragging = false;
+                liveScrubPreviewToMs(previewMs, true, false);
+            } else {
+                liveScrubPreviewToMs(previewMs, false, false);
             }
         });
 
         syncAllComponentsFromMs(true);
     }
 
-    private void panClipToTargetStart(long targetStartMs) {
-        long currentClipDuration = Math.max(MIN_CLIP_DURATION_MS, endMs - startMs);
-        long newStart = Math.max(0L, Math.min(targetStartMs, totalDurationMs - currentClipDuration));
-        startMs = newStart;
-        endMs = newStart + currentClipDuration;
-        syncAllComponentsFromMs(true);
-    }
-
-    private void syncAllComponentsFromMs(boolean scrollFilmstrip) {
+    private void syncTimelineViewsWithoutSeek(boolean scrollFilmstrip, long displayPlayheadMs) {
         long viewportDurationMs = getViewportDurationMs();
         long maxWindowStartMs = Math.max(0L, totalDurationMs - viewportDurationMs);
 
-        // Keep windowStartMs stable if [startMs, endMs] already fits inside [windowStartMs, windowStartMs + viewportDurationMs]
         if (startMs < windowStartMs || endMs > (windowStartMs + viewportDurationMs)) {
             windowStartMs = Math.max(0L, Math.min(startMs, maxWindowStartMs));
         }
@@ -729,36 +922,44 @@ public class ActVideoTrimmer extends LocalizationActivity {
         if (rangeOverlay != null) {
             float startPct = (float) (startMs - windowStartMs) / (float) viewportDurationMs;
             float endPct = (float) (endMs - windowStartMs) / (float) viewportDurationMs;
-            float minSpan = Math.min(1f, (float) MIN_CLIP_DURATION_MS / (float) viewportDurationMs);
+            float minSpan = Math.min(1f, (float) getEffectiveMinClipMs() / (float) viewportDurationMs);
             rangeOverlay.setRange(startPct, endPct, minSpan, 1f);
         }
 
-        updateTimeLabels();
-        updateOverviewSlider();
+        updateTimeLabels(displayPlayheadMs);
+    }
+
+    private void syncAllComponentsFromMs(boolean scrollFilmstrip) {
+        syncTimelineViewsWithoutSeek(scrollFilmstrip, startMs);
+        setOverviewSliderValueSafe(startMs);
         seekToMs(startMs);
     }
 
-    private void updateTimeLabels() {
+    private void updateTimeLabels(long currentDisplayMs) {
         if (txtStartDuration != null) {
-            txtStartDuration.setText(TrimmerUtils.formatSeconds(startMs / 1000L));
+            txtStartDuration.setText(TrimmerUtils.formatMillisPrecise(startMs));
         }
         if (txtEndDuration != null) {
-            txtEndDuration.setText(TrimmerUtils.formatSeconds(endMs / 1000L));
+            txtEndDuration.setText(TrimmerUtils.formatMillisPrecise(endMs));
         }
         if (txtClipDuration != null) {
             float clipSec = (endMs - startMs) / 1000f;
             txtClipDuration.setText(String.format(Locale.getDefault(), getString(R.string.txt_clip_duration_format), clipSec));
         }
         if (txtCurrentDuration != null) {
-            txtCurrentDuration.setText(TrimmerUtils.formatSeconds(startMs / 1000L));
+            txtCurrentDuration.setText(TrimmerUtils.formatMillisPrecise(currentDisplayMs));
         }
         updateQuickDurationChipsState();
     }
 
-    private void updateOverviewSlider() {
-        if (sliderOverview != null && layoutOverviewSlider.getVisibility() == View.VISIBLE && !isOverviewDragging) {
-            float clamped = Math.max(sliderOverview.getValueFrom(), Math.min(sliderOverview.getValueTo(), (float) startMs));
-            sliderOverview.setValue(clamped);
+    private void setOverviewSliderValueSafe(long ms) {
+        if (sliderOverview != null && !isOverviewDragging) {
+            float from = sliderOverview.getValueFrom();
+            float to = sliderOverview.getValueTo();
+            if (to > from) {
+                float clamped = Math.max(from, Math.min(to, (float) ms));
+                sliderOverview.setValue(clamped);
+            }
         }
     }
 
@@ -808,10 +1009,10 @@ public class ActVideoTrimmer extends LocalizationActivity {
             EditText input = dialogView.findViewById(R.id.et_time_input);
 
             title.setText(isStart ? R.string.txt_start_time : R.string.txt_end_time);
-            subtitle.setText(String.format("00:00 — %s", TrimmerUtils.formatSeconds(totalDurationMs / 1000L)));
+            subtitle.setText(String.format("00:00 — %s", TrimmerUtils.formatMillisPrecise(totalDurationMs)));
 
             final long currentValMs = isStart ? startMs : endMs;
-            input.setText(TrimmerUtils.formatSeconds(currentValMs / 1000L));
+            input.setText(TrimmerUtils.formatMillisPrecise(currentValMs));
             input.setSelection(input.getText().length());
 
             androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(this)
@@ -868,7 +1069,7 @@ public class ActVideoTrimmer extends LocalizationActivity {
             String text = input.getText().toString();
             long currentMs = parseTimeInputToMs(text, 0L);
             long newMs = Math.max(0L, Math.min(totalDurationMs, currentMs + (long) (deltaSec * 1000L)));
-            input.setText(TrimmerUtils.formatSeconds(newMs / 1000L));
+            input.setText(TrimmerUtils.formatMillisPrecise(newMs));
             input.setSelection(input.getText().length());
         } catch (Exception ignored) {}
     }
@@ -880,13 +1081,13 @@ public class ActVideoTrimmer extends LocalizationActivity {
         try {
             if (text.contains(":")) {
                 String[] parts = text.split(":");
-                long totalSec = 0L;
+                double totalSec = 0.0;
                 for (String part : parts) {
-                    totalSec = totalSec * 60L + Long.parseLong(part.trim());
+                    totalSec = totalSec * 60.0 + Double.parseDouble(part.trim());
                 }
-                return totalSec * 1000L;
+                return Math.round(totalSec * 1000.0);
             } else {
-                return (long) (Double.parseDouble(text) * 1000.0);
+                return Math.round(Double.parseDouble(text) * 1000.0);
             }
         } catch (Exception e) {
             return fallbackMs;
@@ -894,11 +1095,12 @@ public class ActVideoTrimmer extends LocalizationActivity {
     }
 
     private void applyManualTimeSelection(boolean isStart, long targetMs) {
+        long minClip = getEffectiveMinClipMs();
         if (isStart) {
-            long newStart = Math.max(0L, Math.min(targetMs, totalDurationMs - MIN_CLIP_DURATION_MS));
+            long newStart = Math.max(0L, Math.min(targetMs, totalDurationMs - minClip));
             long newEnd = endMs;
-            if (newEnd < newStart + MIN_CLIP_DURATION_MS) {
-                newEnd = Math.min(totalDurationMs, newStart + MIN_CLIP_DURATION_MS);
+            if (newEnd < newStart + minClip) {
+                newEnd = Math.min(totalDurationMs, newStart + minClip);
             }
             if (newEnd - newStart > MAX_CLIP_DURATION_MS) {
                 newEnd = Math.min(totalDurationMs, newStart + MAX_CLIP_DURATION_MS);
@@ -906,10 +1108,10 @@ public class ActVideoTrimmer extends LocalizationActivity {
             startMs = newStart;
             endMs = newEnd;
         } else {
-            long newEnd = Math.max(MIN_CLIP_DURATION_MS, Math.min(targetMs, totalDurationMs));
+            long newEnd = Math.max(minClip, Math.min(targetMs, totalDurationMs));
             long newStart = startMs;
-            if (newEnd < newStart + MIN_CLIP_DURATION_MS) {
-                newStart = Math.max(0L, newEnd - MIN_CLIP_DURATION_MS);
+            if (newEnd < newStart + minClip) {
+                newStart = Math.max(0L, newEnd - minClip);
             }
             if (newEnd - newStart > MAX_CLIP_DURATION_MS) {
                 newStart = Math.max(0L, newEnd - MAX_CLIP_DURATION_MS);

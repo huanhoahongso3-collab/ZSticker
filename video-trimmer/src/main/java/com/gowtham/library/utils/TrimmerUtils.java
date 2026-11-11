@@ -71,7 +71,9 @@ public class TrimmerUtils {
         try {
             setDataSourceSafe(context, retriever, videoPath);
             String time = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
-            return Long.parseLong(time);
+            if (time != null && !time.trim().isEmpty()) {
+                return Math.max(200L, Long.parseLong(time.trim()));
+            }
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -204,6 +206,16 @@ public class TrimmerUtils {
         formattedTime += seconds;
 
         return formattedTime;
+    }
+
+    public static String formatMillisPrecise(long timeInMillis) {
+        long clamped = Math.max(0L, timeInMillis);
+        String base = formatSeconds(clamped / 1000L);
+        long tenths = (clamped % 1000L) / 100L;
+        if (tenths > 0L && clamped < 600_000L) {
+            return base + "." + tenths;
+        }
+        return base;
     }
 
     public static String getLimitedTimeFormatted(long secs){

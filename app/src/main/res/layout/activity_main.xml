@@ -335,7 +335,6 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center"
-                android:animateLayoutChanges="true"
                 android:clipChildren="false"
                 android:clipToPadding="false"
                 app:layout_constraintStart_toStartOf="parent"
@@ -368,8 +367,7 @@
                             android:paddingStart="16dp"
                             android:paddingEnd="16dp"
                             android:clickable="true"
-                            android:focusable="true"
-                            android:foreground="?attr/selectableItemBackgroundBorderless">
+                            android:focusable="true">
 
                             <ImageView
                                 android:id="@+id/iconNavHome"
@@ -400,8 +398,7 @@
                             android:paddingStart="14dp"
                             android:paddingEnd="14dp"
                             android:clickable="true"
-                            android:focusable="true"
-                            android:foreground="?attr/selectableItemBackgroundBorderless">
+                            android:focusable="true">
 
                             <ImageView
                                 android:id="@+id/iconNavRecents"
@@ -433,8 +430,7 @@
                             android:paddingStart="14dp"
                             android:paddingEnd="14dp"
                             android:clickable="true"
-                            android:focusable="true"
-                            android:foreground="?attr/selectableItemBackgroundBorderless">
+                            android:focusable="true">
 
                             <ImageView
                                 android:id="@+id/iconNavOptions"
@@ -461,11 +457,12 @@
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/addButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    app:fabCustomSize="58dp"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_marginStart="22dp"
+                    app:fabCustomSize="60dp"
                     app:maxImageSize="26dp"
+                    app:shapeAppearance="@style/ShapeAppearance.ZSticker.FullCircle"
                     app:shapeAppearanceOverlay="@style/ShapeAppearance.ZSticker.FullCircle"
                     app:srcCompat="@drawable/ic_add"
                     app:tint="?attr/colorOnSecondaryContainer"

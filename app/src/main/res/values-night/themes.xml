@@ -32,6 +32,15 @@
         <item name="cornerSize">16dp</item>
     </style>
 
+    <style name="ShapeAppearance.ZSticker.FullCircle" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+        <item name="cornerSizeTopLeft">50%</item>
+        <item name="cornerSizeTopRight">50%</item>
+        <item name="cornerSizeBottomLeft">50%</item>
+        <item name="cornerSizeBottomRight">50%</item>
+    </style>
+
     <style name="FloatingNavCardStyle" parent="Widget.Material3.CardView.Filled">
         <item name="cardBackgroundColor">@android:color/transparent</item>
         <item name="cardCornerRadius">32dp</item>

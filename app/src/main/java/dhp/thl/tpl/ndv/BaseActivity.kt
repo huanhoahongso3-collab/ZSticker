@@ -44,7 +44,7 @@ abstract class BaseActivity : MonetCompatActivity() {
         super.attachBaseContext(context)
     }
 
-    protected fun boldTitle(text: String): android.text.SpannableString {
+    fun boldTitle(text: String): android.text.SpannableString {
         val ss = android.text.SpannableString(text)
         ss.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, text.length, 0)
         return ss

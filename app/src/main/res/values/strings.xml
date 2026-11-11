@@ -97,4 +97,5 @@
     <string name="trim_video_hint">Select the part of the video to make a sticker (max 5s)</string>
     <string name="trim_video_title">Trim Video</string>
     <string name="only_one_video_allowed">Only 1 video can be imported at a time</string>
+    <string name="thank_you_toast">Thank you for using this app!</string>
 </resources>

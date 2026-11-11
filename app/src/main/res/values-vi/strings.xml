@@ -97,4 +97,5 @@
     <string name="trim_video_hint">Chọn phần video để tạo nhãn dán (tối đa 5 giây)</string>
     <string name="trim_video_title">Cắt video</string>
     <string name="only_one_video_allowed">Chỉ có thể nhập 1 video mỗi lần</string>
+    <string name="thank_you_toast">Cảm ơn bạn đã sử dụng ứng dụng này!</string>
 </resources>

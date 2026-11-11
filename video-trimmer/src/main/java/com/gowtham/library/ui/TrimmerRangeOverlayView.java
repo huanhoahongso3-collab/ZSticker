@@ -23,13 +23,13 @@ import androidx.core.graphics.ColorUtils;
 public class TrimmerRangeOverlayView extends View {
 
     public interface OnTrimRangeListener {
-        void onTrimRangeChanged(float startPercent, float endPercent, boolean isFinal);
+        void onTrimRangeChanged(float startPercent, float endPercent, int dragMode, boolean isFinal);
     }
 
-    private static final int DRAG_NONE = 0;
-    private static final int DRAG_LEFT = 1;
-    private static final int DRAG_RIGHT = 2;
-    private static final int DRAG_CENTER = 3;
+    public static final int DRAG_NONE = 0;
+    public static final int DRAG_LEFT = 1;
+    public static final int DRAG_RIGHT = 2;
+    public static final int DRAG_CENTER = 3;
 
     private int activeDragMode = DRAG_NONE;
     private float downTouchX = 0f;
@@ -282,6 +282,9 @@ public class TrimmerRangeOverlayView extends View {
                 if (getParent() != null) {
                     getParent().requestDisallowInterceptTouchEvent(true);
                 }
+                if (rangeListener != null) {
+                    rangeListener.onTrimRangeChanged(startPercent, endPercent, activeDragMode, false);
+                }
                 return true;
             }
 
@@ -300,7 +303,7 @@ public class TrimmerRangeOverlayView extends View {
                         startPercent = newStart;
                         invalidate();
                         if (rangeListener != null) {
-                            rangeListener.onTrimRangeChanged(startPercent, endPercent, false);
+                            rangeListener.onTrimRangeChanged(startPercent, endPercent, DRAG_LEFT, false);
                         }
                     }
                 } else if (activeDragMode == DRAG_RIGHT) {
@@ -313,7 +316,7 @@ public class TrimmerRangeOverlayView extends View {
                         endPercent = newEnd;
                         invalidate();
                         if (rangeListener != null) {
-                            rangeListener.onTrimRangeChanged(startPercent, endPercent, false);
+                            rangeListener.onTrimRangeChanged(startPercent, endPercent, DRAG_RIGHT, false);
                         }
                     }
                 } else if (activeDragMode == DRAG_CENTER) {
@@ -325,7 +328,7 @@ public class TrimmerRangeOverlayView extends View {
                         endPercent = newEnd;
                         invalidate();
                         if (rangeListener != null) {
-                            rangeListener.onTrimRangeChanged(startPercent, endPercent, false);
+                            rangeListener.onTrimRangeChanged(startPercent, endPercent, DRAG_CENTER, false);
                         }
                     }
                 }
@@ -335,10 +338,11 @@ public class TrimmerRangeOverlayView extends View {
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL: {
                 if (activeDragMode != DRAG_NONE) {
+                    int endedDragMode = activeDragMode;
                     activeDragMode = DRAG_NONE;
                     performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
                     if (rangeListener != null) {
-                        rangeListener.onTrimRangeChanged(startPercent, endPercent, true);
+                        rangeListener.onTrimRangeChanged(startPercent, endPercent, endedDragMode, true);
                     }
                     return true;
                 }

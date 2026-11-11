@@ -2,9 +2,14 @@ package dhp.thl.tpl.ndv.gif
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.Rect
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.os.Build
 import java.io.File
 import java.io.FileOutputStream
 
@@ -28,7 +33,7 @@ object VideoToGifConverter {
         } finally {
             try {
                 retriever.release()
-            } catch (e: Exception) {}
+            } catch (_: Exception) {}
         }
     }
 
@@ -43,7 +48,7 @@ object VideoToGifConverter {
                     pfd.use { retriever.setDataSource(it.fileDescriptor) }
                     return
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // fallback
             }
             retriever.setDataSource(context, uri)
@@ -52,8 +57,8 @@ object VideoToGifConverter {
 
     /**
      * Converts a short video (or video segment) into a Zalo animated GIF sticker.
-     * Extracts frames at a balanced frame rate (~10-12 FPS) within maxDurationMs,
-     * scales to max 512px maintaining aspect ratio, and encodes via AnimatedGifEncoder.
+     * Primary path uses sequential GPU OES Surface decoding (VideoSurfaceFrameExtractor) to avoid
+     * 4K/10-bit/stride green-stripe artifacts from MediaMetadataRetriever's CPU YUV converter.
      */
     fun convertVideoToGif(
         context: Context,
@@ -68,70 +73,57 @@ object VideoToGifConverter {
         return try {
             setRetrieverDataSource(context, retriever, uri)
 
-            val durationMs = (retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L)
-            val availableMs = (durationMs - startMs).coerceAtLeast(100L)
+            val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+                ?.toLongOrNull() ?: maxDurationMs
+            val safeStartMs = startMs.coerceAtLeast(0L).coerceAtMost((durationMs - 50L).coerceAtLeast(0L))
+            val availableMs = (durationMs - safeStartMs).coerceAtLeast(100L)
             val actualDurationMs = availableMs.coerceAtMost(maxDurationMs)
 
-            val rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
-            val rawW = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 512
-            val rawH = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 512
+            val rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
+                ?.toIntOrNull() ?: 0
+            val rawW = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
+                ?.toIntOrNull() ?: 512
+            val rawH = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
+                ?.toIntOrNull() ?: 512
 
             val isRotated = rotation == 90 || rotation == 270
             val videoW = if (isRotated) rawH else rawW
             val videoH = if (isRotated) rawW else rawH
 
-            val (targetW, targetH) = calculateScaledDimensions(videoW, videoH, MAX_STICKER_SIZE)
+            val (targetW, targetH) = calculateScaledEvenDimensions(videoW, videoH, MAX_STICKER_SIZE)
+            val frameIntervalMs = (1000L / fps.coerceAtLeast(1)).coerceAtLeast(40L)
 
-            val frameIntervalMs = 1000L / fps
-            val frameIntervalUs = frameIntervalMs * 1000L
-            val totalFrames = ((actualDurationMs + frameIntervalMs - 1) / frameIntervalMs).toInt().coerceAtLeast(1)
+            // 1. Primary GPU Surface (MediaCodec + EGL + GL_TEXTURE_EXTERNAL_OES) pass
+            var framesAdded = encodeViaGpuSurface(
+                context = context,
+                uri = uri,
+                outputFile = outputFile,
+                startMs = safeStartMs,
+                actualDurationMs = actualDurationMs,
+                fps = fps,
+                frameIntervalMs = frameIntervalMs,
+                targetW = targetW,
+                targetH = targetH,
+                fallbackRotation = rotation,
+                onProgress = onProgress
+            )
 
-            val encoder = AnimatedGifEncoder()
-            encoder.setRepeat(0)
-            encoder.setSize(targetW, targetH)
-            encoder.setDelay(frameIntervalMs.toInt())
-
-            var framesAdded = 0
-            FileOutputStream(outputFile).use { fos ->
-                encoder.start(fos)
-
-                var frameIndex = 0
-                var timeUs = startMs * 1000L
-                val endUs = (startMs + actualDurationMs) * 1000L
-
-                while (timeUs <= endUs && frameIndex < totalFrames) {
-                    val rawFrame = retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST)
-                        ?: retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
-                        ?: retriever.getFrameAtTime(timeUs)
-
-                    if (rawFrame != null) {
-                        val scaledFrame = orientAndScaleFrame(rawFrame, rawW, rawH, rotation, targetW, targetH)
-                        if (encoder.addFrame(scaledFrame)) {
-                            framesAdded++
-                        }
-                        scaledFrame.recycle()
-                    }
-
-                    frameIndex++
-                    timeUs += frameIntervalUs
-                    onProgress?.invoke(frameIndex.toFloat() / totalFrames)
-                }
-
-                if (framesAdded == 0) {
-                    val fallback = retriever.getFrameAtTime(startMs * 1000L, MediaMetadataRetriever.OPTION_CLOSEST)
-                        ?: retriever.getFrameAtTime(startMs * 1000L, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
-                        ?: retriever.getFrameAtTime(0L, MediaMetadataRetriever.OPTION_CLOSEST)
-                        ?: retriever.getFrameAtTime()
-                    if (fallback != null) {
-                        val scaled = orientAndScaleFrame(fallback, rawW, rawH, rotation, targetW, targetH)
-                        if (encoder.addFrame(scaled)) {
-                            framesAdded++
-                        }
-                        scaled.recycle()
-                    }
-                }
-
-                encoder.finish()
+            // 2. Hardened scaled ARGB_8888 fallback if MediaExtractor/EGL couldn't decode this container
+            if (framesAdded <= 0) {
+                if (outputFile.exists()) outputFile.delete()
+                framesAdded = encodeViaScaledRetrieverFallback(
+                    retriever = retriever,
+                    outputFile = outputFile,
+                    startMs = safeStartMs,
+                    actualDurationMs = actualDurationMs,
+                    frameIntervalMs = frameIntervalMs,
+                    rawW = rawW,
+                    rawH = rawH,
+                    rotation = rotation,
+                    targetW = targetW,
+                    targetH = targetH,
+                    onProgress = onProgress
+                )
             }
 
             if (framesAdded > 0 && outputFile.exists() && outputFile.length() > 0) {
@@ -149,11 +141,167 @@ object VideoToGifConverter {
         } finally {
             try {
                 retriever.release()
-            } catch (e: Exception) {}
+            } catch (_: Exception) {}
         }
     }
 
-    private fun orientAndScaleFrame(
+    private fun encodeViaGpuSurface(
+        context: Context,
+        uri: Uri,
+        outputFile: File,
+        startMs: Long,
+        actualDurationMs: Long,
+        fps: Int,
+        frameIntervalMs: Long,
+        targetW: Int,
+        targetH: Int,
+        fallbackRotation: Int,
+        onProgress: ((Float) -> Unit)?
+    ): Int {
+        var added = 0
+        return try {
+            FileOutputStream(outputFile).use { fos ->
+                val encoder = AnimatedGifEncoder().apply {
+                    setRepeat(0)
+                    setSize(targetW, targetH)
+                    setDelay(frameIntervalMs.toInt())
+                }
+                if (!encoder.start(fos)) return 0
+
+                VideoSurfaceFrameExtractor.extractFrames(
+                    context = context,
+                    uri = uri,
+                    startMs = startMs,
+                    durationMs = actualDurationMs,
+                    fps = fps,
+                    targetW = targetW,
+                    targetH = targetH,
+                    fallbackRotation = fallbackRotation
+                ) { frameIndex, totalFrames, frameBitmap ->
+                    if (encoder.addFrame(frameBitmap)) {
+                        added++
+                    }
+                    onProgress?.invoke(((frameIndex + 1).toFloat() / totalFrames.toFloat()).coerceIn(0f, 1f))
+                }
+
+                encoder.finish()
+            }
+            added
+        } catch (e: Exception) {
+            e.printStackTrace()
+            0
+        }
+    }
+
+    private fun encodeViaScaledRetrieverFallback(
+        retriever: MediaMetadataRetriever,
+        outputFile: File,
+        startMs: Long,
+        actualDurationMs: Long,
+        frameIntervalMs: Long,
+        rawW: Int,
+        rawH: Int,
+        rotation: Int,
+        targetW: Int,
+        targetH: Int,
+        onProgress: ((Float) -> Unit)?
+    ): Int {
+        val frameIntervalUs = frameIntervalMs * 1000L
+        val totalFrames = ((actualDurationMs + frameIntervalMs - 1L) / frameIntervalMs)
+            .toInt()
+            .coerceAtLeast(1)
+
+        val isRotated = rotation == 90 || rotation == 270
+        val reqW = if (isRotated) targetH else targetW
+        val reqH = if (isRotated) targetW else targetH
+
+        val encoder = AnimatedGifEncoder().apply {
+            setRepeat(0)
+            setSize(targetW, targetH)
+            setDelay(frameIntervalMs.toInt())
+        }
+
+        var framesAdded = 0
+        FileOutputStream(outputFile).use { fos ->
+            if (!encoder.start(fos)) return 0
+
+            var frameIndex = 0
+            var timeUs = startMs * 1000L
+            val endUs = (startMs + actualDurationMs) * 1000L
+
+            while (timeUs <= endUs && frameIndex < totalFrames) {
+                val rawFrame = getSafeScaledFrame(retriever, timeUs, reqW, reqH)
+                if (rawFrame != null) {
+                    val opaqueScaled = normalizeToOpaqueSrgbBitmap(rawFrame, rawW, rawH, rotation, targetW, targetH)
+                    if (opaqueScaled != rawFrame) rawFrame.recycle()
+                    if (encoder.addFrame(opaqueScaled)) {
+                        framesAdded++
+                    }
+                    opaqueScaled.recycle()
+                }
+
+                frameIndex++
+                timeUs += frameIntervalUs
+                onProgress?.invoke(frameIndex.toFloat() / totalFrames)
+            }
+
+            if (framesAdded == 0) {
+                val fallback = getSafeScaledFrame(retriever, startMs * 1000L, reqW, reqH)
+                    ?: retriever.getFrameAtTime()
+                if (fallback != null) {
+                    val opaqueScaled = normalizeToOpaqueSrgbBitmap(fallback, rawW, rawH, rotation, targetW, targetH)
+                    if (opaqueScaled != fallback) fallback.recycle()
+                    if (encoder.addFrame(opaqueScaled)) {
+                        framesAdded++
+                    }
+                    opaqueScaled.recycle()
+                }
+            }
+
+            encoder.finish()
+        }
+        return framesAdded
+    }
+
+    private fun getSafeScaledFrame(
+        retriever: MediaMetadataRetriever,
+        timeUs: Long,
+        reqW: Int,
+        reqH: Int
+    ): Bitmap? {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val params = MediaMetadataRetriever.BitmapParams().apply {
+                preferredConfig = Bitmap.Config.ARGB_8888
+            }
+            try {
+                retriever.getScaledFrameAtTime(
+                    timeUs,
+                    MediaMetadataRetriever.OPTION_CLOSEST,
+                    reqW,
+                    reqH,
+                    params
+                )?.let { return it }
+            } catch (_: Exception) {}
+            try {
+                retriever.getScaledFrameAtTime(
+                    timeUs,
+                    MediaMetadataRetriever.OPTION_CLOSEST_SYNC,
+                    reqW,
+                    reqH,
+                    params
+                )?.let { return it }
+            } catch (_: Exception) {}
+        }
+        return try {
+            retriever.getScaledFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST, reqW, reqH)
+                ?: retriever.getScaledFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC, reqW, reqH)
+                ?: retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun normalizeToOpaqueSrgbBitmap(
         rawFrame: Bitmap,
         rawW: Int,
         rawH: Int,
@@ -161,38 +309,54 @@ object VideoToGifConverter {
         targetW: Int,
         targetH: Int
     ): Bitmap {
-        val isRotated90or270 = rotation == 90 || rotation == 270
-        val alreadyRotated = isRotated90or270 && rawW != rawH &&
-            rawFrame.width == rawH && rawFrame.height == rawW
-        val needsRotation = rotation != 0 && !alreadyRotated
-
-        val orientedFrame = if (needsRotation) {
-            val matrix = Matrix().apply { postRotate(rotation.toFloat()) }
-            val rotated = Bitmap.createBitmap(rawFrame, 0, 0, rawFrame.width, rawFrame.height, matrix, true)
-            if (rotated != rawFrame) rawFrame.recycle()
-            rotated
+        val softFrame = if (rawFrame.config == Bitmap.Config.HARDWARE) {
+            rawFrame.copy(Bitmap.Config.ARGB_8888, false) ?: rawFrame
         } else {
             rawFrame
         }
 
-        return if (orientedFrame.width != targetW || orientedFrame.height != targetH) {
-            val scaled = Bitmap.createScaledBitmap(orientedFrame, targetW, targetH, true)
-            if (scaled != orientedFrame) orientedFrame.recycle()
-            scaled
+        val isRotated90or270 = rotation == 90 || rotation == 270
+        val alreadyRotated = isRotated90or270 && rawW != rawH &&
+            ((softFrame.width < softFrame.height) == (rawH < rawW))
+        val needsRotation = rotation != 0 && !alreadyRotated
+
+        val orientedFrame = if (needsRotation) {
+            val matrix = Matrix().apply { postRotate(rotation.toFloat()) }
+            val rotated = Bitmap.createBitmap(softFrame, 0, 0, softFrame.width, softFrame.height, matrix, true)
+            if (softFrame != rawFrame && rotated != softFrame) softFrame.recycle()
+            rotated
         } else {
-            orientedFrame
+            softFrame
         }
+
+        val out = Bitmap.createBitmap(targetW, targetH, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(out)
+        canvas.drawColor(Color.BLACK)
+        val paint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.DITHER_FLAG)
+        canvas.drawBitmap(
+            orientedFrame,
+            Rect(0, 0, orientedFrame.width, orientedFrame.height),
+            Rect(0, 0, targetW, targetH),
+            paint
+        )
+        if (orientedFrame != rawFrame) {
+            orientedFrame.recycle()
+        }
+        return out
     }
 
-    private fun calculateScaledDimensions(origW: Int, origH: Int, maxDim: Int): Pair<Int, Int> {
-        if (origW <= maxDim && origH <= maxDim) return origW.coerceAtLeast(1) to origH.coerceAtLeast(1)
-        val scale = if (origW >= origH) {
-            maxDim.toFloat() / origW.toFloat()
+    private fun calculateScaledEvenDimensions(origW: Int, origH: Int, maxDim: Int): Pair<Int, Int> {
+        val safeW = origW.coerceAtLeast(2)
+        val safeH = origH.coerceAtLeast(2)
+        val scale = if (safeW <= maxDim && safeH <= maxDim) {
+            1.0f
+        } else if (safeW >= safeH) {
+            maxDim.toFloat() / safeW.toFloat()
         } else {
-            maxDim.toFloat() / origH.toFloat()
+            maxDim.toFloat() / safeH.toFloat()
         }
-        val targetW = (origW * scale).toInt().coerceAtLeast(1)
-        val targetH = (origH * scale).toInt().coerceAtLeast(1)
-        return targetW to targetH
+        val evenW = (((safeW * scale).toInt() + 1) and 1.inv()).coerceIn(2, maxDim)
+        val evenH = (((safeH * scale).toInt() + 1) and 1.inv()).coerceIn(2, maxDim)
+        return evenW to evenH
     }
 }
