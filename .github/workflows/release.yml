@@ -27,10 +27,12 @@ jobs:
           echo "code=$CODE" >> "$GITHUB_OUTPUT"
 
   build:
+    # Only the current version is released; older versions and the legacy branch are no longer supported.
+    needs: version
     strategy:
       fail-fast: false
       matrix:
-        branch: [main, legacy]
+        branch: [main]
     runs-on: ubuntu-latest
 
     steps:
@@ -83,20 +85,20 @@ jobs:
       - name: Rename outputs
         run: |
           mkdir -p "${{ runner.temp }}/out"
-          cp app/build/outputs/apk/release/*.apk "${{ runner.temp }}/out/ZSticker-${{ matrix.branch }}.apk"
-          cp app/build/outputs/bundle/release/*.aab "${{ runner.temp }}/out/ZSticker-${{ matrix.branch }}.aab"
+          cp app/build/outputs/apk/release/*.apk "${{ runner.temp }}/out/ZSticker-v${{ needs.version.outputs.name }}.apk"
+          cp app/build/outputs/bundle/release/*.aab "${{ runner.temp }}/out/ZSticker-v${{ needs.version.outputs.name }}.aab"
 
       - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:
-          name: ZSticker-${{ matrix.branch }}-release-apk
-          path: ${{ runner.temp }}/out/ZSticker-${{ matrix.branch }}.apk
+          name: ZSticker-release-apk
+          path: ${{ runner.temp }}/out/ZSticker-v${{ needs.version.outputs.name }}.apk
 
       - name: Upload release AAB
         uses: actions/upload-artifact@v4
         with:
-          name: ZSticker-${{ matrix.branch }}-release-aab
-          path: ${{ runner.temp }}/out/ZSticker-${{ matrix.branch }}.aab
+          name: ZSticker-release-aab
+          path: ${{ runner.temp }}/out/ZSticker-v${{ needs.version.outputs.name }}.aab
 
   publish:
     needs: [version, build]
@@ -113,4 +115,18 @@ jobs:
         with:
           tag_name: v${{ needs.version.outputs.name }}
           name: ZSticker v${{ needs.version.outputs.name }} (${{ needs.version.outputs.code }})
+          body: |
+            ## What's new in ${{ needs.version.outputs.name }}
+
+            - Favorites and folders: star stickers and filter the Home grid with All, Favorites and folder chips
+            - Select several stickers at once to favorite, move, add a border, export or delete them
+            - New sticker editor: eraser, a restore brush that brings back removed background, drawing and text, with undo and redo
+            - Crop GIFs while they play, with a timeline, play/pause and aspect presets
+            - Import short videos with a live trimmer and turn them into GIF stickers
+            - Backups are now `.zsticker` files without a password; backups from older versions open with Import legacy backup
+            - Auto-crop and auto-resize options for background removal and sharing
+            - Material 3 Expressive redesign: floating navigation bar, rounded add button and smoother tab animations
+            - Fixes: GIF encoding crash, video import, language flags and Play Console warnings
+
+            Only the latest version is supported; older versions (including the legacy build) are no longer maintained.
           files: artifacts/*
