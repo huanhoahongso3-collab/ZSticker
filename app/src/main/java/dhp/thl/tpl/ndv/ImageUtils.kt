@@ -267,6 +267,15 @@ object ImageUtils {
      * Crops transparent pixels from the edges of the bitmap.
      */
     fun cropTransparent(bitmap: Bitmap): Bitmap {
+        val rect = cropTransparentRect(bitmap) ?: return bitmap
+        return Bitmap.createBitmap(bitmap, rect.left, rect.top, rect.width(), rect.height())
+    }
+
+    /**
+     * The bounding box of the non-transparent pixels, or null when the bitmap is fully transparent.
+     * Lets callers crop a second, pixel-aligned bitmap (the original photo) with the same rectangle.
+     */
+    fun cropTransparentRect(bitmap: Bitmap): android.graphics.Rect? {
         val width = bitmap.width
         val height = bitmap.height
         val pixels = IntArray(width * height)
@@ -291,7 +300,7 @@ object ImageUtils {
         }
 
         // If minY is still original value, it means the whole image is transparent
-        if (minY == height) return bitmap
+        if (minY == height) return null
 
         // Find maxY
         bottom@ for (y in height - 1 downTo minY) {
@@ -323,9 +332,9 @@ object ImageUtils {
             }
         }
 
-        if (maxX < minX || maxY < minY) return bitmap
+        if (maxX < minX || maxY < minY) return null
 
-        return Bitmap.createBitmap(bitmap, minX, minY, (maxX - minX) + 1, (maxY - minY) + 1)
+        return android.graphics.Rect(minX, minY, maxX + 1, maxY + 1)
     }
     
     /**

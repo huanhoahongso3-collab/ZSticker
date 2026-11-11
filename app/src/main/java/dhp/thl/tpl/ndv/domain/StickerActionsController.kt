@@ -27,6 +27,7 @@ import dhp.thl.tpl.ndv.OptionItem
 import dhp.thl.tpl.ndv.ProgressDialog
 import dhp.thl.tpl.ndv.R
 import dhp.thl.tpl.ndv.ToastUtils
+import dhp.thl.tpl.ndv.data.OriginalStore
 import dhp.thl.tpl.ndv.data.StickerRepository
 import dhp.thl.tpl.ndv.databinding.ActivityMainBinding
 import dhp.thl.tpl.ndv.gif.GifProcessor
@@ -170,6 +171,30 @@ class StickerActionsController(
         binding.progressBar.visibility = View.VISIBLE
     }
 
+    /**
+     * Stores the photo behind a cut-out, scaled to the segmentation size and cropped with the same
+     * rectangle as the sticker, so the two stay pixel-aligned for the Restore brush.
+     */
+    private fun saveOriginal(stickerName: String, source: Bitmap, rect: android.graphics.Rect?, targetW: Int, targetH: Int) {
+        try {
+            val aligned = if (source.width != targetW || source.height != targetH) {
+                Bitmap.createScaledBitmap(source, targetW, targetH, true)
+            } else {
+                source
+            }
+            val cropped = if (rect != null) {
+                Bitmap.createBitmap(aligned, rect.left, rect.top, rect.width(), rect.height())
+            } else {
+                aligned
+            }
+            OriginalStore.save(activity, stickerName, cropped)
+            if (cropped !== aligned) cropped.recycle()
+            if (aligned !== source) aligned.recycle()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     private fun removeBackground(uri: Uri) {
         val fileName = uri.lastPathSegment?.lowercase() ?: ""
         if (fileName.endsWith(".gif") || isVideoUri(uri)) {
@@ -186,19 +211,24 @@ class StickerActionsController(
                 val resizedBitmap = ImageUtils.loadSampledBitmapWithGlide(activity, uri, 512, 512)
                     ?: throw Exception("Glide failed to decode source URI")
                 val segmentedBitmap = mediaPipeBackgroundRemover.removeBackground(resizedBitmap)
-                resizedBitmap.recycle()
 
                 if (segmentedBitmap != null) {
-                    val croppedBitmap = if (isAutoCropEnabled()) ImageUtils.cropTransparent(segmentedBitmap) else segmentedBitmap
+                    val cropRect = if (isAutoCropEnabled()) ImageUtils.cropTransparentRect(segmentedBitmap) else null
+                    val croppedBitmap = cropRect?.let {
+                        Bitmap.createBitmap(segmentedBitmap, it.left, it.top, it.width(), it.height())
+                    } ?: segmentedBitmap
                     val file = File(activity.filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
                     FileOutputStream(file).use { out ->
                         croppedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
                     }
+                    // Keep the photo behind the cut-out so the editor's Restore brush can bring pixels back.
+                    saveOriginal(file.name, resizedBitmap, cropRect, segmentedBitmap.width, segmentedBitmap.height)
                     if (croppedBitmap != segmentedBitmap) segmentedBitmap.recycle()
                     croppedBitmap.recycle()
                     resultUri = Uri.fromFile(file)
                     isSuccess = true
                 }
+                resizedBitmap.recycle()
             } catch (_: Exception) {
                 isSuccess = false
             }
@@ -266,10 +296,12 @@ class StickerActionsController(
         thread {
             var isSuccess = false
             var resultUri: Uri? = null
+            var originalBitmap: Bitmap? = null
             val tempResponseFile = File(activity.cacheDir, "rb_net_${System.currentTimeMillis()}.png")
             try {
                 val resizedBitmap = ImageUtils.loadSampledBitmapWithGlide(activity, uri, 512, 512)
                     ?: throw Exception("Glide failed to decode source URI")
+                originalBitmap = resizedBitmap
 
                 val url = URL("https://bria14proxy.vercel.app/api/nobg")
                 val connection = (url.openConnection() as HttpURLConnection).apply {
@@ -283,7 +315,6 @@ class StickerActionsController(
                 connection.outputStream.use { out ->
                     resizedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
                 }
-                resizedBitmap.recycle()
 
                 if (connection.responseCode == 200) {
                     connection.inputStream.use { input ->
@@ -295,9 +326,15 @@ class StickerActionsController(
                         val downloadedBitmap = ImageUtils.loadSampledBitmapWithGlide(activity, tempResponseFile, 512, 512)
                         if (downloadedBitmap != null) {
                             val file = File(activity.filesDir, "zsticker_rb_${System.currentTimeMillis()}.png")
-                            val croppedBitmap = if (isAutoCropEnabled()) ImageUtils.cropTransparent(downloadedBitmap) else downloadedBitmap
+                            val cropRect = if (isAutoCropEnabled()) ImageUtils.cropTransparentRect(downloadedBitmap) else null
+                            val croppedBitmap = cropRect?.let {
+                                Bitmap.createBitmap(downloadedBitmap, it.left, it.top, it.width(), it.height())
+                            } ?: downloadedBitmap
                             FileOutputStream(file).use { out ->
                                 croppedBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                            }
+                            originalBitmap?.let {
+                                saveOriginal(file.name, it, cropRect, downloadedBitmap.width, downloadedBitmap.height)
                             }
                             if (croppedBitmap != downloadedBitmap) downloadedBitmap.recycle()
                             croppedBitmap.recycle()
@@ -312,6 +349,7 @@ class StickerActionsController(
                 try {
                     if (tempResponseFile.exists()) tempResponseFile.delete()
                 } catch (_: Exception) {}
+                originalBitmap?.recycle()
             }
 
             activity.runOnUiThread {

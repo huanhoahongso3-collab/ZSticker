@@ -7,6 +7,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -25,7 +26,8 @@ sealed interface StickerListItem {
         val file: File,
         val isRecent: Boolean = false,
         val recentEntry: String? = null,
-        val timestamp: Long = 0L
+        val timestamp: Long = 0L,
+        val isFavorite: Boolean = false
     ) : StickerListItem {
         override val stableId: String = if (isRecent) {
             "recent:${recentEntry ?: "${file.name}:$timestamp"}"
@@ -33,6 +35,13 @@ sealed interface StickerListItem {
             "home:${file.name}:${file.length()}"
         }
     }
+}
+
+/** Which stickers the Home grid shows. */
+sealed interface HomeFilter {
+    data object All : HomeFilter
+    data object Favorites : HomeFilter
+    data class Folder(val id: String) : HomeFilter
 }
 
 /**
@@ -43,8 +52,39 @@ object StickerRepository {
 
     private val repoScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    // Every sticker on disk (newest first); the visible Home list is derived from it, the metadata and the filter.
+    private val _allHome = MutableStateFlow<List<StickerListItem.Sticker>>(emptyList())
+
+    private val _selectedFilter = MutableStateFlow<HomeFilter>(HomeFilter.All)
+    val selectedFilter: StateFlow<HomeFilter> = _selectedFilter.asStateFlow()
+
     private val _homeItems = MutableStateFlow<List<StickerListItem>>(emptyList())
     val homeItems: StateFlow<List<StickerListItem>> = _homeItems.asStateFlow()
+
+    init {
+        repoScope.launch {
+            combine(_allHome, StickerMetaStore.meta, _selectedFilter) { all, meta, filter ->
+                val effective = if (filter is HomeFilter.Folder && meta.folders.none { it.id == filter.id }) {
+                    HomeFilter.All
+                } else {
+                    filter
+                }
+                all.mapNotNull { sticker ->
+                    val favorite = sticker.file.name in meta.favorites
+                    val keep = when (effective) {
+                        HomeFilter.All -> true
+                        HomeFilter.Favorites -> favorite
+                        is HomeFilter.Folder -> meta.assignments[sticker.file.name] == effective.id
+                    }
+                    if (keep) sticker.copy(isFavorite = favorite) else null
+                }
+            }.collect { _homeItems.value = it }
+        }
+    }
+
+    fun setFilter(filter: HomeFilter) {
+        _selectedFilter.value = filter
+    }
 
     private val _recentItems = MutableStateFlow<List<StickerListItem>>(emptyList())
     val recentItems: StateFlow<List<StickerListItem>> = _recentItems.asStateFlow()
@@ -71,11 +111,8 @@ object StickerRepository {
     fun refreshAll(context: Context, onCompleteMain: (() -> Unit)? = null) {
         val appCtx = context.applicationContext
         repoScope.launch {
-            val home = loadOrderedBlocking(appCtx)
+            publishHomeBlocking(appCtx)
             val recents = loadRecentsBlocking(appCtx)
-            _homeItems.value = home
-            _homeCount.value = home.count { it is StickerListItem.Sticker }
-            _isHomeLoaded.value = true
 
             _recentItems.value = recents
             _recentCount.value = recents.count { it is StickerListItem.Sticker }
@@ -92,10 +129,7 @@ object StickerRepository {
     fun refreshHome(context: Context, onCompleteMain: (() -> Unit)? = null) {
         val appCtx = context.applicationContext
         repoScope.launch {
-            val home = loadOrderedBlocking(appCtx)
-            _homeItems.value = home
-            _homeCount.value = home.count { it is StickerListItem.Sticker }
-            _isHomeLoaded.value = true
+            publishHomeBlocking(appCtx)
             if (onCompleteMain != null) {
                 withContext(Dispatchers.Main) {
                     onCompleteMain()
@@ -184,10 +218,8 @@ object StickerRepository {
             val deleted = file.exists() && file.delete()
             if (deleted) {
                 pruneMissingRecentsBlocking(appCtx)
-                val home = loadOrderedBlocking(appCtx)
+                publishHomeBlocking(appCtx)
                 val recents = loadRecentsBlocking(appCtx)
-                _homeItems.value = home
-                _homeCount.value = home.count { it is StickerListItem.Sticker }
                 _recentItems.value = recents
                 _recentCount.value = recents.count { it is StickerListItem.Sticker }
             }
@@ -209,12 +241,11 @@ object StickerRepository {
             }
             var successCount = 0
             stickerFiles.forEach { if (it.delete()) successCount++ }
+            OriginalStore.deleteAll(appCtx)
             pruneMissingRecentsBlocking(appCtx)
 
-            val home = loadOrderedBlocking(appCtx)
+            publishHomeBlocking(appCtx)
             val recents = loadRecentsBlocking(appCtx)
-            _homeItems.value = home
-            _homeCount.value = home.count { it is StickerListItem.Sticker }
             _recentItems.value = recents
             _recentCount.value = recents.count { it is StickerListItem.Sticker }
 
@@ -222,6 +253,35 @@ object StickerRepository {
                 onDoneMain(true, successCount > 0)
             }
         }
+    }
+
+    /** Deletes several stickers at once and refreshes the lists a single time; returns how many were deleted. */
+    fun deleteStickers(context: Context, files: List<File>, onDoneMain: (Int) -> Unit) {
+        val appCtx = context.applicationContext
+        repoScope.launch {
+            val deleted = files.count { it.exists() && it.delete() }
+            if (deleted > 0) {
+                pruneMissingRecentsBlocking(appCtx)
+                publishHomeBlocking(appCtx)
+                val recents = loadRecentsBlocking(appCtx)
+                _recentItems.value = recents
+                _recentCount.value = recents.count { it is StickerListItem.Sticker }
+            }
+            withContext(Dispatchers.Main) {
+                onDoneMain(deleted)
+            }
+        }
+    }
+
+    /** Loads the stickers from disk, drops metadata / originals of deleted ones, and publishes the result. */
+    private fun publishHomeBlocking(context: Context) {
+        StickerMetaStore.ensureLoaded(context)
+        val home = loadOrderedBlocking(context).filterIsInstance<StickerListItem.Sticker>()
+        StickerMetaStore.pruneMissing(context)
+        OriginalStore.pruneMissing(context)
+        _allHome.value = home
+        _homeCount.value = home.size
+        _isHomeLoaded.value = true
     }
 
     private fun pruneMissingRecentsBlocking(context: Context) {

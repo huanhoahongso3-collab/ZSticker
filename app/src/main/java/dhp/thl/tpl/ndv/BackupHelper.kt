@@ -7,6 +7,8 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import dhp.thl.tpl.ndv.data.OriginalStore
+import dhp.thl.tpl.ndv.data.StickerMetaStore
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.ZipParameters
 import org.json.JSONObject
@@ -62,6 +64,25 @@ object BackupHelper {
                 }
                 metadata.put("timestamps", timestamps)
                 contents.add("images")
+
+                // Favorites / folders, and the originals behind background-removed stickers.
+                StickerMetaStore.ensureLoaded(context)
+                val metaStoreFile = StickerMetaStore.file(context)
+                if (metaStoreFile.exists()) {
+                    val p = ZipParameters(params)
+                    p.fileNameInZip = "meta/${metaStoreFile.name}"
+                    zipFile.addFile(metaStoreFile, p)
+                    contents.add("meta")
+                }
+                File(context.filesDir, "originals").listFiles()?.forEach { original ->
+                    if (isCancelled()) {
+                        tempFile.delete()
+                        return false
+                    }
+                    val p = ZipParameters(params)
+                    p.fileNameInZip = "originals/${original.name}"
+                    zipFile.addFile(original, p)
+                }
             }
 
             if (type == "history" || type == "all") {
@@ -212,6 +233,19 @@ object BackupHelper {
                     processed++
                     onProgress?.invoke(0.7f + (processed.toFloat() / total * 0.3f))
                 }
+            }
+
+            // Restore favorites / folders and the originals for the Restore brush
+            val metaBackup = File(extractDir, "meta/sticker_meta.json")
+            if (metaBackup.exists()) {
+                try {
+                    StickerMetaStore.importJson(context, metaBackup.readText())
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            File(extractDir, "originals").listFiles()?.forEach { original ->
+                original.copyTo(OriginalStore.file(context, original.name), overwrite = true)
             }
 
             // Restore prefs
